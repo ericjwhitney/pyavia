@@ -14,15 +14,15 @@ Contains:
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
-   line_pt              Function to give a point on a line of two other points
+    line_pt             Function to give a point on a line of two other points
                         with any one coordinate supplied.
-   linear_int_ext       Function for linear interpolation (and optional
+    linear_int_ext      Function for linear interpolation (and optional
                         extrapolation).
-   min_max              Function giving the min and max of an object
+    min_max             Function giving the min and max of an object
                         simultaneously.
-   monotonic            Function checking that sequence values are monotonic.
-   strict_decrease      Specialisation of monotonic.
-   strict_increase      Specialisation of monotonic.
+    monotonic           Function checking that sequence values are monotonic.
+    strict_decrease     Specialisation of monotonic.
+    strict_increase     Specialisation of monotonic.
 """
 
 # Last updated: 29 November 2019 by Eric J. Whitney.

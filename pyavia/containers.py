@@ -2,7 +2,7 @@
 Useful, less common containers.
 
 Contains (hehe, get it?):
-    MultiBiDict       Bi-directional dict class class.
+    MultiBiDict       Bi-directional dict class.
     WeightedDirGraph  Weighted directional graph class.
 """
 
@@ -21,7 +21,7 @@ __all__ = ['MultiBiDict', 'WeightedDirGraph', 'link', 'flatten']
 class MultiBiDict(dict):
     """
     Bi-directional dict class taken from this StackOverflow answer:
-    https://stackoverflow.com/a/21894086A  A forward and inverse dictionary are
+    https://stackoverflow.com/a/21894086  A forward and inverse dictionary are
     synchronised to allow searching by either key or value to get
     the corresponding value / key.  Note:
         - The inverse dict bidict_multi.inverse auto-updates itself
