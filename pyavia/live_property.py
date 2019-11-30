@@ -1,10 +1,10 @@
 """
-Provides LiveProperty class with Allows the addition of 'live properties'
-class methods to user classes.  This is for the case where you would
-immediately like to call some class method once a particular attribute is
-updated (i.e. __set__).  This can be used to update the internal state,
-etc.  This is also useful if updating during every read (i.e. __get__) is
-computationally expensive.
+Provides LiveProperty class which allows the addition of 'live properties'
+to user classes.  This is for the case where you would immediately like to
+call some class method once a particular attribute is updated (i.e.
+__set__).  This can be used to update the internal state, etc.  This is also
+useful if updating during every read (i.e. __get__) is computationally
+expensive.
 
 Example
 -------
