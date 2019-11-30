@@ -215,7 +215,7 @@ def bisect_root(f: Callable[[float], float], x_a: float, x_b: float,
 
 def bounded_by(x, iterable, key=None):
     """Returns True the value x is bounded by the given iterable it, i.e.
-    min(seq) <= x <= max(seq).  If x_a key function is provided this is applied
+    min(seq) <= x <= max(seq).  If a key function is provided this is applied
     to x and the iterable before comparison.
     """
     if key is None:
@@ -230,7 +230,7 @@ def bracket_list(li, x, key=None):
     the usual one-sided method with strict inequality i.e. low <= x < high
 
     r_idx = l_idx + 1 on return. Sorting can be in either direction.  For x
-    equal to x_a middle list value, the left side bracket is returned.
+    equal to a middle list value, the left side bracket is returned.
     Comparison uses key function if supplied.
     """
     # EJW Removed 25/11 duck typing policy
@@ -256,25 +256,27 @@ def bracket_list(li, x, key=None):
 
 
 def _ignore_key(x):
-    """Satisfies some inbuilt functions that do not accept None as x_a key."""
+    """Satisfies some inbuilt functions that do not accept None as a key."""
     return x
 
 
 def line_pt(a, b, p, scale=None):
-    """Find the coordinates of x_a point p anywhere along the line x_a --> x_b
+    """Find the coordinates of a point p anywhere along the line a --> b
     where at least one component of p is supplied (remaining can be None).
     Each axis may be optionally scaled.
 
-    Note: There is no limitation that p is in the interval [x_a, x_b], so this
+    Note: There is no limitation that p is in the interval [a, b], so this
     function can also be used for extrapolation as required.
+
     Args:
-        - a, b: Two distinct points on the line (x_1, ... x_n)
-        - p: Required point on the line with at least x_a single known
+        a: Two distinct points on the line (x_1, ... x_n)
+        b: Ditto.
+        p: Required point on the line with at least a single known
             component, i.e. (..., None, p_i, None, ...).  If more
             than one is supplied, the first is used.
-        - scale: If supplied, x_a list corresponding to each axis. Options:
+        scale: If supplied, a list corresponding to each axis. Options:
             - None: No scaling performed.
-            - 'log': This axis is linear on x_a log scale.  In practice
+            - 'log': This axis is linear on a log scale.  In practice
                 log(x_i) is performed on this axis prior to doing the
                 interpolation / extrapolation, then exp(x) is done prior to
                 returning.
@@ -284,7 +286,7 @@ def line_pt(a, b, p, scale=None):
     if scale is None:
         scale = [None] * len(a)
     if not len(a) == len(b) == len(p) == len(scale):
-        raise ValueError("x_a, x_b, p, [scale] must be the same length.")
+        raise ValueError("a, b, p, [scale] must be the same length.")
 
     # Scale axes.
     scl_funs, rev_funs = [], []
@@ -322,12 +324,12 @@ def linear_int_ext(data_pts, p, scale=None, allow_extrap=False):
     end corresponding to the p.
 
     Args:
-        - data_pts: [(a_1, ... a_n), ...] sorted on the required axis
+        data_pts: [(a_1, ... a_n), ...] sorted on the required axis
             (either direction).
-        - p: Required point to interpolate / extrapolate with at least
-            x_a single known component, i.e. (..., None, p_i, None, ...).
+        p: Required point to interpolate / extrapolate with at least
+            a single known component, i.e. (..., None, p_i, None, ...).
             If more than one is supplied, the first is used.
-        - scale: Same as line_pt scale.
+        scale: Same as line_pt scale.
 
     Returns:
         - Interpolated / extrapolated point [q_1, ..., q_n] where
