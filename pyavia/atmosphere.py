@@ -8,10 +8,8 @@ Contains:
 
 Notes:
 
-- Uses ISO 2533-1975 International Standard Atmsosphere (ISA).
-
-- Altitude from -2 → +80 km, however dynamic_viscosity is inaccurate for
-very high or low temperatures.
+- Uses ISO 2533-1975 International Standard Atmsosphere (ISA).  Altitude
+from -2 → +80 km
 
 - The ISA is defined in terms of geopotential altitude (H) which is
 convenient when computing the pressure distribution through the depth of
@@ -23,6 +21,17 @@ conversion.  Unless noted otherwise, all altitudes used in Atmosphere are
 geopotential (H).
 
 - Humidity is not presently included.
+
+- Dynamic viscosity is computed via Sutherland's formula which is reasonably
+accurate between 180°R - 3400°R (or 100K - 1889K, -173 - 1616°C, ref
+NACA TN 1135).
+
+- Specific heats (c_p, c_v, γ) are computed using a model of a simple harmonic
+vibrator, ref NACA TN 1135 Eqn 175, 176 only for temperatures above 550°R (
+306K, 32°C).  Below this point fixed values (i.e. calorically perfect gas) is
+assumed; this aligns with most calculations in this range where γ = 1.4 is
+assumed and removes growing equation errors for very cold atmospheres.  Air is
+assumed to be thermally perfect at all times.
 
 - Uppercase and lowercase are mixed to be consistent with source
 documents.  Uppercase H and associated values refer to geopotential
@@ -195,7 +204,6 @@ class Atmosphere:
 
     # Class constants.
     R = Dim(287.05287, 'J/K/kg')  # Gas constant for air.
-    GAMMA = 1.4  # γ = Ratio of specific heats C_p/C_v.
 
     # Output defaults.
     unitdef_alt = 'ft'
@@ -203,6 +211,7 @@ class Atmosphere:
     unitdef_kine = 'ft²/s'
     unitdef_press = 'psf'
     unitdef_spd = 'ft/s'
+    unitdef_spheat = 'ft.lbf/slug/°R'
     unitdef_temp = '°R'
     unitdef_visc = 'psf.s'
 
@@ -215,6 +224,7 @@ class Atmosphere:
             cls.unitdef_kine = 'ft²/s'
             cls.unitdef_press = 'psf'
             cls.unitdef_spd = 'ft/s'
+            cls.unitdef_spheat = 'ft.lbf/slug/°R'
             cls.unitdef_temp = '°R'
             cls.unitdef_visc = 'psf.s'  # Also = slug/ft/s.
         elif style == 'SI':
@@ -223,12 +233,41 @@ class Atmosphere:
             cls.unitdef_kine = 'm²/s'
             cls.unitdef_press = 'kPa'
             cls.unitdef_spd = 'm/s'
+            cls.unitdef_spheat = 'J/kg/K'
             cls.unitdef_temp = 'K'
             cls.unitdef_visc = 'Pa.s'
         else:
             raise ValueError(f"Unknown default style: {style}")
 
     # Properties.
+
+    @property
+    def c_p(self) -> Dim:
+        """Specific heat at constant pressure.  Only corrected above T =
+        550°R."""
+        temp_R = self.temperature.convert('°R').value
+        if temp_R <= 550:
+            return _C_P_PERF.convert(Atmosphere.unitdef_spheat)
+
+        # Correct c_p.
+        ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
+        c_p_corr = _C_P_PERF * (1 + ((_GAMMA_PERF - 1) / _GAMMA_PERF) * (
+            (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
+        return c_p_corr.convert(Atmosphere.unitdef_spheat)
+
+    @property
+    def c_v(self) -> Dim:
+        """Specific heat at constant volume.  Only corrected above T =
+        550°R."""
+        temp_R = self.temperature.convert('°R').value
+        if temp_R <= 550:
+            return _C_V_PERF.convert(Atmosphere.unitdef_spheat)
+
+        # Correct c_v.
+        ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
+        c_v_corr = _C_V_PERF * (1 + (_GAMMA_PERF - 1) * (
+                (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
+        return c_v_corr.convert(Atmosphere.unitdef_spheat)
 
     @property
     def delta(self) -> float:
@@ -284,6 +323,15 @@ class Atmosphere:
             Atmosphere.unitdef_kine)
 
     @property
+    def gamma(self) -> float:
+        """γ = c_p / c_v ratio of specific heats.  Only corrected above T =
+        550°R."""
+        if self.temperature.convert('°R').value <= 550:
+            return _GAMMA_PERF
+        else:
+            return self.c_p / self.c_v
+
+    @property
     def pressure(self) -> Dim:
         return self._P.convert(Atmosphere.unitdef_press)
 
@@ -305,7 +353,7 @@ class Atmosphere:
     @property
     def speed_of_sound(self) -> Dim:
         """a = sqrt(γRT)."""
-        return ((Atmosphere.GAMMA * Atmosphere.R * self._T) ** 0.5).convert(
+        return ((self.gamma * Atmosphere.R * self._T) ** 0.5).convert(
             Atmosphere.unitdef_spd)
 
     @property
@@ -323,7 +371,7 @@ class Atmosphere:
     a = speed_of_sound
 
     δ = delta
-    γ = GAMMA
+    γ = gamma
     θ = theta
     μ = dynamic_viscosity
     ν = kinematic_viscosity
@@ -335,8 +383,14 @@ class Atmosphere:
 
 # Related constants.
 
-g_n = Dim(9.80665, 'm/s^2')  # Gravitational acceleration
-r_earth = Dim(6356.766, 'km')  # Earth radius (nom) from ISO 2533-1975 §2.3
+G_N = Dim(9.80665, 'm/s^2')  # Gravitational acceleration
+R_EARTH = Dim(6356.766, 'km')  # Earth radius (nom) from ISO 2533-1975 §2.3
+
+# Specific heats are from the American Meteorological Society and are for
+# dry air (±2.5 J/kg/K).  Atmosphere class corrects these above T = 550°R.
+_C_P_PERF = Dim(1005.7, 'J/kg/K')
+_C_V_PERF = Dim(719, 'J/kg/K')
+_GAMMA_PERF = 1.4  # γ = Ratio of specific heats c_p/c_v.
 
 
 # -----------------------------------------------------------------------------
@@ -349,10 +403,10 @@ def _press_in_layer(H, P_b, H_b, T_b, beta):
     if not isclose(beta, 0, abs_tol=1e-6):
         # ISO 2533-1975 Eqn 12.
         return P_b * ((1 + (beta / T_b) * (H - H_b)) ** (
-                -g_n / beta / Atmosphere.R))
+                -G_N / beta / Atmosphere.R))
     else:
         # ISO 2533-1975 Eqn 13.
-        return P_b * exp((-g_n / Atmosphere.R / T_b) * (H - H_b))
+        return P_b * exp((-G_N / Atmosphere.R / T_b) * (H - H_b))
 
 
 # noinspection PyPep8Naming
@@ -361,10 +415,10 @@ def _alt_in_layer(P, P_b, H_b, T_b, beta):
     given pressure and base layer values of (_b) of pressure,
     altitude, temperature and lapse rate."""
     if not isclose(beta, 0, abs_tol=1e-6):
-        return H_b + ((P / P_b) ** (-beta * Atmosphere.R / g_n) - 1) * (
+        return H_b + ((P / P_b) ** (-beta * Atmosphere.R / G_N) - 1) * (
                 T_b / beta)
     else:
-        return H_b - log(P / P_b) * (Atmosphere.R * T_b / g_n)
+        return H_b - log(P / P_b) * (Atmosphere.R * T_b / G_N)
 
 
 _ISA_HTPrho_b, _ISA_beta = None, None
@@ -380,7 +434,9 @@ def _set_ISA_levels():
     # - P_b: Pressure computed later from each lower base, except H_b = 0
     # (p = 101325 Pa From ISO 2533-1975 Table 1) and H < 0 (computed from
     # above).
-    # - rho_b: Density computed from T, P. Only needed for density altitude l
+    # - rho_b: Density computed from T, P. Only needed for density altitude
+    # method.
+    #
     # Note: These values are subscript _b meaning they apply at the base of the
     # next range of constant lapse rate.
 
@@ -425,9 +481,9 @@ _set_ISA_levels()
 
 def geo_alt_to_pot(geo_alt):
     """Convert h -> H per ISO 2533-1975 Eqn 8."""
-    return r_earth * geo_alt / (r_earth + geo_alt)
+    return R_EARTH * geo_alt / (R_EARTH + geo_alt)
 
 
 def pot_alt_to_geo(pot_alt):
     """Convert H -> h per ISO 2533-1975 Eqn 9."""
-    return r_earth * pot_alt / (r_earth - pot_alt)
+    return R_EARTH * pot_alt / (R_EARTH - pot_alt)
