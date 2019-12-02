@@ -49,8 +49,14 @@ class TestBisectRoot(TestCase):
         def f(g):
             return g ** 2 - g - 1
         exact = 1.618033988749895
-        x, it = bisect_root(f, 1.0, 2.0, tol=1e-15)
+
+        # Normal operation.
+        x = bisect_root(f, 1.0, 2.0, tol=1e-15)
         self.assertAlmostEqual(x, exact, places=15)
+
+        # Failure to converge.
+        with self.assertRaises(RuntimeError):
+            bisect_root(f, 1.0, 2.0, maxits=10, tol=1e-15)
 
 
 class TestLinearInterp(TestCase):

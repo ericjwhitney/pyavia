@@ -70,6 +70,11 @@ class TestAtmosphere(TestCase):
         self.assertAlmostEqual(atm.density_altitude.convert('ft').value,
                                7586.4166, places=2)
 
+        # Test geometric altitude.
+        atm = Atmosphere(h_geometric=(50120.16,'ft'))
+        self.assertAlmostEqual(atm.pressure_altitude.convert('ft').value,
+                               50000, places=2)
+
         # Test hot gases.
         atm = Atmosphere(P=(10, 'kPa'), T=(1500, 'K'))
         self.assertAlmostEqual(atm.c_p.value, 1216, places=-1)

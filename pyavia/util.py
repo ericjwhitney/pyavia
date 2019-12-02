@@ -160,7 +160,7 @@ def to_ucode_super(ss: str) -> str:
 # Simple search and interpolation functions.
 
 def bisect_root(f: Callable[[float], float], x_a: float, x_b: float,
-                maxits: int = 100, tol: float = 1e-6):
+                maxits: int = 100, tol: float = 1e-6) -> float:
     """
     Approximate solution of f(x)=0 on interval [x_a,x_b] by bisection
     method. For bisection to work f(x) must change sign across the interval,
@@ -178,14 +178,16 @@ def bisect_root(f: Callable[[float], float], x_a: float, x_b: float,
     Args:
         f: Function to find root f(x_m) -> 0.
         x_a, x_b: float.  Each end of the search interval, in any order.
-        maxits:  Maximum number of iterations before stopping.
+        maxits:  Maximum number of iterations.
         tol: End search when abs(f(x)) < tol.
 
     Returns:
-        xm, it:
+        xm:
             xm: float corresponding to best estimate of root found i.e.
             f(x_m) approx = 0.0.
-            it: Iteration number on exit.
+
+    Raises:
+        RuntimeError is maxits is reached before a solution is found.
     """
     if f(x_a)*f(x_b) >= 0:
         raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
@@ -199,18 +201,17 @@ def bisect_root(f: Callable[[float], float], x_a: float, x_b: float,
         it += 1
 
         # Check stopping criteria.
-        if it >= maxits or abs(f_m_next) < tol:
-            return x_m, it
+        if abs(f_m_next) < tol:
+            return x_m
+
+        if it >= maxits:
+            raise RuntimeError(f"Reached {maxits} iteration limit.")
 
         # Check which side root is on, narrow interval.
         if f(x_a_next) * f_m_next < 0:
             x_b_next = x_m
         else:
             x_a_next = x_m
-
-        # Check we haven't collapsed interval.
-        if x_a_next == x_b_next:
-            raise RuntimeError(f"Search interval collapsed.")
 
 
 def bounded_by(x, iterable, key=None):

@@ -36,7 +36,7 @@ assumed to be thermally perfect at all times.
 - Uppercase and lowercase are mixed to be consistent with source
 documents.  Uppercase H and associated values refer to geopotential
 altitudes, lowercase refer to geometric (but these don't appear together
-anyway # so as to prevent errors).
+anyway so as to prevent errors).
 
 - Some non-ASCII characters are used.
 """
@@ -150,7 +150,7 @@ class Atmosphere:
 
             if 'h_geometric' in kwargs:
                 # Set an ISA atmosphere based on geometric altitude h.
-                tmp = Atmosphere(h_pot=geo_alt_to_pot(kwargs['h_geometric']))
+                tmp = Atmosphere(H=geo_alt_to_pot(kwargs['h_geometric']))
                 self._T, self._P = tmp._T, tmp._P
                 return
 
@@ -217,7 +217,7 @@ class Atmosphere:
 
     @classmethod
     def set_default_style(cls, style: str = 'US'):
-        """Setting to give default results in style='ISO' or 'US' units."""
+        """Setting to give default results in style='US' or 'SI' units."""
         if style == 'US':
             cls.unitdef_alt = 'ft'
             cls.unitdef_dens = 'slug/ft³'
@@ -296,10 +296,8 @@ class Atmosphere:
                 dens_reqd.units).value - dens_reqd.value
 
         maxits = 50
-        H_d, last_it = bisect_root(density_err, H_lhs, H_rhs, maxits,
-                                   tol=1e-6)
-        if last_it >= maxits:
-            raise RuntimeError(f"Exceeded iteration limit.")
+        H_d = bisect_root(density_err, H_lhs, H_rhs, maxits,
+                          tol=1e-6)
 
         return Dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
 
