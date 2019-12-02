@@ -6,6 +6,10 @@ __set__).  This can be used to update the internal state, etc.  This is also
 useful if updating during every read (i.e. __get__) is computationally
 expensive.
 
+Calling del on the property deletes the corresponding internal
+attribute and also calls the given method.  This is only useful if the
+existence of the attribute is monitored by the update method.
+
 Example
 -------
 
@@ -31,7 +35,7 @@ We want an update of either x or y to trigger a recompute.
 ...     x = LiveProperty('_x', _update, "An x value.")
 ...     y = LiveProperty('_y', _update, "A y value.")
 
-Now we setup an instance and update the attributes:
+Now we setup an instance and change the properties:
 
 >>> obj = LiveSum()
 z updated to 0
@@ -40,6 +44,13 @@ z updated to 7
 z updated to 16
 >>> print(f"obj.z = {obj.z}")  # No update; z already computed.
 obj.z = 16
+
+Deleting the internal attribute also results in an _update() call.
+
+>>> del obj.y
+Traceback (most recent call last):
+...
+AttributeError: 'LiveSum' object has no attribute '_y'
 """
 # Last updated: 1 December 2019 by Eric J. Whitney
 
@@ -74,4 +85,8 @@ class LiveProperty:
 
     def __set__(self, instance, value):
         setattr(instance, self.internal_id, value)
+        self.callback(instance)
+
+    def __delete__(self, instance):
+        delattr(instance, self.internal_id)
         self.callback(instance)
