@@ -246,6 +246,10 @@ class TestDim(TestCase):
         k_ic_metric = Dim(51.3, 'MPa.m⁰ᐧ⁵')  # Fracture toughness 7039-T6351.
         k_ic_imp = k_ic_metric.convert('ksi.in^0.5')
         self.assertAlmostEqual(k_ic_imp.value, 46.7, places=1)
+        cal_energy = Dim(1, 'cal')
+        self.assertAlmostEqual(cal_energy.convert('J').value, 4.184, places=3)
+        self.assertAlmostEqual(cal_energy.convert('Btu').value, 0.003965667,
+                               places=6)
 
         # Test unit multipliers are carried correctly.
         x = Dim(1, 'US_gal').convert('in^3')
