@@ -1132,7 +1132,7 @@ add_unit('atm', '101325 Pa')  # ISO 2533-1975
 add_unit('bar', '100000*Pa')
 add_unit('mmHg', '133.322387415*Pa')
 # mmHg conversion from BS 350: Part 1: 1974 – Conversion factors and tables
-add_unit('Torr', f'{1/760}*atm')
+add_unit('Torr', f'{1 / 760}*atm')
 
 add_unit('psf', 'lbf/ft^2')
 add_unit('inHg', '25.4*mmHg')
@@ -1144,6 +1144,13 @@ add_unit('ksi', '1000*psi')
 #
 
 add_unit('J', 'N.m')
+add_unit('kJ', '1000.J')
+add_unit('MJ', '1000.kJ')
+add_unit('cal', '4.184×J')  # ISO Thermochemical calorie (cal_th).
+add_unit('kcal', '1000.cal')
+add_unit('Btu', '778.1723212164716×ft.lbf')  # ISO British Thermal Unit.
+# The ISO Btu is defined as exactly 1055.06 J. The above value is the
+# calculated conversion to ft.lbf.
 
 #
 # Power.
