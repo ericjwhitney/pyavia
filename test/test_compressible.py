@@ -15,6 +15,7 @@ class TestCompressibleGas(TestCase):
 			self.assertEqual(test_gas.Cv.units, Units('J/kg/K'))
 			self.assertAlmostEqual(test_gas.Cv.value, 716.28, places=1)
 			self.assertAlmostEqual(test_gas.gamma, 1.40, places=2)
+			self.assertAlmostEqual(test_gas.a.value, 340.4, places=1)
 			# Check US units.
 			self.assertAlmostEqual(test_gas.Cp.convert('Btu/lbm/°R').value,
 			                       0.240, places=3)
@@ -43,4 +44,3 @@ class TestCompressibleGas(TestCase):
 		self.assertAlmostEqual(gas.R.value, 287.05287, places=5)  # Unchanged.
 		self.assertAlmostEqual(gas.Cp.value, 1259.8, places=1)
 		self.assertAlmostEqual(gas.gamma, 1.294, places=2)
-

@@ -83,7 +83,7 @@ class ComprFlow:
 
 		self._P, self._T = 0, 0   # Dummies required for Tt / h functions.
 		if T and not Tt and not h:
-			self._T = T
+			self._T = make_total_temp(T)
 		elif Tt and not T and not h:
 			self._T = self._get_T_from_Tt(Tt)
 		elif h and not T and not Tt:
@@ -116,11 +116,7 @@ class ComprFlow:
 		Returns:
 			New ComprFlow object.
 		"""
-		# Get properties directly from internal values.
-		new_kwargs = {_key: getattr(self, _key) for _key in self.__slots__}
-
-		# Strip underscores.
-		new_kwargs = {_key[1:]: val for _key, val in new_kwargs.items()}
+		new_kwargs = {key: getattr(self, key) for key in self.props()}
 
 		for new_key, value in kwargs.items():
 			if new_key in ('P', 'Pt'):
@@ -132,6 +128,11 @@ class ComprFlow:
 		return ComprFlow(**new_kwargs)
 
 	# Properties.
+
+	@property
+	def a(self) -> Dim:
+		"""Local speed of sound a = (γRT)**0.5."""
+		return (self.gamma * self.R * self.T)**0.5
 
 	@property
 	def Cp(self) -> Dim:
