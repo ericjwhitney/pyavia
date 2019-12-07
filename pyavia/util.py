@@ -14,6 +14,8 @@ Contains:
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
+    iterate_fn          Simple function to iterate a given function
+                        until the output converges.
     line_pt             Function to give a point on a line of two other points
                         with any one coordinate supplied.
     linear_int_ext      Function for linear interpolation (and optional
@@ -23,18 +25,20 @@ Contains:
     monotonic           Function checking that sequence values are monotonic.
     strict_decrease     Specialisation of monotonic.
     strict_increase     Specialisation of monotonic.
+
 """
 
 # Last updated: 29 November 2019 by Eric J. Whitney.
 
 import operator as op
 from math import log, exp
-from typing import Union, Callable
+from typing import Union, Callable, Any
 
 __all__ = ['kind_div', 'force_type', 'coax_type', 'UCODE_SS_CHARS',
            'from_ucode_super', 'to_ucode_super', 'bisect_root',
-           'bounded_by', 'bracket_list', 'line_pt', 'linear_int_ext',
-           'min_max', 'monotonic', 'strict_decrease', 'strict_increase']
+           'bounded_by', 'bracket_list', 'iterate_fn', 'line_pt',
+           'linear_int_ext', 'min_max', 'monotonic', 'strict_decrease',
+           'strict_increase']
 
 
 # -----------------------------------------------------------------------------
@@ -261,6 +265,33 @@ def _ignore_key(x):
     return x
 
 
+def iterate_fn(func: Callable[[Any], Any], x_start, xtol=1e-6,
+               max_iter: int = 15):
+    """
+    Refine a value by iterating it through a function that gives a better
+    estimate of the same value.
+
+    Args:
+        func: Function that returns a better estimate of 'x'.
+        x_start: Starting value for 'x'.
+        xtol: Stop when abs(x_new - x) < xtol.
+        max_iter: (int) Iteration limit.
+
+    Returns:
+        x_final
+    """
+    x, its = x_start, 0
+    while True:
+        new_x = func(x)
+        its += 1
+        if abs(new_x - x) <= xtol:
+            break
+        x = new_x
+        if its >= max_iter:
+            raise RuntimeError(f"Limit of {max_iter} iterations exceeded.")
+    return new_x
+
+
 def line_pt(a, b, p, scale=None):
     """Find the coordinates of a point p anywhere along the line a --> b
     where at least one component of p is supplied (remaining can be None).
@@ -331,6 +362,8 @@ def linear_int_ext(data_pts, p, scale=None, allow_extrap=False):
             a single known component, i.e. (..., None, p_i, None, ...).
             If more than one is supplied, the first is used.
         scale: Same as line_pt scale.
+        allow_extrap: True if linear extrapolation from the two adjacent
+        endpoints is permitted.
 
     Returns:
         - Interpolated / extrapolated point [q_1, ..., q_n] where
