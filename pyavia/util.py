@@ -274,7 +274,7 @@ def _ignore_key(x):
 
 
 def iterate_fn(func: Callable[[Any], Any], x_start, xtol=1e-6,
-               max_iter: int = 15):
+               max_iter: int = 15, display=False):
     """
     Refine a value by iterating it through a function that gives a better
     estimate of the same value.
@@ -284,14 +284,21 @@ def iterate_fn(func: Callable[[Any], Any], x_start, xtol=1e-6,
         x_start: Starting value for 'x'.
         xtol: Stop when abs(x_new - x) < xtol.
         max_iter: (int) Iteration limit.
+        display: (bool) If True, print iterations.
 
     Returns:
         x_final
     """
+    if display:
+        print(f"iterate_fn: Start x = {x_start}")
     x, its = x_start, 0
     while True:
         new_x = func(x)
         its += 1
+
+        if display:
+            print(f"\tIteration {its}: x = {new_x}")
+
         if abs(new_x - x) <= xtol:
             break
         x = new_x
