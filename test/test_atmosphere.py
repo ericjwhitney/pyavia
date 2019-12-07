@@ -26,9 +26,9 @@ class TestAtmosphere(TestCase):
         self.assertAlmostEqual(atm.a.value, 340.294, places=3)
         self.assertAlmostEqual(atm.μ.value, 1.7894e-5, places=8)
         self.assertAlmostEqual(atm.ν.value, 1.4607e-5, places=8)
-        self.assertAlmostEqual(atm.c_p.value, 1005.7, places=1)
-        self.assertAlmostEqual(atm.c_v.value, 719, places=1)
-        self.assertAlmostEqual(atm.gamma, 1.4, places=1)
+        # self.assertAlmostEqual(atm.c_p.value, 1005.7, places=1)
+        # self.assertAlmostEqual(atm.c_v.value, 719, places=1)
+        # self.assertAlmostEqual(atm.gamma, 1.4, places=1)
 
         atm = Atmosphere(H=Dim(11, 'km'))  # Known geompotential level.
         self.assertAlmostEqual(atm.T.value, 216.65, places=4)
@@ -76,12 +76,12 @@ class TestAtmosphere(TestCase):
                                50000, places=2)
 
         # Test hot gases.
-        atm = Atmosphere(P=(10, 'kPa'), T=(1500, 'K'))
-        self.assertAlmostEqual(atm.c_p.value, 1216, places=-1)
-        self.assertAlmostEqual(atm.c_v.value, 929, places=-1)
-        self.assertAlmostEqual(atm.gamma, 1.309, places=2)
-        atm = Atmosphere(P=(101325, 'Pa'), T=(4000, '°R'))
-        self.assertAlmostEqual(atm.gamma, 1.298, places=2)
+        # atm = Atmosphere(P=(10, 'kPa'), T=(1500, 'K'))
+        # self.assertAlmostEqual(atm.c_p.value, 1216, places=-1)
+        # self.assertAlmostEqual(atm.c_v.value, 929, places=-1)
+        # self.assertAlmostEqual(atm.gamma, 1.309, places=2)
+        # atm = Atmosphere(P=(101325, 'Pa'), T=(4000, '°R'))
+        # self.assertAlmostEqual(atm.gamma, 1.298, places=2)
 
     # noinspection PyTypeChecker
     def test_methods(self):
