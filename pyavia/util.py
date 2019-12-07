@@ -199,10 +199,11 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
 
     x_a_next, x_b_next = x_a, x_b
     f_a_next, f_b_next = f(x_a_next), f(x_b_next)
-    if f_a_next == 0 or f_b_next == 0:
-        raise ValueError(f"f(x_a) and f(x_b) must not be zero.")
-    if f_a_next/f_b_next >= 0:   # Sign comp. via division.
-        raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
+    try:
+        if f_a_next/f_b_next >= 0:   # Sign comp. via division.
+            raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
+    except ZeroDivisionError:
+        raise ValueError(f"One of the start points is already zero.")
 
     it = 0
     while True:
