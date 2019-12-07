@@ -70,7 +70,7 @@ class LiveProperty:
             internal_id: Name of the corresponding instance attribute to
             associate with the property.  Typically same as property name
             with leading underscore.
-            callback: Class method to call after setting property.
+            callback: Instance method to call after setting property.
             doc: Optional docstring.
         """
         self.internal_id = internal_id
