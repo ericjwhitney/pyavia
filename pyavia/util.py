@@ -163,8 +163,8 @@ def to_ucode_super(ss: str) -> str:
 # -----------------------------------------------------------------------------
 # Simple search and interpolation functions.
 
-def bisect_root(f: Callable[[float], float], x_a: float, x_b: float,
-                maxits: int = 100, tol: float = 1e-6) -> float:
+def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 100,
+                tol=1e-6) -> Any:
     """
     Approximate solution of f(x)=0 on interval [x_a,x_b] by bisection
     method. For bisection to work f(x) must change sign across the interval,
@@ -174,21 +174,19 @@ def bisect_root(f: Callable[[float], float], x_a: float, x_b: float,
     --------
     >>> f = lambda x: x**2 - x - 1
     >>> bisect_root(f, 1, 2, 25)  # This will take 17 iterations.
-    (1.6180343627929688, 17)
+    1.6180343627929688
     >>> f = lambda x: (2*x - 1)*(x - 3)
     >>> bisect_root(f, 0, 1, 10)  # Only takes 1 iteration (in middle).
-    (0.5, 1)
+    0.5
 
     Args:
         f: Function to find root f(x_m) -> 0.
-        x_a, x_b: float.  Each end of the search interval, in any order.
+        x_a, x_b: Each end of the search interval, in any order.
         maxits:  Maximum number of iterations.
         tol: End search when abs(f(x)) < tol.
 
     Returns:
-        xm:
-            xm: float corresponding to best estimate of root found i.e.
-            f(x_m) approx = 0.0.
+        xm: Best estimate of root found i.e. f(x_m) approx = 0.0.
 
     Raises:
         RuntimeError is maxits is reached before a solution is found.
