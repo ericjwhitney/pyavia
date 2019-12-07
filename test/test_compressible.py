@@ -1,0 +1,61 @@
+from unittest import TestCase
+
+
+class TestCompressibleGas(TestCase):
+	def test_all(self):
+		from compressible import ComprFlow
+		from units import Dim, Units
+
+		def stp_checks(test_gas):
+			self.assertEqual(test_gas.gas, 'air')
+			self.assertEqual(test_gas.R.units, Units('J/kg/K'))
+			self.assertAlmostEqual(test_gas.R.value, 287.05287, places=5)
+			self.assertEqual(test_gas.Cp.units, Units('J/kg/K'))
+			self.assertAlmostEqual(test_gas.Cp.value, 1003.33, places=1)
+			self.assertEqual(test_gas.Cv.units, Units('J/kg/K'))
+			self.assertAlmostEqual(test_gas.Cv.value, 716.28, places=1)
+			self.assertAlmostEqual(test_gas.gamma, 1.40, places=2)
+			# Check US units.
+			self.assertAlmostEqual(test_gas.Cp.convert('Btu/lbm/°R').value,
+			                       0.240, places=3)
+
+		# Check standard temp. properties (Ps = 0 i.e. not relevant to this).
+		# Default gas is air.
+		gas = ComprFlow(P=Dim(0, 'Pa'), T=Dim(15, '°C'), M=0.0)
+		stp_checks(gas)
+		# Check stagnation.
+		gas = ComprFlow(Pt=Dim(0, 'Pa'), Tt=Dim(15, '°C'), M=0.0)
+		stp_checks(gas)
+
+		# Check air at higher temp (poly range). First setup room temperature.
+		gas = ComprFlow(P=Dim(1, 'bar'), T=Dim(15, '°C'), M=0, gas='air')
+		# Assigning h = 1.937741828959338 MJ/kg should set T = 1400 K and
+		# leave everything else alone.  Class should automatically convert
+		# °C -> K.
+		gas.h = Dim(1.937741828959338, 'MJ/kg')
+		self.assertEqual(gas.Tt.units, Units('K'))
+		self.assertAlmostEqual(gas.Tt.value, 1400.0, places=1)
+		self.assertAlmostEqual(gas.R.value, 287.05287, places=5)  # Unchanged.
+		self.assertAlmostEqual(gas.Cp.value, 1200, places=0)
+		self.assertAlmostEqual(gas.gamma, 1.314, places=2)
+
+		# Raise M via property, check stagnation values.
+		gas.M = 0.8
+		self.assertAlmostEqual(gas.Tt_on_T, 1.1023746, places=3)
+		self.assertAlmostEqual(gas.Tt.convert('K').value, 1400.0, places=1)
+		self.assertAlmostEqual(gas.Pt_on_P, 1.494999, places=3)
+		self.assertAlmostEqual(gas.Pt.convert('bar').value, 1.0, places=3)
+
+		# Check air at even higher temp (eqn range).
+		gas = ComprFlow(P=Dim(1, 'atm'), T=Dim(2500, 'K'), M=0, gas='air')
+		self.assertAlmostEqual(gas.R.value, 287.05287, places=5)  # Unchanged.
+		self.assertAlmostEqual(gas.Cp.value, 1259.8, places=1)
+		self.assertAlmostEqual(gas.gamma, 1.294, places=2)
+
+		# Check live changes to Mach number give the same result.
+		old_P = gas.P.convert('Pa').value
+		old_T = gas.T.convert('K').value
+		gas.M = 2.0
+		gas.M = 0.0
+		self.assertAlmostEqual(gas.P.convert('Pa').value, old_P, places=1)
+		self.assertAlmostEqual(gas.T.convert('K').value, old_T, places=2)
