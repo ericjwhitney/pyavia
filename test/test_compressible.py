@@ -28,23 +28,15 @@ class TestCompressibleGas(TestCase):
 		stp_checks(gas)
 
 		# Check air at higher temp (poly range). First setup room temperature.
-		gas = ComprFlow(P=Dim(1, 'bar'), T=Dim(15, '°C'), M=0, gas='air')
+		gas = ComprFlow(P=Dim(1, 'bar'), h=Dim(1.937741828959338, 'MJ/kg'),
+		                M=0, gas='air')
 		# Assigning h = 1.937741828959338 MJ/kg should set T = 1400 K and
-		# leave everything else alone.  Class should automatically convert
-		# °C -> K.
-		gas.h = Dim(1.937741828959338, 'MJ/kg')
+		# leave everything else alone.
 		self.assertEqual(gas.Tt.units, Units('K'))
 		self.assertAlmostEqual(gas.Tt.value, 1400.0, places=1)
 		self.assertAlmostEqual(gas.R.value, 287.05287, places=5)  # Unchanged.
 		self.assertAlmostEqual(gas.Cp.value, 1200, places=0)
 		self.assertAlmostEqual(gas.gamma, 1.314, places=2)
-
-		# Raise M via property, check stagnation values.
-		gas.M = 0.8
-		self.assertAlmostEqual(gas.Tt_on_T, 1.1023746, places=3)
-		self.assertAlmostEqual(gas.Tt.convert('K').value, 1400.0, places=1)
-		self.assertAlmostEqual(gas.Pt_on_P, 1.494999, places=3)
-		self.assertAlmostEqual(gas.Pt.convert('bar').value, 1.0, places=3)
 
 		# Check air at even higher temp (eqn range).
 		gas = ComprFlow(P=Dim(1, 'atm'), T=Dim(2500, 'K'), M=0, gas='air')
@@ -52,10 +44,3 @@ class TestCompressibleGas(TestCase):
 		self.assertAlmostEqual(gas.Cp.value, 1259.8, places=1)
 		self.assertAlmostEqual(gas.gamma, 1.294, places=2)
 
-		# Check live changes to Mach number give the same result.
-		old_P = gas.P.convert('Pa').value
-		old_T = gas.T.convert('K').value
-		gas.M = 2.0
-		gas.M = 0.0
-		self.assertAlmostEqual(gas.P.convert('Pa').value, old_P, places=1)
-		self.assertAlmostEqual(gas.T.convert('K').value, old_T, places=2)

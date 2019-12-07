@@ -2,7 +2,7 @@
 Equations and constants relating to gases and compressible flow.
 
 Contains:
-	ComprFlow     Class giving live properties of a flowing compressible gas.
+	ComprFlow     Class giving fixed properties of a flowing compressible gas.
 """
 # Last updated: 7 December 2019 by Eric J. Whitney
 
@@ -23,8 +23,7 @@ class ComprFlow:
 
 	"""
 	Class representing a flowing compressible gas.  Once initialised,
-	properties are live so that changing one will change any of the other
-	affected properties.
+	properties are fixed.
 
 	Notes:
 		- Cp and γ vary with temperature.  For higher temperatures the
@@ -39,11 +38,16 @@ class ComprFlow:
 
 	# Magic methods.
 
-	def __init__(self, *, Pt: Dim = None, Tt: Dim = None, P: Dim = None,
-	             T: Dim = None, M: float, W: Dim = None, gas: str = 'air',
-	             FAR: float = 0.0):
+	def __init__(self, *, P: Dim = None, Pt: Dim = None, T: Dim = None,
+	             Tt: Dim = None, h: Dim = None, M: float, W: Dim = None,
+	             gas: str = 'air', FAR: float = 0.0):
 		"""
 		Constructs a representation of a compressible gas flowing in 1-D.
+		Notes:
+			- Set either T, Tt or h (note the h baseline is arbitrary;
+			refer to formulation used).
+			- Set either P or Pt.
+			- Mach number must be supplied.
 
 		Note: Any combination of total / stagnation (Pt, Tt) and static (P, T)
 		pressure or temperature can be set, but of course only one at a time.
@@ -53,6 +57,7 @@ class ComprFlow:
 			Tt: (Dim) Total /stagnation temperature (also T0).
 			Pt: (Dim) Stream / static pressure.
 			T: (Dim) Stream / static temperature.
+			h: (Dim) Specific enthalpy.
 			M: (float) Mach number.
 			W: (dim) Mass flowrate.
 			gas: (str) identifier (default = 'air').  Available 'gas' values
@@ -67,23 +72,29 @@ class ComprFlow:
 		Raises:
 			ValueError on unknown gas.  TypeError on invalid arguments.
 		"""
-		self._M, self._W, self.FAR = M, W, FAR
+		self._M, self._W, self._FAR = M, W, FAR
 
-		# T, P, gas set via properties so that any internal states
+		if gas not in {'air', 'burned_kero', 'burned_diesel'}:
+			raise ValueError(f"Unknown gas: {gas}")
+		self._gas = gas
+
+		# T, P set via properties so that any internal states
 		# can be updated / checks made.
-		self.gas = gas
 
-		if T and not Tt:
-			self.T = T
-		elif Tt and not T:
-			self.Tt = Tt
+		self._P, self._T = 0, 0   # Dummies required for Tt / h functions.
+		if T and not Tt and not h:
+			self._T = T
+		elif Tt and not T and not h:
+			self._T = self._get_T_from_Tt(Tt)
+		elif h and not T and not Tt:
+			self._T = self._get_T_from_h(h)
 		else:
 			raise TypeError(f"Invalid temperature arguments.")
 
 		if P and not Pt:
-			self.P = P
+			self._P = P
 		elif Pt and not P:
-			self.Pt = Pt
+			self._P = Pt / self.Pt_on_P
 		else:
 			raise TypeError(f"Invalid pressure arguments.")
 
@@ -105,19 +116,17 @@ class ComprFlow:
 		Returns:
 			New ComprFlow object.
 		"""
-		# Check that two pressures or temperatures are not present at the
-		# same time.
-		if ({'P', 'Pt'}.issubset(kwargs.keys()) or
-				{'T', 'Tt'}.issubset(kwargs.keys())):
-			raise TypeError(f"Invalid temperature / pressure arguments.")
+		# Get properties directly from internal values.
+		new_kwargs = {_key: getattr(self, _key) for _key in self.__slots__}
 
-		new_kwargs = {key: getattr(self, key) for key in self.props()}
+		# Strip underscores.
+		new_kwargs = {_key[1:]: val for _key, val in new_kwargs.items()}
 
 		for new_key, value in kwargs.items():
 			if new_key in ('P', 'Pt'):
-				del new_kwargs['P']
-			if new_key in ('T', 'Tt'):
-				del new_kwargs['T']
+				new_kwargs.pop('P', None)
+			if new_key in ('T', 'Tt', 'h'):
+				new_kwargs.pop('T', None)
 			new_kwargs[new_key] = value
 
 		return ComprFlow(**new_kwargs)
@@ -194,10 +203,6 @@ class ComprFlow:
 		"""Fuel-Air Ratio."""
 		return self._FAR
 
-	@FAR.setter
-	def FAR(self, value: float) -> None:
-		self._FAR = value
-
 	@property
 	def gamma(self) -> float:
 		"""Ratio of specific heats γ = Cp / c_v."""
@@ -206,12 +211,6 @@ class ComprFlow:
 	@property
 	def gas(self) -> str:
 		return self._gas
-
-	@gas.setter
-	def gas(self, value: str) -> None:
-		if value not in {'air', 'burned_kero', 'burned_diesel'}:
-			raise ValueError(f"Unknown gas: {value}")
-		self._gas = value
 
 	@property
 	def h(self) -> Dim:
@@ -262,33 +261,10 @@ class ComprFlow:
 		else:
 			return h_res
 
-	@h.setter
-	def h(self, value: Dim) -> None:
-		"""This allows setting the specific enthalpy of the gas under
-		consideration, by recomputing static / ambient temperature (Ts)
-		using a bisection method.  The initial range is assumed to be the
-		full range of the gas."""
-
-		def h_error(T: Dim) -> Dim:
-			return self.replace(T=T).h - value
-
-		T_L = Dim(_T_RANGE_K[self.gas][0], 'K')
-		T_R = Dim(_T_RANGE_K[self.gas][1], 'K')
-		self._T = bisect_root(h_error, T_L, T_R, maxits=50,
-		                      tol=Dim(1, 'J/kg'))  # Approx tol=1e-6
-
 	@property
 	def M(self) -> float:
 		"""Mach number."""
 		return self._M
-
-	@M.setter
-	def M(self, value) -> None:
-		"""Changing the Mach number after initialisation will also change
-		the stream / ambient temperature and pressure."""
-		Pt, Tt = self.Pt, self.Tt
-		new_state = self.replace(Pt=Pt, Tt=Tt, M=value)
-		self._P, self._T, self._M = new_state.P, new_state.T, new_state._M
 
 	@property
 	def Pt_on_P(self) -> float:
@@ -301,18 +277,10 @@ class ComprFlow:
 		"""Total / stagnation pressure."""
 		return self.Pt_on_P * self.P
 
-	@Pt.setter
-	def Pt(self, value: Dim) -> None:
-		self._P = value / self.Pt_on_P  # Not temperature dependent.
-
 	@property
 	def P(self) -> Dim:
 		"""Stream / ambient pressure."""
 		return self._P
-
-	@P.setter
-	def P(self, value: Dim) -> None:
-		self._P = value
 
 	@property
 	def R(self) -> Dim:
@@ -343,43 +311,45 @@ class ComprFlow:
 		"""Total / stagnation temperature."""
 		return self.Tt_on_T * self.T
 
-	@Tt.setter
-	def Tt(self, value: Dim) -> None:
-		"""Total (stagnation) temperature is set through this property so
-		that an iteration for Ts can be done if required.  This is due to
-		the non-linear dependence of γ on Ts."""
-		value = make_total_temp(value)
-		if self._M == 0:  # Already at stagnation.
-			self._T = value
-			return
-
-		# Iterate temperature due to non-linear dependence of γ on Ts.
-		# Start iteration with Ts = T.
-		def new_Ts(try_Ts):
-			flow = ComprFlow(P=Dim(0, 'kPa'), T=try_Ts, M=self._M,
-			                 W=self._W, gas=self._gas, FAR=self._FAR)
-			return value / flow.Tt_on_T
-
-		self._T = iterate_fn(new_Ts, x_start=value, xtol=Dim(1e-6, 'K'))
-
 	@property
 	def T(self) -> Dim:
 		"""Stream / ambient temperature."""
 		return self._T
-
-	@T.setter
-	def T(self, value) -> None:
-		self._T = make_total_temp(value)
 
 	@property
 	def W(self) -> Dim:
 		"""Mass flowrate."""
 		return self._W
 
-	@W.setter
-	def W(self, value) -> None:
-		self._W = value
+	def _get_T_from_h(self, value: Dim) -> Dim:
+		"""Find the stream temperature of the gas given the specific
+		enthalpy, using a bisection method.  The initial T range is assumed
+		to be the full range of the gas."""
 
+		def h_error(T_try: Dim) -> Dim:
+			return self.replace(P=Dim(0, 'kPa'), T=T_try).h - value
+
+		T_L = Dim(_T_RANGE_K[self.gas][0], 'K')
+		T_R = Dim(_T_RANGE_K[self.gas][1], 'K')
+		return bisect_root(h_error, T_L, T_R, maxits=50,
+		                   tol=Dim(1, 'J/kg'))  # Approx tol=1e-6
+
+	def _get_T_from_Tt(self, Tt_reqd: Dim) -> Dim:
+		"""Find the stream temperature of the gas given the total (stagnation)
+		temperature via iteration..  This is due to the non-linear
+		dependence of γ on Ts."""
+		Tt_reqd = make_total_temp(Tt_reqd)
+		if self._M == 0:  # Already at stagnation.
+			return Tt_reqd
+
+		# Iterate temperature due to non-linear dependence of γ on Ts.
+		# Start iteration with Ts = T.
+		def new_Ts(try_Ts):
+			flow = ComprFlow(P=Dim(0, 'kPa'), T=try_Ts, M=self._M,
+			                 W=self._W, gas=self._gas, FAR=self._FAR)
+			return Tt_reqd / flow.Tt_on_T
+
+		return iterate_fn(new_Ts, x_start=Tt_reqd, xtol=Dim(1e-6, 'K'))
 
 # -----------------------------------------------------------------------------
 
