@@ -26,13 +26,6 @@ geopotential (H).
 accurate between 180°R - 3400°R (or 100K - 1889K, -173 - 1616°C, ref
 NACA TN 1135).
 
-- Specific heats (c_p, c_v, γ) are computed using a model of a simple harmonic
-vibrator, ref NACA TN 1135 Eqn 175, 176 only for temperatures above 550°R (
-306K, 32°C).  Below this point fixed values (i.e. calorically perfect gas) is
-assumed; this aligns with most calculations in this range where γ = 1.4 is
-assumed and removes growing equation errors for very cold atmospheres.  Air is
-assumed to be thermally perfect at all times.
-
 - Uppercase and lowercase are mixed to be consistent with source
 documents.  Uppercase H and associated values refer to geopotential
 altitudes, lowercase refer to geometric (but these don't appear together
@@ -41,7 +34,7 @@ anyway so as to prevent errors).
 - Some non-ASCII characters are used.
 """
 
-# Last updated: 25 November 2019 by Eric J. Whitney
+# Last updated: 5 December 2019 by Eric J. Whitney
 
 from math import exp, log, isclose
 from units import Dim, Units, make_total_temp
@@ -241,33 +234,33 @@ class Atmosphere:
 
     # Properties.
 
-    @property
-    def c_p(self) -> Dim:
-        """Specific heat at constant pressure.  Only corrected above T =
-        550°R."""
-        temp_R = self.temperature.convert('°R').value
-        if temp_R <= 550:
-            return _C_P_PERF.convert(Atmosphere.unitdef_spheat)
-
-        # Correct c_p.
-        ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
-        c_p_corr = _C_P_PERF * (1 + ((_GAMMA_PERF - 1) / _GAMMA_PERF) * (
-            (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
-        return c_p_corr.convert(Atmosphere.unitdef_spheat)
-
-    @property
-    def c_v(self) -> Dim:
-        """Specific heat at constant volume.  Only corrected above T =
-        550°R."""
-        temp_R = self.temperature.convert('°R').value
-        if temp_R <= 550:
-            return _C_V_PERF.convert(Atmosphere.unitdef_spheat)
-
-        # Correct c_v.
-        ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
-        c_v_corr = _C_V_PERF * (1 + (_GAMMA_PERF - 1) * (
-                (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
-        return c_v_corr.convert(Atmosphere.unitdef_spheat)
+    # @property
+    # def c_p(self) -> Dim:
+    #     """Specific heat at constant pressure.  Only corrected above T =
+    #     550°R."""
+    #     temp_R = self.temperature.convert('°R').value
+    #     if temp_R <= 550:
+    #         return _C_P_PERF.convert(Atmosphere.unitdef_spheat)
+    #
+    #     # Correct c_p.
+    #     ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
+    #     c_p_corr = _C_P_PERF * (1 + ((_GAMMA_PERF - 1) / _GAMMA_PERF) * (
+    #         (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
+    #     return c_p_corr.convert(Atmosphere.unitdef_spheat)
+    #
+    # @property
+    # def c_v(self) -> Dim:
+    #     """Specific heat at constant volume.  Only corrected above T =
+    #     550°R."""
+    #     temp_R = self.temperature.convert('°R').value
+    #     if temp_R <= 550:
+    #         return _C_V_PERF.convert(Atmosphere.unitdef_spheat)
+    #
+    #     # Correct c_v.
+    #     ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
+    #     c_v_corr = _C_V_PERF * (1 + (_GAMMA_PERF - 1) * (
+    #             (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
+    #     return c_v_corr.convert(Atmosphere.unitdef_spheat)
 
     @property
     def delta(self) -> float:
