@@ -22,19 +22,26 @@ __all__ = ['ComprFlow']
 class ComprFlow:
 
 	"""
-	Class representing a flowing compressible gas.  Once initialised,
-	properties are fixed.
+	Class representing a flowing compressible gas, including non-linear
+	thermal values.  Once initialised, properties are fixed.
 
 	Notes:
-		- Cp and γ vary with temperature.  For higher temperatures the
+		- cp and γ vary with temperature.  For higher temperatures the
 		interpolating polynomial method of Walsh & Fletcher Chapter 3 is
-		used to calculate Cp and h.
+		used to calculate cp and h.
+
+		- The following properties may not be defined for extreme / high
+		temperature flow states, although the object will successfully
+		initialise:
+			- h
+		In this case these properties will return None.
+
 		- Static (ambient) temperature and pressure are	used internally for
-		convenience of Cp and h calculation.
+		convenience of cp and h calculation.
+
 		- As expected, specific enthalpy has an arbitrary baseline and
 		should never be used as a standalone value.
 	"""
-	__slots__ = ('_P', '_T', '_M', '_W', '_gas', '_FAR')
 
 	# Magic methods.
 
@@ -72,24 +79,33 @@ class ComprFlow:
 		Raises:
 			ValueError on unknown gas.  TypeError on invalid arguments.
 		"""
-		self._M, self._W, self._FAR = M, W, FAR
-
-		if gas not in {'air', 'burned_kero', 'burned_diesel'}:
+		self._M, self._W, self._gas, self._FAR = M, W, gas, FAR
+		if self._gas not in {'air', 'burned_kero', 'burned_diesel'}:
 			raise ValueError(f"Unknown gas: {gas}")
-		self._gas = gas
 
-		# T, P set via properties so that any internal states
-		# can be updated / checks made.
+		# Most other properties depend on T so this is set next.
 
 		self._P, self._T = 0, 0   # Dummies required for Tt / h functions.
 		if T and not Tt and not h:
-			self._T = make_total_temp(T)
+			self._T = make_total_temp(T)  # Straightforward case.
 		elif Tt and not T and not h:
-			self._T = self._get_T_from_Tt(Tt)
+			self._T = self._get_T_from_Tt(Tt)  # From stagnation.
 		elif h and not T and not Tt:
-			self._T = self._get_T_from_h(h)
+			self._T = self._get_T_from_h(h)  # From enthalpy.
 		else:
 			raise TypeError(f"Invalid temperature arguments.")
+
+		# Precompute remaining properties.
+		if self._T.units.θ[0] == '°R':  # Try and match units intent.
+			self._output_units = 'US'
+		else:
+			self._output_units = 'SI'
+
+		self._set_cp_from_T()
+		self._set_R()
+		self._γ = self._cp / (self._cp - self._R)
+		self._a = (self._γ * self._R * self._T)**0.5
+		self._set_h_from_T()
 
 		if P and not Pt:
 			self._P = P
@@ -100,10 +116,11 @@ class ComprFlow:
 
 	# Normal methods.
 
-	def props(self) -> Set[str]:
-		"""Returns a set containing strings of all the directly stored gas
-		properties, i.e. {'P', 'T', 'M', ...)"""
-		return {_key[1:] for _key in self.__slots__}
+	@staticmethod
+	def props() -> Set[str]:
+		"""Returns a set containing strings of all the independent
+		parameters required to fully initialise the object."""
+		return {'P', 'T', 'M', 'W', 'gas', 'FAR'}
 
 	def replace(self, **kwargs) -> 'ComprFlow':
 		"""
@@ -132,72 +149,17 @@ class ComprFlow:
 	@property
 	def a(self) -> Dim:
 		"""Local speed of sound a = (γRT)**0.5."""
-		return (self.gamma * self.R * self.T)**0.5
+		return self._a
 
 	@property
-	def Cp(self) -> Dim:
-		"""
-		Specific heat capacity at constant pressure of the gas.  The
-		interpolating polynomial method of Walsh & Fletcher Eqn F3.23,
-		F3.24 is used.
-
-		Note:  Very hot cases for air are permitted above the polynomial
-		range limit of 2000 K.  In this case the Cp value for air is
-		computed using a model of a simple  harmonic vibrator, ref NACA TN
-		1135 Eqn 175, 176.  In any case the vibrator and polynomial model are
-		within about 0.5% everywhere under 2000 K.
-
-		Returns:
-			Dim() object with Cp in J/kg/K (or Btu/lbm/°R).
-
-		Raises:
-			ValueError if the temperature is outside the allowable range.
-		"""
-		# Set gas properties.
-		T_K = self._T.convert('K').value
-		T_Range_K = _T_RANGE_K[self._gas]
-		if self._gas in ('air', 'burned_kero', 'burned_diesel'):
-			coeff_a = _EQN_COEFF['F3.23_A_Air'][0:9]  # Only A0..A8
-		else:
-			raise ValueError(f"Unknown gas when computing Cp: {self._gas}")
-
-		# Check in valid range.
-		if not (T_Range_K[0] <= T_K <= T_Range_K[1]):
-			if T_K > T_Range_K[1] and self._gas == 'air':
-				# Special high temperature case for air.
-				c_p_perf = Dim(1005.7, 'J/kg/K')  # American Meter. Society
-				γ_perf = 1.4
-				temp_R = self._T.convert('°R').value
-				ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
-				return c_p_perf * (1 + ((γ_perf - 1) / γ_perf) * (
-						(ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
-			else:
-				raise ValueError(f"Temperature {T_K:.1f} K out of range "
-				                 f" for Cp in {self._gas}. Allowable range "
-				                 f"is {T_Range_K[0]:.1f} -> "
-				                 f"{T_Range_K[1]:.1f}")
-
-		# Multiply out the A polynomial.
-		Tz = T_K / 1000
-		c_p_val = sum([a_i * Tz ** i for i, a_i in enumerate(coeff_a)])
-
-		# Add FAR correction if required.
-		if self._gas in ('burned_kero', 'burned_diesel'):
-			# Multiply out the B polynomial.
-			coeff_b = _EQN_COEFF['F3.24_B'][0:8]  # Only B0..B7
-			b_poly = sum([b_i * Tz ** i for i, b_i in enumerate(coeff_b)])
-			c_p_val += (self.FAR / (1 + self.FAR)) * b_poly
-
-		c_p_res = Dim(c_p_val * 1000, 'J/kg/K')  # x1000 to get J/kg/K
-		if self._T.units.θ[0] == '°R':  # Try and match intent.
-			return c_p_res.convert('Btu/lbm/°R')
-		else:
-			return c_p_res
+	def cp(self) -> Dim:
+		"""Specific heat capacity at constant pressure of the gas."""
+		return self._cp
 
 	@property
-	def Cv(self) -> Dim:
+	def cv(self) -> Dim:
 		"""Specific heat capacity at constant volume of the gas."""
-		return self.Cp - self.R
+		return self._cp - self._R
 
 	@property
 	def FAR(self) -> float:
@@ -206,8 +168,8 @@ class ComprFlow:
 
 	@property
 	def gamma(self) -> float:
-		"""Ratio of specific heats γ = Cp / c_v."""
-		return self.Cp / (self.Cp - self.R)
+		"""Ratio of specific heats γ = cp / c_v."""
+		return self._γ
 
 	@property
 	def gas(self) -> str:
@@ -215,52 +177,8 @@ class ComprFlow:
 
 	@property
 	def h(self) -> Dim:
-		"""
-		Specific enthalpy of the gas.  The interpolating polynomial method
-		of Walsh & Fletcher Eqn F3.26, F3.27 is used.
-
-		Returns:
-			Dim() object with H in MJ/kg (or Btu/lbm).
-
-		Raises:
-			ValueError if the temperature is outside the allowable range.
-		"""
-		# Set dry gas properties.
-		Ts_K = self._T.convert('K').value
-		Ts_Range_K = _T_RANGE_K[self._gas]
-		if self._gas in ('air', 'burned_kero', 'burned_diesel'):
-			coeff_a = list(_EQN_COEFF['F3.23_A_Air'][0:10])  # A0..A9
-			A9 = coeff_a.pop()  # Leaves only A0..A8
-		else:
-			raise ValueError(f"Unknown gas when computing H: {self._gas}")
-
-		# Check in valid range.
-		if not (Ts_Range_K[0] <= Ts_K <= Ts_Range_K[1]):
-			raise ValueError(f"Temperature {Ts_K:.1f} K out of range for "
-			                 f"H in {self._gas}. Allowable range is"
-			                 f"{Ts_Range_K[0]:.1f} -> {Ts_Range_K[1]:.1f}")
-
-		# Multiply out the polynomial.
-		Tz = Ts_K / 1000
-		h_val = A9 + sum([(a_i / i) * Tz ** i for i, a_i in
-		                  enumerate(coeff_a, 1)])
-		# Note divisors and Tz powers are all +1 compared to Cp.
-
-		# Add FAR correction if required.
-		if self._gas in ('burned_kero', 'burned_diesel'):
-			# Multiply out the B polynomial.
-			coeff_b = list(_EQN_COEFF['F3.24_B'][0:9])  # B0..B8
-			B8 = coeff_b.pop()  # Leaves only B0..B7
-			b_poly = B8 + sum([(b_i / i) * Tz ** i for i, b_i in
-			                   enumerate(coeff_b, 1)])
-			# Again divisors and Tz powers are all +1 compared to Cp.
-			h_val += (self.FAR / (1 + self.FAR)) * b_poly
-
-		h_res = Dim(h_val, 'MJ/kg')  # Equation gives MJ/kg.
-		if self._T.units.θ[0] == '°R':  # Try and match intent.
-			return h_res.convert('Btu/lbm')
-		else:
-			return h_res
+		"""Specific enthalpy of the gas.  Note: The baseline is arbitrary."""
+		return self._h
 
 	@property
 	def M(self) -> float:
@@ -270,8 +188,8 @@ class ComprFlow:
 	@property
 	def Pt_on_P(self) -> float:
 		"""Ratio of total (stagnation) pressure to static pressure."""
-		_γ = self.gamma  # One @property call.
-		return (1 + 0.5 * (_γ - 1) * self._M ** 2) ** (_γ / (_γ - 1))
+		return (1 + 0.5 * (self._γ - 1) * self._M ** 2) ** (self._γ / (
+				self._γ - 1))
 
 	@property
 	def Pt(self) -> Dim:
@@ -285,27 +203,13 @@ class ComprFlow:
 
 	@property
 	def R(self) -> Dim:
-		"""Gas constant R [J/kg/K]."""
-		_R_air = 287.05287  # J/kg/K.
-		if self._gas == 'air':
-			_R = _R_air
-		elif self._gas == 'burned_kero':
-			_R = _R_air - 0.00990 * self.FAR + 1e-7 * self.FAR ** 2
-		elif self._gas == 'burned_diesel':
-			_R = _R_air - 8.0262 * self.FAR + 3e-7 * self.FAR ** 2
-		else:
-			raise ValueError(f"Unknown gas getting R value: {self._gas}")
-		R_res = Dim(_R, 'J/kg/K')
-		if self._T.units.θ[0] == '°R':  # Try and match units to intent.
-			return R_res.convert('Btu/lbm/°R')
-		else:
-			return R_res
+		"""Gas constant R."""
+		return self._R
 
 	@property
 	def Tt_on_T(self) -> float:
 		"""Ratio of total (stagnation) pressure to static temperature."""
-		_γ = self.gamma  # One @property call.
-		return 1 + 0.5 * (_γ - 1) * self._M ** 2
+		return 1 + 0.5 * (self._γ - 1) * self._M ** 2
 
 	@property
 	def Tt(self) -> Dim:
@@ -321,6 +225,8 @@ class ComprFlow:
 	def W(self) -> Dim:
 		"""Mass flowrate."""
 		return self._W
+
+	# Internal methods.
 
 	def _get_T_from_h(self, value: Dim) -> Dim:
 		"""Find the stream temperature of the gas given the specific
@@ -352,8 +258,111 @@ class ComprFlow:
 
 		return iterate_fn(new_Ts, x_start=Tt_reqd, xtol=Dim(1e-6, 'K'))
 
-# -----------------------------------------------------------------------------
+	def _set_cp_from_T(self) -> None:
+		"""
+		Computes cp using the interpolating polynomial method of Walsh &
+		Fletcher Eqn F3.23.
 
+		Note:  Very hot cases for air are permitted above the polynomial
+		range limit of 2000 K.  In this case the cp value for air is
+		computed using a model of a simple  harmonic vibrator, ref NACA TN
+		1135 Eqn 175, 176.  In any case the vibrator and polynomial model are
+		within about 0.5% everywhere under 2000 K.
+		"""
+		# Set gas properties.
+		T_K = self._T.convert('K').value
+		T_Range_K = _T_RANGE_K[self._gas]
+		if self._gas in ('air', 'burned_kero', 'burned_diesel'):
+			coeff_a = _EQN_COEFF['F3.23_A_Air'][0:9]  # Only A0..A8
+		else:
+			raise RuntimeError(f"Reached unreachable point.")
+
+		# Check in valid range.
+		if not (T_Range_K[0] <= T_K <= T_Range_K[1]):
+			if T_K > T_Range_K[1] and self._gas == 'air':
+				# Special high temperature case for air.
+				c_p_perf = Dim(1005.7, 'J/kg/K')  # American Meter. Society
+				γ_perf = 1.4
+				temp_R = self._T.convert('°R').value
+				ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
+				self._cp = c_p_perf * (1 + ((γ_perf - 1) / γ_perf) * (
+						(ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
+				return
+
+			raise ValueError(f"Temperature {T_K:.1f} K out of range "
+			                 f" for cp in {self._gas}. Allowable range "
+			                 f"is {T_Range_K[0]:.1f} -> "
+			                 f"{T_Range_K[1]:.1f}")
+
+		# Multiply out the A polynomial.
+		Tz = T_K / 1000
+		c_p_val = sum([a_i * Tz ** i for i, a_i in enumerate(coeff_a)])
+
+		# Add FAR correction if required.
+		if self._gas in ('burned_kero', 'burned_diesel'):
+			# Multiply out the B polynomial.
+			coeff_b = _EQN_COEFF['F3.24_B'][0:8]  # Only B0..B7
+			b_poly = sum([b_i * Tz ** i for i, b_i in enumerate(coeff_b)])
+			c_p_val += (self.FAR / (1 + self.FAR)) * b_poly
+
+		self._cp = Dim(c_p_val * 1000, 'J/kg/K')  # x1000 to get J/kg/K
+		if self._output_units == 'US':  # Try and match intent.
+			self._cp = self._cp.convert('Btu/lbm/°R')
+
+	def _set_h_from_T(self) -> None:
+		""" Sets specific enthalpy of the gas using the interpolating
+		polynomial method of Walsh & Fletcher Eqn F3.26, F3.27."""
+		# Set dry gas properties.
+		Ts_K = self._T.convert('K').value
+		Ts_Range_K = _T_RANGE_K[self._gas]
+		if self._gas in ('air', 'burned_kero', 'burned_diesel'):
+			coeff_a = list(_EQN_COEFF['F3.23_A_Air'][0:10])  # A0..A9
+			A9 = coeff_a.pop()  # Leaves only A0..A8
+		else:
+			raise RuntimeError(f"Reached unreachable point.")
+
+		# Check in valid range.
+		if not (Ts_Range_K[0] <= Ts_K <= Ts_Range_K[1]):
+			self._h = None  # None is permitted for this property.
+			return
+
+		# Multiply out the polynomial.
+		Tz = Ts_K / 1000
+		h_val = A9 + sum([(a_i / i) * Tz ** i for i, a_i in
+		                  enumerate(coeff_a, 1)])
+		# Note divisors and Tz powers are all +1 compared to cp.
+
+		# Add FAR correction if required.
+		if self._gas in ('burned_kero', 'burned_diesel'):
+			# Multiply out the B polynomial.
+			coeff_b = list(_EQN_COEFF['F3.24_B'][0:9])  # B0..B8
+			B8 = coeff_b.pop()  # Leaves only B0..B7
+			b_poly = B8 + sum([(b_i / i) * Tz ** i for i, b_i in
+			                   enumerate(coeff_b, 1)])
+			# Again divisors and Tz powers are all +1 compared to cp.
+			h_val += (self.FAR / (1 + self.FAR)) * b_poly
+
+		self._h = Dim(h_val, 'MJ/kg')  # Equation gives MJ/kg.
+		if self._output_units == 'US':
+			self._h = self._h.convert('Btu/lbm')
+
+	def _set_R(self) -> None:
+		R_air = 287.05287  # J/kg/K.
+		if self._gas == 'air':
+			R_adj = R_air
+		elif self._gas == 'burned_kero':
+			R_adj = R_air - 0.00990 * self.FAR + 1e-7 * self.FAR ** 2
+		elif self._gas == 'burned_diesel':
+			R_adj = R_air - 8.0262 * self.FAR + 3e-7 * self.FAR ** 2
+		else:
+			raise RuntimeError(f"Reached unreachable point.")
+
+		self._R = Dim(R_adj, 'J/kg/K')
+		if self._output_units == 'US':
+			self._R = self._R.convert('Btu/lbm/°R')
+
+# -----------------------------------------------------------------------------
+# Local constants.
 
 # Coefficiencts A0, A1, ... or B0, ... etc for polynomial fit equations in
 # Walsh & Fletcher.

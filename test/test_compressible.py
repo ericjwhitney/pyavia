@@ -10,14 +10,14 @@ class TestCompressibleGas(TestCase):
 			self.assertEqual(test_gas.gas, 'air')
 			self.assertEqual(test_gas.R.units, Units('J/kg/K'))
 			self.assertAlmostEqual(test_gas.R.value, 287.05287, places=5)
-			self.assertEqual(test_gas.Cp.units, Units('J/kg/K'))
-			self.assertAlmostEqual(test_gas.Cp.value, 1003.33, places=1)
-			self.assertEqual(test_gas.Cv.units, Units('J/kg/K'))
-			self.assertAlmostEqual(test_gas.Cv.value, 716.28, places=1)
+			self.assertEqual(test_gas.cp.units, Units('J/kg/K'))
+			self.assertAlmostEqual(test_gas.cp.value, 1003.33, places=1)
+			self.assertEqual(test_gas.cv.units, Units('J/kg/K'))
+			self.assertAlmostEqual(test_gas.cv.value, 716.28, places=1)
 			self.assertAlmostEqual(test_gas.gamma, 1.40, places=2)
 			self.assertAlmostEqual(test_gas.a.value, 340.4, places=1)
 			# Check US units.
-			self.assertAlmostEqual(test_gas.Cp.convert('Btu/lbm/°R').value,
+			self.assertAlmostEqual(test_gas.cp.convert('Btu/lbm/°R').value,
 			                       0.240, places=3)
 
 		# Check standard temp. properties (Ps = 0 i.e. not relevant to this).
@@ -36,11 +36,11 @@ class TestCompressibleGas(TestCase):
 		self.assertEqual(gas.Tt.units, Units('K'))
 		self.assertAlmostEqual(gas.Tt.value, 1400.0, places=1)
 		self.assertAlmostEqual(gas.R.value, 287.05287, places=5)  # Unchanged.
-		self.assertAlmostEqual(gas.Cp.value, 1200, places=0)
+		self.assertAlmostEqual(gas.cp.value, 1200, places=0)
 		self.assertAlmostEqual(gas.gamma, 1.314, places=2)
 
 		# Check air at even higher temp (eqn range).
 		gas = ComprFlow(P=Dim(1, 'atm'), T=Dim(2500, 'K'), M=0, gas='air')
 		self.assertAlmostEqual(gas.R.value, 287.05287, places=5)  # Unchanged.
-		self.assertAlmostEqual(gas.Cp.value, 1259.8, places=1)
+		self.assertAlmostEqual(gas.cp.value, 1259.8, places=1)
 		self.assertAlmostEqual(gas.gamma, 1.294, places=2)
