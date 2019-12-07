@@ -163,12 +163,14 @@ def to_ucode_super(ss: str) -> str:
 # -----------------------------------------------------------------------------
 # Simple search and interpolation functions.
 
-def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 100,
+def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
                 tol=1e-6) -> Any:
     """
     Approximate solution of f(x)=0 on interval [x_a,x_b] by bisection
     method. For bisection to work f(x) must change sign across the interval,
     i.e. f(x_a) and f(x_b) must have opposite sign.
+
+    Note: This function is able to be used with arbirary units.
 
     Examples
     --------
@@ -191,10 +193,17 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 100,
     Raises:
         RuntimeError is maxits is reached before a solution is found.
     """
-    if f(x_a)*f(x_b) >= 0:
-        raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
+    # We use division approach to compare signs instead of multiplication as
+    # it neatly cancels units if present.  But this requires a check for
+    # f(x_b) == 0 first.
 
     x_a_next, x_b_next = x_a, x_b
+    f_a_next, f_b_next = f(x_a_next), f(x_b_next)
+    if f_a_next == 0 or f_b_next == 0:
+        raise ValueError(f"f(x_a) and f(x_b) must not be zero.")
+    if f_a_next/f_b_next >= 0:   # Sign comp. via division.
+        raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
+
     it = 0
     while True:
         # Compute midpoint.
@@ -210,7 +219,7 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 100,
             raise RuntimeError(f"Reached {maxits} iteration limit.")
 
         # Check which side root is on, narrow interval.
-        if f(x_a_next) * f_m_next < 0:
+        if f_a_next / f_m_next < 0:  # Sign comp. via division.
             x_b_next = x_m
         else:
             x_a_next = x_m
