@@ -164,7 +164,7 @@ def to_ucode_super(ss: str) -> str:
 # Simple search and interpolation functions.
 
 def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
-                tol=1e-6) -> Any:
+                tol=1e-6, display=False) -> Any:
     """
     Approximate solution of f(x)=0 on interval [x_a,x_b] by bisection
     method. For bisection to work f(x) must change sign across the interval,
@@ -186,6 +186,7 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
         x_a, x_b: Each end of the search interval, in any order.
         maxits:  Maximum number of iterations.
         tol: End search when abs(f(x)) < tol.
+        display: (bool) If True, print progress statements.
 
     Returns:
         xm: Best estimate of root found i.e. f(x_m) approx = 0.0.
@@ -193,13 +194,14 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
     Raises:
         RuntimeError is maxits is reached before a solution is found.
     """
-    # We use division approach to compare signs instead of multiplication as
-    # it neatly cancels units if present.  But this requires a check for
-    # f(x_b) == 0 first.
-
+    if display:
+        print(f"bisect_root:")
     x_a_next, x_b_next = x_a, x_b
     f_a_next, f_b_next = f(x_a_next), f(x_b_next)
     try:
+        # We use division approach to compare signs instead of multiplication as
+        # it neatly cancels units if present.  But this requires a check for
+        # f(x_b) == 0 first.
         if f_a_next/f_b_next >= 0:   # Sign comp. via division.
             raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
     except ZeroDivisionError:
@@ -209,21 +211,28 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
     while True:
         # Compute midpoint.
         x_m = (x_a_next + x_b_next)/2
-        f_m_next = f(x_m)
+        f_m = f(x_m)
         it += 1
 
+        if display:
+            print(f"\tIteration {it}: x = [{x_a_next}, {x_m}, {x_b_next}] "
+                  f"--> f = [{f_a_next}, {f_m}, {f_b_next}]")
+
         # Check stopping criteria.
-        if abs(f_m_next) < tol:
+        if abs(f_m) < tol:
             return x_m
 
         if it >= maxits:
             raise RuntimeError(f"Reached {maxits} iteration limit.")
 
         # Check which side root is on, narrow interval.
-        if f_a_next / f_m_next < 0:  # Sign comp. via division.
+        if f_a_next / f_m < 0:  # Sign comp. via division.
             x_b_next = x_m
+            f_b_next = f_m
         else:
             x_a_next = x_m
+            f_a_next = f_m
+
 
 
 def bounded_by(x, iterable, key=None):
