@@ -4,7 +4,7 @@ Equations and constants relating to gases and compressible flow.
 Contains:
 	ComprFlow     Class giving fixed properties of a flowing compressible gas.
 """
-# Last updated: 7 December 2019 by Eric J. Whitney
+# Last updated: 9 December 2019 by Eric J. Whitney
 
 from math import exp, log
 from typing import Set, Tuple
@@ -291,100 +291,11 @@ class ComprFlow:
 		# Iterate temperature due to non-linear dependence of γ on Ts.
 		# Start iteration with Ts = T.
 		def new_Ts(try_Ts):
-			flow = ComprFlow(P=Dim(0, 'kPa'), T=try_Ts, M=self._M,
-			                 W=self._W, gas=self._gas, FAR=self._FAR)
+			flow = ComprFlow(P=Dim(0, 'kPa'), T=try_Ts, M=self._M, W=self._W,
+			                 gas=self._gas, FAR=self._FAR)
 			return Tt_reqd / flow.Tt_on_T
 
 		return iterate_fn(new_Ts, x_start=Tt_reqd, xtol=Dim(1e-6, 'K'))
-
-	# def _set_cp_from_T(self) -> None:
-	# 	"""
-	# 	Computes cp using the interpolating polynomial method of Walsh &
-	# 	Fletcher Eqn F3.23.
-	#
-	# 	Note:  Very hot cases for air are permitted above the polynomial
-	# 	range limit of 2000 K.  In this case the cp value for air is
-	# 	computed using a model of a simple  harmonic vibrator, ref NACA TN
-	# 	1135 Eqn 175, 176.  In any case the vibrator and polynomial model are
-	# 	within about 0.5% everywhere under 2000 K.
-	# 	"""
-	# 	# Set gas properties.
-	# 	T_K = self._T.convert('K').value
-	# 	T_Range_K = _T_RANGE_K[self._gas]
-	# 	if self._gas in ('air', 'burned_kero', 'burned_diesel'):
-	# 		coeff_a = _EQN_COEFF['F3.23_A_Air'][0:9]  # Only A0..A8
-	# 	else:
-	# 		raise RuntimeError(f"Reached unreachable point.")
-	#
-	# 	# Check in valid range.
-	# 	if not (T_Range_K[0] <= T_K <= T_Range_K[1]):
-	# 		if T_K > T_Range_K[1] and self._gas == 'air':
-	# 			# Special high temperature case for air.
-	# 			c_p_perf = Dim(1005.7, 'J/kg/K')  # American Meter. Society
-	# 			γ_perf = 1.4
-	# 			temp_R = self._T.convert('°R').value
-	# 			ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
-	# 			self._cp = c_p_perf * (1 + ((γ_perf - 1) / γ_perf) * (
-	# 					(ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
-	# 			return
-	#
-	# 		raise ValueError(f"Temperature {T_K:.1f} K out of range "
-	# 		                 f" for cp in {self._gas}. Allowable range "
-	# 		                 f"is {T_Range_K[0]:.1f} -> "
-	# 		                 f"{T_Range_K[1]:.1f}")
-	#
-	# 	# Multiply out the A polynomial.
-	# 	Tz = T_K / 1000
-	# 	c_p_val = sum([a_i * Tz ** i for i, a_i in enumerate(coeff_a)])
-	#
-	# 	# Add FAR correction if required.
-	# 	if self._gas in ('burned_kero', 'burned_diesel'):
-	# 		# Multiply out the B polynomial.
-	# 		coeff_b = _EQN_COEFF['F3.24_B'][0:8]  # Only B0..B7
-	# 		b_poly = sum([b_i * Tz ** i for i, b_i in enumerate(coeff_b)])
-	# 		c_p_val += (self.FAR / (1 + self.FAR)) * b_poly
-	#
-	# 	self._cp = Dim(c_p_val * 1000, 'J/kg/K')  # x1000 to get J/kg/K
-	# 	if self._output_units == 'US':
-	# 		self._cp = self._cp.convert('Btu/lbm/°R')
-	#
-	#
-	# def _set_h_from_T(self) -> None:
-	# 	""" Sets specific enthalpy of the gas using the interpolating
-	# 	polynomial method of Walsh & Fletcher Eqn F3.26, F3.27."""
-	# 	# Set dry gas properties.
-	# 	T_K = self._T.convert('K').value
-	# 	T_Range_K = _T_RANGE_K[self._gas]
-	# 	if self._gas in ('air', 'burned_kero', 'burned_diesel'):
-	# 		coeff_a = list(_EQN_COEFF['F3.23_A_Air'][0:10])  # A0..A9
-	# 		A9 = coeff_a.pop()  # Leaves only A0..A8
-	# 	else:
-	# 		raise RuntimeError(f"Reached unreachable point.")
-	#
-	# 	# Check in valid range.
-	# 	if not (T_Range_K[0] <= T_K <= T_Range_K[1]):
-	# 		self._h = None  # None is permitted for this property.
-	# 		return
-	#
-	# 	# Multiply out the polynomial.
-	# 	Tz = T_K / 1000
-	# 	h_val = A9 + sum([(a_i / i) * Tz ** i for i, a_i in
-	# 	                  enumerate(coeff_a, 1)])
-	# 	# Note divisors and Tz powers are all +1 compared to cp.
-	#
-	# 	# Add FAR correction if required.
-	# 	if self._gas in ('burned_kero', 'burned_diesel'):
-	# 		# Multiply out the B polynomial.
-	# 		coeff_b = list(_EQN_COEFF['F3.24_B'][0:9])  # B0..B8
-	# 		B8 = coeff_b.pop()  # Leaves only B0..B7
-	# 		b_poly = B8 + sum([(b_i / i) * Tz ** i for i, b_i in
-	# 		                   enumerate(coeff_b, 1)])
-	# 		# Again divisors and Tz powers are all +1 compared to cp.
-	# 		h_val += (self.FAR / (1 + self.FAR)) * b_poly
-	#
-	# 	self._h = Dim(h_val, 'MJ/kg')  # Equation gives MJ/kg.
-	# 	if self._output_units == 'US':
-	# 		self._h = self._h.convert('Btu/lbm')
 
 	def _set_R(self) -> None:
 		R_air = 287.05287  # J/kg/K.
@@ -401,85 +312,13 @@ class ComprFlow:
 		if self._output_units == 'US':
 			self._R = self._R.convert('Btu/lbm/°R')
 
-	# def _set_s_from_T(self) -> None:
-	#
-	# 	XXXX Entropy baseline seems wrong but difference is right?
-	#
-	# 	"""Sets the value of the specific heat indeifinite intergral term
-	# 	{cp/T dt} for this specific gas state using the polynomial method of
-	# 	Walsh & Fletcher Eqn F3.29."""
-	# 	# Set gas properties.
-	# 	T_K = self._T.convert('K').value
-	# 	T_Range_K = _T_RANGE_K[self._gas]
-	# 	if self._gas in ('air', 'burned_kero', 'burned_diesel'):
-	# 		A0 = _EQN_COEFF['F3.23_A_Air'][0]  # A0 handled separately.
-	# 		coeff_a = _EQN_COEFF['F3.23_A_Air'][1:9]  # A1..A8
-	# 		A10 = _EQN_COEFF['F3.23_A_Air'][10]  # A10 also reqd.
-	# 	else:
-	# 		raise RuntimeError(f"Reached unreachable point.")
-	#
-	# 	# Check in valid range.
-	# 	if not (T_Range_K[0] <= T_K <= T_Range_K[1]):
-	# 		self._s = None  # None is permitted.
-	# 		return
-	#
-	# 	# Multiply out the polynomial for A1 -> A8, add A0 and A10.
-	# 	Tz = T_K / 1000
-	# 	int_term = sum([(a_i / i) * Tz ** i
-	# 	                for i, a_i in enumerate(coeff_a, 1)])
-	#
-	#
-	# 	                combine H Cp T i to one fu ction
-	# 	# Note divisors and Tz powers start at 1 from A1.
-	# 	int_term += A0 * log(Tz) + A10
-	#
-	# 	# Add FAR correction if required.
-	# 	if self._gas in ('burned_kero', 'burned_diesel'):
-	# 		# Multiply out the B polynomial.
-	# 		B0 = _EQN_COEFF['F3.24_B'][0]
-	# 		coeff_b = _EQN_COEFF['F3.24_B'][1:8]  # B1..B7  FOUND THE ERROR
-	# 		B9 = _EQN_COEFF['F3.24_B'][9]
-	# 		b_poly = (B0 * log(Tz) + B9 +
-	# 		          sum([(b_i / i) * Tz ** i
-	# 		               for i, b_i in enumerate(coeff_b, 1)]))
-	# 		# Again divisors and Tz powers start at 1 from B1.
-	# 		int_term += (self.FAR / (1 + self.FAR)) * b_poly
-	#
-	# 	self._s = Dim(int_term, 'kJ/kg/K')
-	# 	if self._output_units == 'US':
-	# 		self._s = self._s.convert(
-	# 			'Btu/lbm/°R')
-
 
 # -----------------------------------------------------------------------------
-# Local constants.
-
-# # Coefficiencts A0, A1, ... or B0, ... etc for polynomial fit equations in
-# # Walsh & Fletcher.
-# _EQN_COEFF = {
-# 	# 'A' coefficients for dry air with/without kerosene or diesel products
-# 	# of combustion.
-# 	'F3.23_A_Air': (0.992313, 0.236688, -1.852148, 6.083152, -8.893933,
-# 	               7.097112, -3.234725, 0.794571, -0.081873, 0.422178,
-# 	                 0.001053),
-#
-# 	# 'B' coefficients for corrections due to kerosene / diesel products of
-# 	# combustion.
-# 	'F3.24_B': (-0.718874, 8.747481, -15.863157, 17.254096, -10.233795,
-# 	              3.081778, -0.361112, -0.003919, 0.0555930, -0.0016079),
-# }
-#
-# # Valid region for temperature polynomials (K).
-# _T_RANGE_K = {
-# 	'air': (200, 2000),
-# 	'burned_kero': (200, 2000),
-# 	'burned_diesel': (200, 2000)
-# }
-
+# Internal functions.
 
 # noinspection PyPep8Naming
 def _wfpoly_cp_h_s(T_K: float, gas: str, FAR: float) -> Tuple[float, float,
-															  float]:
+                                                              float]:
 	"""
 	Computes cp, h, s for a given temperature (K) using the interpolating
 	polynomial method of Walsh & Fletcher.  Valid for gas in {
@@ -498,10 +337,8 @@ def _wfpoly_cp_h_s(T_K: float, gas: str, FAR: float) -> Tuple[float, float,
 	# Eqn F3.23 A coefficients.
 	A_COEFF = {
 		# Dry air with/without kerosene or diesel products of combustion.
-		'air': (0.992313, 0.236688, -1.852148, 6.083152, -8.893933,
-				7.097112, -3.234725, 0.794571, -0.081873, 0.422178, # A8 - ?
-				0.001053),
-	}
+		'air': (0.992313, 0.236688, -1.852148, 6.083152, -8.893933, 7.097112,
+		        -3.234725, 0.794571, -0.081873, 0.422178, 0.001053), }
 
 	if gas in ('air', 'burned_kero', 'burned_diesel'):
 		coeff_a = A_COEFF['air']
@@ -515,39 +352,38 @@ def _wfpoly_cp_h_s(T_K: float, gas: str, FAR: float) -> Tuple[float, float,
 	cp = sum([a_i * Tz ** i for i, a_i in enumerate(coeff_a[0:9], 0)])
 
 	# Eqn F3.26
-	h = sum([(a_i / i) * Tz ** i
-			 for i, a_i in enumerate(coeff_a[0:9], 1)]) + coeff_a[9]
+	h = coeff_a[9] + sum(
+		[(a_i / i) * Tz ** i for i, a_i in enumerate(coeff_a[0:9], 1)])
 
 	# Eqn F3.28
 	EJW_s_A0_corr_term = coeff_a[0] * log(1000)
-	s = ((coeff_a[0] * log(Tz)) +
-	     sum([(a_i / i) * Tz ** i for i, a_i in enumerate(coeff_a[1:9], 1)]) +
+	s = ((coeff_a[0] * log(Tz)) + sum(
+		[(a_i / i) * Tz ** i for i, a_i in enumerate(coeff_a[1:9], 1)]) +
 	     coeff_a[10]) + EJW_s_A0_corr_term
-
 
 	# Add FAR correction if required.
 	if gas in ('burned_kero', 'burned_diesel') and FAR > 0:
 		# 'B' coefficients for corrections due to kerosene / diesel products of
 		# combustion.
-		coeff_b = (-0.718874, 8.747481, -15.863157, 17.254096, -10.233795,
-				   3.081778, -0.361112, -0.003919, 0.0555930, -0.0016079)
+		coeff_b = (
+			-0.718874, 8.747481, -15.863157, 17.254096, -10.233795, 3.081778,
+		-0.361112, -0.003919, 0.0555930, -0.0016079)
 
 		# Eqn F3.24
-		cp += (FAR / (1 + FAR)) * sum([b_i * Tz ** i for i, b_i in
-									   enumerate(coeff_b[0:8], 0)])
+		cp += (FAR / (1 + FAR)) * sum(
+			[b_i * Tz ** i for i, b_i in enumerate(coeff_b[0:8], 0)])
 
 		# Eqn F3.27
-		h += (FAR / (1 + FAR)) * (sum([(b_i / i) * Tz ** i for i, b_i in
-									   enumerate(coeff_b[0:7], 1)]) +
-								  coeff_b[8])
+		h += (FAR / (1 + FAR)) * (sum(
+			[(b_i / i) * Tz ** i for i, b_i in enumerate(coeff_b[0:7], 1)]) +
+		                          coeff_b[8])
 
 		# Eqn F3.29
 		EJW_s_B0_corr_term = coeff_b[0] * log(1000)
 		print(f"XXX TODO VERIFY FAR CORR TERM WITH EXAMPLES")
-		s += (FAR / (1 + FAR)) * (coeff_b[0] * log(Tz) +
-								  sum([(b_i / i) * Tz ** i for i, b_i in
-									   enumerate(coeff_b[1:8], 1)])
-								  + coeff_b[9] + EJW_s_B0_corr_term)
+		s += (FAR / (1 + FAR)) * (coeff_b[0] * log(Tz) + sum(
+			[(b_i / i) * Tz ** i for i, b_i in enumerate(coeff_b[1:8], 1)]) +
+		                          coeff_b[9] + EJW_s_B0_corr_term)
 
 	return cp, h, s
 
