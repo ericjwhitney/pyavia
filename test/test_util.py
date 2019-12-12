@@ -51,12 +51,12 @@ class TestBisectRoot(TestCase):
         exact = 1.618033988749895
 
         # Normal operation.
-        x = bisect_root(f, 1.0, 2.0, tol=1e-15)
+        x = bisect_root(f, 1.0, 2.0, f_tol=1e-15)
         self.assertAlmostEqual(x, exact, places=15)
 
         # Failure to converge.
         with self.assertRaises(RuntimeError):
-            bisect_root(f, 1.0, 2.0, maxits=10, tol=1e-15)
+            bisect_root(f, 1.0, 2.0, max_its=10, f_tol=1e-15)
 
 
 class TestLinearInterp(TestCase):

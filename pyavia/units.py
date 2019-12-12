@@ -1061,7 +1061,7 @@ set_conversion('deg', '°', fwd=1)
 add_base_unit(['sp', 'sr'], 'Ω')
 
 # Conversions.
-set_conversion('sp', 'sr', fwd=4 * math.pi)  # 1 spat = 4*pi steradians.
+set_conversion('sp', 'sr', fwd=4 * math.pi)  # 1 spat = 4*pr steradians.
 
 # -----------------------------------------------------------------------------
 

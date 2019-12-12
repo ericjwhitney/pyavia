@@ -45,7 +45,7 @@ class TestCompressibleGas(TestCase):
 		self.assertAlmostEqual(gas.cp.value, 1259.8, places=1)
 		self.assertAlmostEqual(gas.gamma, 1.294, places=2)
 
-		# Check h, s terms across a compressor (W&F Ex. C3.2(iii).
+		# Check h, s terms across a compressor (w&F Ex. C3.2(iii).
 		inlet_flow = ComprFlow(P=Dim(1, 'atm'), T=Dim(288.15, 'K'), M=0,
 		                       gas='air')
 		self.assertAlmostEqual(inlet_flow.h.convert('MJ/kg').value,

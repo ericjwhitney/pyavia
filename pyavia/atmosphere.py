@@ -290,7 +290,7 @@ class Atmosphere:
 
         maxits = 50
         H_d = bisect_root(density_err, H_lhs, H_rhs, maxits,
-                          tol=1e-6)
+                          f_tol=1e-6)
 
         return Dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
 

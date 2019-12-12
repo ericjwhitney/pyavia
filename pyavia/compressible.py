@@ -33,8 +33,8 @@ class ComprFlow:
 		- The following properties may not be defined for extreme / high
 		temperature flow states, although the object will successfully
 		initialise:
-			- h
-			- cp_integral_term
+			- h and h_flow
+			- s
 		In this case these properties will return None.
 
 		- Static (ambient) temperature and pressure are	used internally for
@@ -48,7 +48,7 @@ class ComprFlow:
 
 	def __init__(self, *, P: Dim = None, Pt: Dim = None, T: Dim = None,
 	             Tt: Dim = None, h: Dim = None, s: Dim = None, M: float,
-	             W: Dim = None, gas: str = 'air', FAR: float = 0.0):
+	             w: Dim = None, gas: str = 'air', FAR: float = 0.0):
 		"""
 		Constructs a representation of a compressible gas flowing in 1-D.
 		Notes:
@@ -68,7 +68,7 @@ class ComprFlow:
 			h: (Dim) Specific enthalpy.
 			s: (Dim) Specific entropy.
 			M: (float) Mach number.
-			W: (dim) Mass flowrate.
+			w: (dim) Mass flowrate.
 			gas: (str) identifier (default = 'air').  Available 'gas' values
 				are:
 					air             Dry air
@@ -81,12 +81,11 @@ class ComprFlow:
 		Raises:
 			ValueError on unknown gas.  TypeError on invalid arguments.
 		"""
-		self._M, self._W, self._gas, self._FAR = M, W, gas, FAR
+		self._M, self._w, self._gas, self._FAR = M, w, gas, FAR
 		if self._gas not in {'air', 'burned_kero', 'burned_diesel'}:
 			raise ValueError(f"Unknown gas: {gas}")
 
 		# Most other properties depend on T so this is set next.
-
 		self._P, self._T = 0, 0   # Dummies required for Tt / h functions.
 		if T and not any([Tt, h, s]):
 			self._T = make_total_temp(T)  # Straightforward case.
@@ -105,7 +104,6 @@ class ComprFlow:
 		else:
 			self._output_units = 'SI'
 
-		# self._set_cp_from_T()
 		T_K = self._T.convert('K').value
 		try:
 			# Set via polynomial.
@@ -115,15 +113,17 @@ class ComprFlow:
 			self._s = Dim(s_, 'kJ/kg/K')
 
 		except ValueError:
-			# Set via vibrator model.
-			self._cp = Dim(_vib_cp(T_K)*1000, 'J/kg/K')
-			self._h, self._s = None, None
+			if self._gas == 'air' and T_K > 2000:
+				# Set via vibrator model.
+				self._cp = Dim(_vib_cp(T_K)*1000, 'J/kg/K')
+				self._h, self._s = None, None
+			else:
+				raise ValueError(f"Temperature {self._T} outside range for "
+				                 f"gas '{self._gas}'")
 
 		self._set_R()
 		self._γ = self._cp / (self._cp - self._R)
 		self._a = (self._γ * self._R * self._T)**0.5
-		# self._set_h_from_T()
-		# self._set_s_from_T()
 
 		if P and not Pt:
 			self._P = P
@@ -132,13 +132,30 @@ class ComprFlow:
 		else:
 			raise TypeError(f"Invalid pressure arguments.")
 
+	def __format__(self, format_spec) -> str:
+		prop_list = []
+		for p in self.props():
+			if p == 'gas':
+				fmt = 's'
+			else:
+				fmt = format_spec
+			prop_list += [f'{p}={getattr(self, p):{fmt}}']
+		return ', '.join(prop_list)
+
+	def __repr__(self):
+		return 'ComprFlow(' + ', '.join([f'{p}={repr(getattr(self, p))}'
+		                                 for p in self.props()]) + ')'
+
+	def __str__(self):
+		return self.__format__('')
+
 	# Normal methods ----------------------------------------------------------
 
 	@staticmethod
-	def props() -> Set[str]:
+	def props():
 		"""Returns a set containing strings of all the independent
 		parameters required to fully initialise the object."""
-		return {'P', 'T', 'M', 'W', 'gas', 'FAR'}
+		return 'P', 'T', 'M', 'w', 'gas', 'FAR'
 
 	def replace(self, **kwargs) -> 'ComprFlow':
 		"""
@@ -156,7 +173,7 @@ class ComprFlow:
 		for new_key, value in kwargs.items():
 			if new_key in ('P', 'Pt'):
 				new_kwargs.pop('P', None)
-			if new_key in ('T', 'Tt', 'h'):
+			if new_key in ('T', 'Tt', 'h', 's'):
 				new_kwargs.pop('T', None)
 			new_kwargs[new_key] = value
 
@@ -183,6 +200,15 @@ class ComprFlow:
 	def cv(self) -> Dim:
 		"""Specific heat capacity at constant volume of the gas."""
 		return self._cp - self._R
+
+	@property
+	def Q(self) -> Dim:
+		"""Enthalpy flowrate Q = h * w.  Returns kJ/s or Btu/s."""
+		_Q = self._h * self._w
+		if self._output_units == 'US':
+			return _Q.convert('Btu/s')
+		else:
+			return _Q.convert('kJ/s')
 
 	@property
 	def FAR(self) -> float:
@@ -250,9 +276,9 @@ class ComprFlow:
 		return self._T
 
 	@property
-	def W(self) -> Dim:
+	def w(self) -> Dim:
 		"""Mass flowrate."""
-		return self._W
+		return self._w
 
 	# Internal methods --------------------------------------------------------
 
@@ -265,8 +291,8 @@ class ComprFlow:
 			return self.replace(P=Dim(0, 'kPa'), T=T_try).h - value
 
 		T_L, T_R = Dim(200, 'K'), Dim(2000, 'K')
-		return bisect_root(h_error, T_L, T_R, maxits=50,
-		                   tol=Dim(1, 'J/kg'))  # Approx tol=1e-6
+		return bisect_root(h_error, T_L, T_R, max_its=50,
+		                   f_tol=Dim(1, 'J/kg'))  # Approx f_tol=1e-6
 
 	def _get_T_from_s(self, value: Dim) -> Dim:
 		"""Find the stream temperature of the gas given the specific
@@ -277,8 +303,8 @@ class ComprFlow:
 			return self.replace(P=Dim(0, 'kPa'), T=T_try).s - value
 
 		T_L, T_R = Dim(200, 'K'), Dim(2000, 'K')
-		return bisect_root(s_error, T_L, T_R, maxits=50,
-		                   tol=Dim(1e-4, 'J/kg/K'))
+		return bisect_root(s_error, T_L, T_R, max_its=50,
+		                   f_tol=Dim(1e-4, 'J/kg/K'))
 
 	def _get_T_from_Tt(self, Tt_reqd: Dim) -> Dim:
 		"""Find the stream temperature of the gas given the total (stagnation)
@@ -291,11 +317,11 @@ class ComprFlow:
 		# Iterate temperature due to non-linear dependence of γ on Ts.
 		# Start iteration with Ts = T.
 		def new_Ts(try_Ts):
-			flow = ComprFlow(P=Dim(0, 'kPa'), T=try_Ts, M=self._M, W=self._W,
+			flow = ComprFlow(P=Dim(0, 'kPa'), T=try_Ts, M=self._M, w=self._w,
 			                 gas=self._gas, FAR=self._FAR)
 			return Tt_reqd / flow.Tt_on_T
 
-		return iterate_fn(new_Ts, x_start=Tt_reqd, xtol=Dim(1e-6, 'K'))
+		return iterate_fn(new_Ts, x_start=Tt_reqd, x_tol=Dim(1e-6, 'K'))
 
 	def _set_R(self) -> None:
 		R_air = 287.05287  # J/kg/K.
@@ -380,7 +406,7 @@ def _wfpoly_cp_h_s(T_K: float, gas: str, FAR: float) -> Tuple[float, float,
 
 		# Eqn F3.29
 		EJW_s_B0_corr_term = coeff_b[0] * log(1000)
-		print(f"XXX TODO VERIFY FAR CORR TERM WITH EXAMPLES")
+		# print(f"XXX TODO VERIFY FAR CORR TERM WITH EXAMPLES")
 		s += (FAR / (1 + FAR)) * (coeff_b[0] * log(Tz) + sum(
 			[(b_i / i) * Tz ** i for i, b_i in enumerate(coeff_b[1:8], 1)]) +
 		                          coeff_b[9] + EJW_s_B0_corr_term)

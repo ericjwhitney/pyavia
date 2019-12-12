@@ -163,10 +163,10 @@ def to_ucode_super(ss: str) -> str:
 # -----------------------------------------------------------------------------
 # Simple search and interpolation functions.
 
-def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
-                tol=1e-6, display=False) -> Any:
+def bisect_root(f: Callable[[Any], Any], x_a, x_b, max_its: int = 50,
+                f_tol=1e-6, display=False) -> Any:
     """
-    Approximate solution of f(x)=0 on interval [x_a,x_b] by bisection
+    Approximate solution of f(x)=0 on interval [x_a, x_b] by bisection
     method. For bisection to work f(x) must change sign across the interval,
     i.e. f(x_a) and f(x_b) must have opposite sign.
 
@@ -184,15 +184,15 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
     Args:
         f: Function to find root f(x_m) -> 0.
         x_a, x_b: Each end of the search interval, in any order.
-        maxits:  Maximum number of iterations.
-        tol: End search when abs(f(x)) < tol.
+        max_its:  Maximum number of iterations.
+        f_tol: End search when abs(f(x)) < f_tol.
         display: (bool) If True, print progress statements.
 
     Returns:
         xm: Best estimate of root found i.e. f(x_m) approx = 0.0.
 
     Raises:
-        RuntimeError is maxits is reached before a solution is found.
+        RuntimeError is max_its is reached before a solution is found.
     """
     if display:
         print(f"bisect_root:")
@@ -219,11 +219,11 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, maxits: int = 50,
                   f"--> f = [{f_a_next}, {f_m}, {f_b_next}]")
 
         # Check stopping criteria.
-        if abs(f_m) < tol:
+        if abs(f_m) < f_tol:
             return x_m
 
-        if it >= maxits:
-            raise RuntimeError(f"Reached {maxits} iteration limit.")
+        if it >= max_its:
+            raise RuntimeError(f"Reached {max_its} iteration limit.")
 
         # Check which side root is on, narrow interval.
         if f_a_next / f_m < 0:  # Sign comp. via division.
@@ -282,8 +282,8 @@ def _ignore_key(x):
     return x
 
 
-def iterate_fn(func: Callable[[Any], Any], x_start, xtol=1e-6,
-               max_iter: int = 15, display=False):
+def iterate_fn(func: Callable[[Any], Any], x_start, x_tol=1e-6, relax=1.0,
+               max_its: int = 15, display=False):
     """
     Refine a value by iterating it through a function that gives a better
     estimate of the same value.
@@ -291,29 +291,36 @@ def iterate_fn(func: Callable[[Any], Any], x_start, xtol=1e-6,
     Args:
         func: Function that returns a better estimate of 'x'.
         x_start: Starting value for 'x'.
-        xtol: Stop when abs(x_new - x) < xtol.
-        max_iter: (int) Iteration limit.
+        x_tol: Stop when abs(x_new - x) < x_tol.
+        relax: Relaxation factor.  After the next trial value 'x_next' is
+        computed, it is revised to x' as follows:
+            x' = x + relax * (x_next - x)
+        If relax = 1 this is equivalent to standard iteration using x_next.
+        When relax < 1 (e.g. 0.5) this is an under-relaxation which can add
+        stability.
+        max_its: (int) Iteration limit.
         display: (bool) If True, print iterations.
 
     Returns:
-        x_final
+        Converged x value.
     """
     if display:
         print(f"iterate_fn: Start x = {x_start}")
     x, its = x_start, 0
     while True:
-        new_x = func(x)
+        next_x = func(x)
+        relax_x = x + relax*(next_x - x)
         its += 1
 
         if display:
-            print(f"\tIteration {its}: x = {new_x}")
+            print(f"\tIteration {its}: x = {relax_x}")
 
-        if abs(new_x - x) <= xtol:
+        if abs(relax_x - x) <= x_tol:
             break
-        x = new_x
-        if its >= max_iter:
-            raise RuntimeError(f"Limit of {max_iter} iterations exceeded.")
-    return new_x
+        x = relax_x
+        if its >= max_its:
+            raise RuntimeError(f"Limit of {max_its} iterations exceeded.")
+    return relax_x
 
 
 def line_pt(a, b, p, scale=None):
