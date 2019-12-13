@@ -38,13 +38,22 @@ __all__ = ['output_ucode_pwr', 'UnitsError', 'Units', 'Dim',
            'set_conversion', 'similar_to', 'total_temperature_convert',
            'make_total_temp']
 
-output_ucode_pwr = True  # Generate unicode chars for power values in strings.
+# Generate unicode chars for power values in strings.
+output_ucode_pwr = True
+
+# Computed conversions are cached for faster repeat access. To ensure
+# accurate handling of values only the requested conversion 'direction' is
+# cached; the reverse conversion is not automatically computed and would
+# need to be separately cached when encountered.
+cache_computed_convs = True
+
+# Note: There is presently no size limit on this cache. This is normally not
+# a problem as only a few types of conversions occur in any application.
 
 # Issue a warning if a unit conversion traces a path longer than
 # _CONV_PATH_LENGTH_WARNING.  It could indicate a potential buildup of error
 # and usually means that a suitable conversion for these units should be
 # added.
-
 _CONV_PATH_LENGTH_WARNING = 4
 
 # -----------------------------------------------------------------------------
@@ -54,7 +63,7 @@ _CONV_PATH_LENGTH_WARNING = 4
 _known_units = MultiBiDict()  # All Units(), base and derived.
 _known_base_units = set()  # Single entry ^1 Units().
 _conversions = WeightedDirGraph()  # Conversions between Units().
-
+_comp_conv_cache = {}  # {(Units, Units): Factor, ...}
 
 class UnitsError(Exception):
     """Exception class signifying errors specifically related to units /
@@ -715,13 +724,16 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
     """
     Determine the conversion factor between from_unit and to_unit.  When
     multiplying a from_label quantity this factor would result in the
-    correct to_units quantity.   A two step process is used:
-    1. Look for a conversion by tracing between (combining) Units()
+    correct to_units quantity.   A three step process is used:
+    1. If caching is active, see if this conversion has been done previously.
+    2. Look for a conversion by tracing between (combining) Units()
     conversions already known.
-    2. Compute the factor by breaking down Units() objects corresponding to
+    3. Compute the factor by breaking down Units() objects corresponding to
     from_units and to_units.  Note: This step is skipped when converting
     base units because in that case it cannot be further broken down by
     computation (and trying to do so would result in an infinite loop).
+
+    Note: If caching is active, this can occur at Step 2 or 3.
 
     Args:
         from_unit: Units object or string label.
@@ -742,7 +754,14 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
     if from_unit == to_unit:
         return 1
 
-    # Step 1:  See if a shortcut is available (base units will only take
+    # Step 1: See if this conversion has been cached.
+    if cache_computed_convs:
+        try:
+            return _comp_conv_cache[from_unit, to_unit]
+        except KeyError:
+            pass
+
+    # Step 2: See if a shortcut is available (base units will only take
     # this path).
     if (from_unit in _conversions) and (to_unit in _conversions):
         path, factor = _conversions.trace(from_unit, to_unit, operator.mul)
@@ -751,6 +770,8 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
                           f" gives overlong path: " + ' -> '.join(str(x) for
                                                                   x in path))
         if factor is not None:
+            if cache_computed_convs:
+                _comp_conv_cache[from_unit, to_unit] = factor
             return factor
 
     # Don't compute conversions if we are at base units (otherwise infinite
@@ -758,7 +779,7 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
     if (from_unit in _known_base_units) or (to_unit in _known_base_units):
         return None
 
-    # Step 2:  Try to compute the factor from the base units.  Conversion is
+    # Step 3: Try to compute the factor from the base units.  Conversion is
     # equivalent to multiplying by (1/k)*to_units^0 on LHS.  Also check
     # consistency.
     new_basis = []
@@ -776,8 +797,10 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
                              f"'{from_u}^{from_p}' and '{to_u}^{to_p}'")
         new_basis += [(to_u, 0)]
 
-    mult_units = Dim(1 / to_unit.k, Units(1, *new_basis)) * from_unit
-    return mult_units.value
+    factor = (Dim(1 / to_unit.k, Units(1, *new_basis)) * from_unit).value
+    if cache_computed_convs:
+        _comp_conv_cache[from_unit, to_unit] = factor
+    return factor
 
 
 def set_conversion(from_label: str, to_label: str, *, fwd: Any,
