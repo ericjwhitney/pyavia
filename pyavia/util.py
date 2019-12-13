@@ -311,11 +311,12 @@ def iterate_fn(func: Callable[[Any], Any], x_start, x_tol=1e-6, relax=1.0,
         next_x = func(x)
         relax_x = x + relax*(next_x - x)
         its += 1
+        x_err = abs(relax_x - x)
 
         if display:
-            print(f"\tIteration {its}: x = {relax_x}")
+            print(f"\tIteration {its}: x = {relax_x}, Error = {x_err}")
 
-        if abs(relax_x - x) <= x_tol:
+        if x_err <= x_tol:
             break
         x = relax_x
         if its >= max_its:
