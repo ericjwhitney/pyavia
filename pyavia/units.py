@@ -271,6 +271,10 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
         return label
 
     def __repr__(self):
+        unique_label = _unique_unit_label(self)
+        if unique_label:
+            return f"Units('{unique_label}')"
+
         arglist = []
         for f in self._fields:
             thisarg = getattr(self, f)
@@ -360,8 +364,6 @@ class Dim:
         ret_val.label = self.label
         return ret_val
 
-    # TODO __invert__
-
     #
     # Binary operators.
     #
@@ -395,7 +397,9 @@ class Dim:
                               default=res_value)
 
         if not self.units.dimless():
-            return Dim(res_value, self.units)
+            res = Dim(res_value, self.units)
+            res.label = self.label
+            return res
         else:
             return res_value
 
@@ -435,12 +439,15 @@ class Dim:
                               default=res_value)
 
         if not res_units.dimless():
-            return Dim(res_value, res_units)
+            res = Dim(res_value, res_units)
+            res.label = self.label
+            return res
         else:
             return res_value
 
     def __mul__(self, rhs):
-        """Multiplication of dimensioned values.
+        """Multiplication of dimensioned values.  This is the central
+        function used by most other operators / conversions.
 
         If either LHS or RHS units have a k-factor, this is multiplied out
         into the value leaving k = 1 for both LHS and RHS. If RHS is Units()
@@ -450,8 +457,17 @@ class Dim:
         these disappear as they are dimensionless and have served their
         purpose.
         """
+        # Shortcut scalar multiplication. Check for dimless case.
+        if not isinstance(rhs, (Dim, Units)):
+            if not self.units.dimless():
+                res = Dim(self.value * rhs, self.units)
+                res.label = self.label
+                return res
+            else:
+                return self.value * rhs
+
         if not isinstance(rhs, Dim):
-            rhs = Dim(rhs)
+            rhs = Dim(rhs)  # Promote.
 
         res_k = rhs.units.k * self.units.k
         res_basis = []
@@ -564,9 +580,13 @@ class Dim:
 
     def __repr__(self):
         if self.label is not None:
-            ustr = f"'{self.label}'"
+            ustr = repr(self.label)
         else:
-            ustr = repr(self.units)
+            ustr = _unique_unit_label(self.units)
+            if ustr:
+                ustr = repr(ustr)
+            else:
+                ustr = repr(self.units)
         return f"Dim({self.value}, {ustr})"
 
     def __str__(self):
@@ -587,6 +607,12 @@ class Dim:
         if isinstance(to_units, str):
             use_label = to_units
             to_units = Units(to_units)
+
+        # Shortcut conversion to units already in use.
+        if to_units == self.units:
+            res = Dim(self.value, self.units)
+            res.label = use_label or self.label
+            return res
 
         # Conversion to °C and °F base units are special cased due to
         # offset of scales.
@@ -636,6 +662,15 @@ def _common_cmp(lhs: Dim, rhs: Dim, op: Callable[..., bool]):
         return op(lhs.value, rhs.value)
     else:
         return op(lhs.value, rhs.convert(lhs.units).value)
+
+def _unique_unit_label(u: Units) -> str:
+    """If 'u' is unique in _known_units return it's label.  Otherwise return
+    an empty string."""
+    matches = _known_units.inverse.get(u, [])
+    if len(matches) == 1:
+        return matches[0]
+    else:
+        return ''
 
 def add_base_unit(labels: Iterable[str], base: str) -> None:
     """
