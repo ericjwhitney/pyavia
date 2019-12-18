@@ -14,8 +14,9 @@ Contains:
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
-    iterate_fn          Simple function to iterate a given function
-                        until the output converges.
+    fixed_point         Simple iteration of a given function until the
+                        output converges x = f(x).
+    fixed_point_scalar  Ident. to fixed_point() for scalar args.
     line_pt             Function to give a point on a line of two other points
                         with any one coordinate supplied.
     linear_int_ext      Function for linear interpolation (and optional
@@ -32,13 +33,13 @@ Contains:
 
 import operator as op
 from math import log, exp
-from typing import Union, Callable, Any
+from typing import Union, Callable, Any, List
 
 __all__ = ['kind_div', 'force_type', 'coax_type', 'UCODE_SS_CHARS',
            'from_ucode_super', 'to_ucode_super', 'bisect_root',
-           'bounded_by', 'bracket_list', 'iterate_fn', 'line_pt',
-           'linear_int_ext', 'min_max', 'monotonic', 'strict_decrease',
-           'strict_increase']
+           'bounded_by', 'bracket_list', 'fixed_point', 'fixed_point_scalar',
+           'line_pt', 'linear_int_ext', 'min_max', 'monotonic',
+           'strict_decrease', 'strict_increase']
 
 
 # -----------------------------------------------------------------------------
@@ -282,20 +283,25 @@ def _ignore_key(x):
     return x
 
 
-def iterate_fn(func: Callable[[Any], Any], x_start, x_tol=1e-6, relax=1.0,
-               max_its: int = 15, display=False):
+def fixed_point(func: Callable[[Any], Any], x_start: List[Any],
+                x_tol: List[Any], relax=1.0, max_its: int = 50, display=False):
     """
-    Refine a value by iterating it through a function that gives a better
-    estimate of the same value.
+    Find the fixed point of a function x = f(x) by iteratively passing an
+    initial estimate through the function.  The fixed point is a vector
+    (list).
 
     Args:
-        func: Function that returns a better estimate of 'x'.
-        x_start: Starting value for 'x'.
-        x_tol: Stop when abs(x_new - x) < x_tol.
-        relax: Relaxation factor.  After the next trial value 'x_next' is
+        func: Function that returns a better estimate of vector 'x'.
+        x_start: Starting value for 'x'. List of any numeric type (including
+        user types) may be used.  Individual elements need not be the
+        same type.
+        x_tol: Stop when largest component abs(x_new_i - x_i) < x_tol_i.
+        This is a list (vector) of any numeric type aligned with x.
+        Components of x_tol that are None are ignored.
+        relax: Relaxation factor.  After the next trial value 'x_step' is
         computed, it is revised to x' as follows:
-            x' = x + relax * (x_next - x)
-        If relax = 1 this is equivalent to standard iteration using x_next.
+            x' = x + relax * (x_step - x)
+        If relax = 1 this is equivalent to standard iteration using x_step.
         When relax < 1 (e.g. 0.5) this is an under-relaxation which can add
         stability.
         max_its: (int) Iteration limit.
@@ -304,24 +310,42 @@ def iterate_fn(func: Callable[[Any], Any], x_start, x_tol=1e-6, relax=1.0,
     Returns:
         Converged x value.
     """
+    def nice_str(xli: List):
+        return ', '.join([str(x_i) for x_i in xli])
+
     if display:
-        print(f"iterate_fn: Start x = {x_start}")
+        print(f"fixed_point: Start x = {nice_str(x_start)}")
     x, its = x_start, 0
+    n = len(x)  # More compact than zips.
     while True:
-        next_x = func(x)
-        relax_x = x + relax*(next_x - x)
+        x_step = func(x)
+        x_next = [x[i] + relax * (x_step[i] - x[i]) for i in range(n)]
+        x_err = [abs(x_next[i] - x[i]) for i in range(n)]
         its += 1
-        x_err = abs(relax_x - x)
 
         if display:
-            print(f"\tIteration {its}: x = {relax_x}, Error = {x_err}")
+            print(f"\tIteration {its}: x = {nice_str(x_next)}, "
+                  f"Error = {nice_str(x_err)}")
 
-        if x_err <= x_tol:
+        if all([x_err[i] <= x_tol[i] for i in range(n)]):
             break
-        x = relax_x
+
+        x = x_next
         if its >= max_its:
             raise RuntimeError(f"Limit of {max_its} iterations exceeded.")
-    return relax_x
+    return x_next
+
+
+def fixed_point_scalar(func: Callable[[Any], Any], x_start, x_tol,
+                       relax=1.0, max_its: int = 15, display=False):
+    """Identical to fixed_point() except it wraps scalar arguments for
+    convenience."""
+
+    def func_wrap(x):
+        return [func(x[0])]
+
+    return fixed_point(func_wrap, x_start=[x_start], x_tol=[x_tol],
+                       relax=relax, max_its=max_its, display=display)
 
 
 def line_pt(a, b, p, scale=None):
