@@ -18,7 +18,7 @@ Contains:
     make_total_temp     Convert a temperature into its total equivalent.
 """
 
-# Last updated: 29 November 2019 by Eric J. Whitney
+# Last updated: 28 December 2019 by Eric J. Whitney
 
 from __future__ import annotations
 import warnings
@@ -64,6 +64,7 @@ _known_units = MultiBiDict()  # All Units(), base and derived.
 _known_base_units = set()  # Single entry ^1 Units().
 _conversions = WeightedDirGraph()  # Conversions between Units().
 _comp_conv_cache = {}  # {(Units, Units): Factor, ...}
+
 
 class UnitsError(Exception):
     """Exception class signifying errors specifically related to units /
@@ -124,6 +125,7 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
     looked up for quick conversions.
     """
 
+    # noinspection PyTypeChecker
     def __new__(cls, *args, **kwargs):
         """
         Units objects can be created in three ways:
@@ -270,6 +272,7 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
             label = f'{self.k}*' + label
         return label
 
+    # noinspection PyUnresolvedReferences
     def __repr__(self):
         unique_label = _unique_unit_label(self)
         if unique_label:
@@ -387,6 +390,7 @@ class Dim:
                                  f"{self.units.θ[0]} + {rhs.units.θ[0]}")
 
             # For LHS (°C, °F) change conversion target to (Δ°C, Δ°F)
+            # noinspection PyProtectedMember
             new_rhs_units = new_rhs_units._replace(**{'θ': ('Δ' +
                                                             self.units.θ[0],
                                                             1)})
@@ -492,6 +496,7 @@ class Dim:
         # Build units and check if multiplication has cancelled radians.
         res_units = Units(1, *res_basis)
         if res_units.A == ('rad', 1):
+            # noinspection PyProtectedMember
             res_units = res_units._replace(A=('', 0))
 
         # Uncertain at this stage that steradians cancel out. XX TODO
@@ -624,7 +629,6 @@ class Dim:
                                  f"{to_units}")
             res_value = total_temperature_convert(self.value, from_temp,
                                                   to_temp)
-            # XXXX TODO Add Reamur
 
         else:
             # All rhs unit types.
@@ -655,6 +659,7 @@ def _check_units(u_tuple):
         raise UnitsError(f"Offset temperature units are only permitted to "
                          f"be base units.")
 
+
 def _common_cmp(lhs: Dim, rhs: Dim, op: Callable[..., bool]):
     """Common comparison method between two Dim objects called by all
     magic methods."""
@@ -662,6 +667,7 @@ def _common_cmp(lhs: Dim, rhs: Dim, op: Callable[..., bool]):
         return op(lhs.value, rhs.value)
     else:
         return op(lhs.value, rhs.convert(lhs.units).value)
+
 
 def _unique_unit_label(u: Units) -> str:
     """If 'u' is unique in _known_units return it's label.  Otherwise return
@@ -671,6 +677,7 @@ def _unique_unit_label(u: Units) -> str:
         return matches[0]
     else:
         return ''
+
 
 def add_base_unit(labels: Iterable[str], base: str) -> None:
     """
