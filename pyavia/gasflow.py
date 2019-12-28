@@ -3,8 +3,8 @@ Equations and constants relating to gases and compressible flow.
 
 Contains:
     GasFlow         Abstract class for compressible gas flows.
-    GasFlowWF       Compressible gas, calorifically imperfect, opt. fuel-air.
-    PerfectGasFlow  Compressible gas, calorifically perfect.
+    GasFlowWF       Compressible gas, calorically imperfect, opt. fuel-air.
+    PerfectGasFlow  Compressible gas, calorically perfect.
 """
 # Last updated: 18 December 2019 by Eric J. Whitney
 
