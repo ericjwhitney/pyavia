@@ -195,10 +195,9 @@ class Atmosphere:
 
         raise TypeError(f"Incorrect arguments: {', '.join(kwargs.keys())}")
 
-    # Class constants.
+    # Class constants and defaults  ------------------------------------------
     R = Dim(287.05287, 'J/K/kg')  # Gas constant for air.
 
-    # Output defaults.
     unitdef_alt = 'ft'
     unitdef_dens = 'slug/ft^3'
     unitdef_kine = 'ft²/s'
@@ -232,35 +231,7 @@ class Atmosphere:
         else:
             raise ValueError(f"Unknown default style: {style}")
 
-    # Properties.
-
-    # @property
-    # def c_p(self) -> Dim:
-    #     """Specific heat at constant pressure.  Only corrected above T =
-    #     550°R."""
-    #     temp_R = self.temperature.convert('°R').value
-    #     if temp_R <= 550:
-    #         return _C_P_PERF.convert(Atmosphere.unitdef_spheat)
-    #
-    #     # Correct c_p.
-    #     ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
-    #     c_p_corr = _C_P_PERF * (1 + ((_GAMMA_PERF - 1) / _GAMMA_PERF) * (
-    #         (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
-    #     return c_p_corr.convert(Atmosphere.unitdef_spheat)
-    #
-    # @property
-    # def c_v(self) -> Dim:
-    #     """Specific heat at constant volume.  Only corrected above T =
-    #     550°R."""
-    #     temp_R = self.temperature.convert('°R').value
-    #     if temp_R <= 550:
-    #         return _C_V_PERF.convert(Atmosphere.unitdef_spheat)
-    #
-    #     # Correct c_v.
-    #     ratio = 5500 / temp_R  # Ratio (Theta) = 5,500°R / T
-    #     c_v_corr = _C_V_PERF * (1 + (_GAMMA_PERF - 1) * (
-    #             (ratio ** 2) * exp(ratio) / (exp(ratio) - 1) ** 2))
-    #     return c_v_corr.convert(Atmosphere.unitdef_spheat)
+    # Properties -------------------------------------------------------------
 
     @property
     def delta(self) -> float:
@@ -315,12 +286,10 @@ class Atmosphere:
 
     @property
     def gamma(self) -> float:
-        """γ = c_p / c_v ratio of specific heats.  Only corrected above T =
-        550°R."""
-        if self.temperature.convert('°R').value <= 550:
-            return _GAMMA_PERF
-        else:
-            return self.c_p / self.c_v
+        """γ = c_p / c_v ratio of specific heats.  This is presently set to
+        a constant γ = 1.4 which is valid for all ambient atmospheres which
+        are relatively cold."""
+        return _GAMMA_PERF
 
     @property
     def pressure(self) -> Dim:
@@ -370,21 +339,18 @@ class Atmosphere:
     σ = sigma
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 # Related constants.
 
 G_N = Dim(9.80665, 'm/s^2')  # Gravitational acceleration
 R_EARTH = Dim(6356.766, 'km')  # Earth radius (nom) from ISO 2533-1975 §2.3
-
-# Specific heats are from the American Meteorological Society and are for
-# dry air (±2.5 J/kg/K).  Atmosphere class corrects these above T = 550°R.
-_C_P_PERF = Dim(1005.7, 'J/kg/K')
-_C_V_PERF = Dim(719, 'J/kg/K')
-_GAMMA_PERF = 1.4  # γ = Ratio of specific heats c_p/c_v.
+_GAMMA_PERF = 1.4
+# γ = Ratio of specific heats c_p/c_v.  Valid for normal and cold air
+# temperatures.
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 # noinspection PyPep8Naming
 def _press_in_layer(H, P_b, H_b, T_b, beta):
