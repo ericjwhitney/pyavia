@@ -552,7 +552,7 @@ class PerfectGasFlow(GasFlow):
                 γ = 1.33    Hot air, burners, turbines.
         """
         # Set basic constants.
-        self._M, self._γ = M, gamma
+        self._M, self._gamma = M, gamma
 
         if gas == 'air':
             R = Dim(287.05287, 'J/kg/K')
@@ -601,11 +601,11 @@ class PerfectGasFlow(GasFlow):
 
     @property
     def gamma(self) -> float:
-        return self._γ
+        return self._gamma
 
     @property
     def cp(self) -> Dim:
-        return self._R * self._γ / (self._γ - 1)
+        return self._R * self._gamma / (self._gamma - 1)
 
     @property
     def h(self) -> Dim:
@@ -628,8 +628,8 @@ class PerfectGasFlow(GasFlow):
         """Ratio of total (stagnation) pressure to static pressure computed
         using T0/T = (1 + 0.5 * (γ - 1) * M ** 2) ** (γ / (γ - 1)),
         which assumes a perfect gas."""
-        return (1 + 0.5 * (self._γ - 1) * self._M ** 2) ** (self._γ /
-                                                            (self._γ - 1))
+        return (1 + 0.5 * (self._gamma - 1) * self._M ** 2) ** (self._gamma /
+                                                                (self._gamma - 1))
 
     @property
     def s(self) -> Dim:
@@ -649,7 +649,7 @@ class PerfectGasFlow(GasFlow):
         """Ratio of total (stagnation) pressure to static temperature
         computed using T0/T = 1 + 0.5 * (γ - 1) * M ** 2, which assumes a
         perfect gas."""
-        return 1 + 0.5 * (self._γ - 1) * self._M ** 2
+        return 1 + 0.5 * (self._gamma - 1) * self._M ** 2
 
     @property
     def u(self) -> Dim:
