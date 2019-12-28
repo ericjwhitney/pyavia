@@ -10,13 +10,11 @@ Contains:
     UCODE_SS_CHARS      List of unicode superscript characters.
     from_ucode_super    Convert unicode sueprscripts to an ASCII string.
     to_ucode_super      Convert an ASCII string to unicode superscripts.
-    bisect_root         Simple root finding function by bisection.
+    bisect_root         Find scalar equation root via bisection.
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
-    fixed_point         Simple iteration of a given function until the
-                        output converges x = f(x).
-    fixed_point_scalar  Ident. to fixed_point() for scalar args.
+    fixed_point         Find the fixed point of a scalar function.
     line_pt             Function to give a point on a line of two other points
                         with any one coordinate supplied.
     linear_int_ext      Function for linear interpolation (and optional
@@ -26,23 +24,21 @@ Contains:
     monotonic           Function checking that sequence values are monotonic.
     strict_decrease     Specialisation of monotonic.
     strict_increase     Specialisation of monotonic.
-
 """
 
-# Last updated: 29 November 2019 by Eric J. Whitney.
+# Last updated: 26 December 2019 by Eric J. Whitney.
 
 import operator as op
 from math import log, exp
-from typing import Union, Callable, Any, List
+from typing import Union, Callable, Any
 
 __all__ = ['kind_div', 'force_type', 'coax_type', 'UCODE_SS_CHARS',
-           'from_ucode_super', 'to_ucode_super', 'bisect_root',
-           'bounded_by', 'bracket_list', 'fixed_point', 'fixed_point_scalar',
-           'line_pt', 'linear_int_ext', 'min_max', 'monotonic',
-           'strict_decrease', 'strict_increase']
+           'from_ucode_super', 'to_ucode_super', 'bisect_root', 'bounded_by',
+           'bracket_list', 'fixed_point', 'line_pt', 'linear_int_ext',
+           'min_max', 'monotonic', 'strict_decrease', 'strict_increase']
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Operators.
 
 def kind_div(x, y) -> Union[int, float]:
@@ -164,8 +160,10 @@ def to_ucode_super(ss: str) -> str:
 # -----------------------------------------------------------------------------
 # Simple search and interpolation functions.
 
+
 def bisect_root(f: Callable[[Any], Any], x_a, x_b, max_its: int = 50,
                 f_tol=1e-6, display=False) -> Any:
+    # noinspection PyUnresolvedReferences
     """
     Approximate solution of f(x)=0 on interval [x_a, x_b] by bisection
     method. For bisection to work f(x) must change sign across the interval,
@@ -200,9 +198,9 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, max_its: int = 50,
     x_a_next, x_b_next = x_a, x_b
     f_a_next, f_b_next = f(x_a_next), f(x_b_next)
     try:
-        # We use division approach to compare signs instead of multiplication as
-        # it neatly cancels units if present.  But this requires a check for
-        # f(x_b) == 0 first.
+        # We use division approach to compare signs instead of
+        # multiplicationas it neatly cancels units if present.  But this
+        # requires a check for f(x_b) == 0 first.
         if f_a_next/f_b_next >= 0:   # Sign comp. via division.
             raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
     except ZeroDivisionError:
@@ -235,7 +233,6 @@ def bisect_root(f: Callable[[Any], Any], x_a, x_b, max_its: int = 50,
             f_a_next = f_m
 
 
-
 def bounded_by(x, iterable, key=None):
     """Returns True the value x is bounded by the given iterable it, i.e.
     min(seq) <= x <= max(seq).  If a key function is provided this is applied
@@ -256,10 +253,6 @@ def bracket_list(li, x, key=None):
     equal to a middle list value, the left side bracket is returned.
     Comparison uses key function if supplied.
     """
-    # EJW Removed 25/11 duck typing policy
-    # if not isinstance(li, list):
-    #     raise TypeError("Requires list.")
-
     l_idx = 0
     r_idx = len(li) - 1
 
@@ -278,74 +271,64 @@ def bracket_list(li, x, key=None):
     return l_idx, r_idx
 
 
-def _ignore_key(x):
-    """Satisfies some inbuilt functions that do not accept None as a key."""
-    return x
-
-
-def fixed_point(func: Callable[[Any], Any], x_start: List[Any],
-                x_tol: List[Any], relax=1.0, max_its: int = 50, display=False):
+def fixed_point(func, x0, xtol, relax=1.0, max_its: int = 20, verbose=False):
     """
-    Find the fixed point of a function x = f(x) by iteratively passing an
-    initial estimate through the function.  The fixed point is a vector
-    (list).
+    Find the fixed point of a scalar function x = f(x) by iteratively
+    passing an estimate through the function.  Return when the point
+    stabilises.  Example:
+    >>> def f(x): return (x + 10) ** 0.25
+    >>> x_fixed = fixed_point(f, x0=-3, xtol=1e-6,
+    ... verbose=True)
+    Fixed point iteration: Start x = -3
+    ... Iteration 1: x = 1.6265765616977852
+    ... Iteration 2: x = 1.8465580452920933
+    ... Iteration 3: x = 1.8552312312746646
+    ... Iteration 4: x = 1.855570704344644
+    ... Iteration 5: x = 1.8555839877110183
+    ... Iteration 6: x = 1.855584507474938
+    ... Converged.
 
     Args:
-        func: Function that returns a better estimate of vector 'x'.
-        x_start: Starting value for 'x'. List of any numeric type (including
-        user types) may be used.  Individual elements need not be the
-        same type.
-        x_tol: Stop when largest component abs(x_new_i - x_i) < x_tol_i.
-        This is a list (vector) of any numeric type aligned with x.
-        Components of x_tol that are None are ignored.
+        func: Function that returns a better estimate of 'x'.
+        x0: Starting value for 'x'. Any numeric type (including user
+            types) may be used.  Individual elements need not be the same type.
+        xtol: Stop when abs(x' - x) < x_tol.
         relax: Relaxation factor.  After the next trial value 'x_step' is
-        computed, it is revised to x' as follows:
-            x' = x + relax * (x_step - x)
-        If relax = 1 this is equivalent to standard iteration using x_step.
-        When relax < 1 (e.g. 0.5) this is an under-relaxation which can add
-        stability.
+            computed, it is revised to x' as follows:
+               x' = x + relax * (x_step - x)
+            If relax = 1 this is equivalent to standard iteration using x_step.
+            When relax < 1 (e.g. 0.5) this is an under-relaxation which can
+            add stability.
         max_its: (int) Iteration limit.
-        display: (bool) If True, print iterations.
+        verbose: (bool) If True, print iterations.
 
     Returns:
         Converged x value.
     """
-    def nice_str(xli: List):
-        return ', '.join([str(x_i) for x_i in xli])
-
-    if display:
-        print(f"fixed_point: Start x = {nice_str(x_start)}")
-    x, its = x_start, 0
-    n = len(x)  # More compact than zips.
+    if verbose:
+        print(f"Fixed point iteration: Start x = {x0}")
+    x, its = x0, 0
     while True:
-        x_step = func(x)
-        x_next = [x[i] + relax * (x_step[i] - x[i]) for i in range(n)]
-        x_err = [abs(x_next[i] - x[i]) for i in range(n)]
-        its += 1
-
-        if display:
-            print(f"\tIteration {its}: x = {nice_str(x_next)}, "
-                  f"Error = {nice_str(x_err)}")
-
-        if all([x_err[i] <= x_tol[i] for i in range(n)]):
-            break
-
-        x = x_next
         if its >= max_its:
             raise RuntimeError(f"Limit of {max_its} iterations exceeded.")
+
+        x_step = func(x)
+        x_next = x + relax * (x_step - x)
+        its += 1
+        if verbose:
+            print(f"... Iteration {its}: x = {x_next}")
+
+        if abs(x_next - x) < xtol:
+            if verbose:
+                print(f"... Converged.")
+            break
+        x = x_next
     return x_next
 
 
-def fixed_point_scalar(func: Callable[[Any], Any], x_start, x_tol,
-                       relax=1.0, max_its: int = 15, display=False):
-    """Identical to fixed_point() except it wraps scalar arguments for
-    convenience."""
-
-    def func_wrap(x):
-        return [func(x[0])]
-
-    return fixed_point(func_wrap, x_start=[x_start], x_tol=[x_tol],
-                       relax=relax, max_its=max_its, display=display)
+def _ignore_key(x):
+    """Satisfies some inbuilt functions that do not accept None as a key."""
+    return x
 
 
 def line_pt(a, b, p, scale=None):
