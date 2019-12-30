@@ -10,11 +10,9 @@ Contains:
     UCODE_SS_CHARS      List of unicode superscript characters.
     from_ucode_super    Convert unicode sueprscripts to an ASCII string.
     to_ucode_super      Convert an ASCII string to unicode superscripts.
-    bisect_root         Find scalar equation root via bisection.
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
-    fixed_point         Find the fixed point of a scalar function.
     line_pt             Function to give a point on a line of two other points
                         with any one coordinate supplied.
     linear_int_ext      Function for linear interpolation (and optional
@@ -30,12 +28,12 @@ Contains:
 
 import operator as op
 from math import log, exp
-from typing import Union, Callable, Any
+from typing import Union
 
 __all__ = ['kind_div', 'force_type', 'coax_type', 'UCODE_SS_CHARS',
-           'from_ucode_super', 'to_ucode_super', 'bisect_root', 'bounded_by',
-           'bracket_list', 'fixed_point', 'line_pt', 'linear_int_ext',
-           'min_max', 'monotonic', 'strict_decrease', 'strict_increase']
+           'from_ucode_super', 'to_ucode_super', 'bounded_by',
+           'bracket_list', 'line_pt', 'linear_int_ext', 'min_max',
+           'monotonic', 'strict_decrease', 'strict_increase']
 
 
 # ----------------------------------------------------------------------------
@@ -157,81 +155,8 @@ def to_ucode_super(ss: str) -> str:
     return result
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Simple search and interpolation functions.
-
-
-def bisect_root(f: Callable[[Any], Any], x_a, x_b, max_its: int = 50,
-                f_tol=1e-6, display=False) -> Any:
-    # noinspection PyUnresolvedReferences
-    """
-    Approximate solution of f(x)=0 on interval [x_a, x_b] by bisection
-    method. For bisection to work f(x) must change sign across the interval,
-    i.e. f(x_a) and f(x_b) must have opposite sign.
-
-    Note: This function is able to be used with arbirary units.
-
-    Examples
-    --------
-    >>> f = lambda x: x**2 - x - 1
-    >>> bisect_root(f, 1, 2, 25)  # This will take 17 iterations.
-    1.6180343627929688
-    >>> f = lambda x: (2*x - 1)*(x - 3)
-    >>> bisect_root(f, 0, 1, 10)  # Only takes 1 iteration (in middle).
-    0.5
-
-    Args:
-        f: Function to find root f(x_m) -> 0.
-        x_a, x_b: Each end of the search interval, in any order.
-        max_its:  Maximum number of iterations.
-        f_tol: End search when abs(f(x)) < f_tol.
-        display: (bool) If True, print progress statements.
-
-    Returns:
-        xm: Best estimate of root found i.e. f(x_m) approx = 0.0.
-
-    Raises:
-        RuntimeError is max_its is reached before a solution is found.
-    """
-    if display:
-        print(f"bisect_root:")
-    x_a_next, x_b_next = x_a, x_b
-    f_a_next, f_b_next = f(x_a_next), f(x_b_next)
-    try:
-        # We use division approach to compare signs instead of
-        # multiplicationas it neatly cancels units if present.  But this
-        # requires a check for f(x_b) == 0 first.
-        if f_a_next/f_b_next >= 0:   # Sign comp. via division.
-            raise ValueError(f"f(x_a) and f(x_b) must have opposite sign.")
-    except ZeroDivisionError:
-        raise ValueError(f"One of the start points is already zero.")
-
-    it = 0
-    while True:
-        # Compute midpoint.
-        x_m = (x_a_next + x_b_next)/2
-        f_m = f(x_m)
-        it += 1
-
-        if display:
-            print(f"\tIteration {it}: x = [{x_a_next}, {x_m}, {x_b_next}] "
-                  f"--> f = [{f_a_next}, {f_m}, {f_b_next}]")
-
-        # Check stopping criteria.
-        if abs(f_m) < f_tol:
-            return x_m
-
-        if it >= max_its:
-            raise RuntimeError(f"Reached {max_its} iteration limit.")
-
-        # Check which side root is on, narrow interval.
-        if f_a_next / f_m < 0:  # Sign comp. via division.
-            x_b_next = x_m
-            f_b_next = f_m
-        else:
-            x_a_next = x_m
-            f_a_next = f_m
-
 
 def bounded_by(x, iterable, key=None):
     """Returns True the value x is bounded by the given iterable it, i.e.
@@ -269,61 +194,6 @@ def bracket_list(li, x, key=None):
             l_idx = mid_idx
 
     return l_idx, r_idx
-
-
-def fixed_point(func, x0, xtol, relax=1.0, max_its: int = 20, verbose=False):
-    """
-    Find the fixed point of a scalar function x = f(x) by iteratively
-    passing an estimate through the function.  Return when the point
-    stabilises.  Example:
-    >>> def f(x): return (x + 10) ** 0.25
-    >>> x_fixed = fixed_point(f, x0=-3, xtol=1e-6,
-    ... verbose=True)
-    Fixed point iteration: Start x = -3
-    ... Iteration 1: x = 1.6265765616977852
-    ... Iteration 2: x = 1.8465580452920933
-    ... Iteration 3: x = 1.8552312312746646
-    ... Iteration 4: x = 1.855570704344644
-    ... Iteration 5: x = 1.8555839877110183
-    ... Iteration 6: x = 1.855584507474938
-    ... Converged.
-
-    Args:
-        func: Function that returns a better estimate of 'x'.
-        x0: Starting value for 'x'. Any numeric type (including user
-            types) may be used.  Individual elements need not be the same type.
-        xtol: Stop when abs(x' - x) < x_tol.
-        relax: Relaxation factor.  After the next trial value 'x_step' is
-            computed, it is revised to x' as follows:
-               x' = x + relax * (x_step - x)
-            If relax = 1 this is equivalent to standard iteration using x_step.
-            When relax < 1 (e.g. 0.5) this is an under-relaxation which can
-            add stability.
-        max_its: (int) Iteration limit.
-        verbose: (bool) If True, print iterations.
-
-    Returns:
-        Converged x value.
-    """
-    if verbose:
-        print(f"Fixed point iteration: Start x = {x0}")
-    x, its = x0, 0
-    while True:
-        if its >= max_its:
-            raise RuntimeError(f"Limit of {max_its} iterations exceeded.")
-
-        x_step = func(x)
-        x_next = x + relax * (x_step - x)
-        its += 1
-        if verbose:
-            print(f"... Iteration {its}: x = {x_next}")
-
-        if abs(x_next - x) < xtol:
-            if verbose:
-                print(f"... Converged.")
-            break
-        x = x_next
-    return x_next
 
 
 def _ignore_key(x):
