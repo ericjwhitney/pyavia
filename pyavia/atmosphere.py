@@ -38,7 +38,8 @@ anyway so as to prevent errors).
 
 from math import exp, log, isclose
 from units import Dim, Units, make_total_temp
-from util import bracket_list, bisect_root
+from util import bracket_list
+from solve import bisect_root
 
 __all__ = ['Atmosphere', 'geo_alt_to_pot', 'pot_alt_to_geo']
 
@@ -60,25 +61,25 @@ class Atmosphere:
 
         # Show some ISA SSL values.
         >>> atm = Atmosphere('SSL')
-        >>> print(f"P = {atm.pressure:.3f}, T = {atm.temperature:.2f}")
+        >>> print(func"P = {atm.pressure:.3f}, T = {atm.temperature:.2f}")
         P = 14.696 psi, T = 288.15 K
 
         # Show density for an ISA standard altitude (note that these are
         # formally geopotential altitudes).
         >>> atm = Atmosphere(H=Dim(10000, 'ft'))
-        >>> print(f"ρ = {atm.ρ:.3f}")
+        >>> print(func"ρ = {atm.ρ:.3f}")
         ρ = 0.905 kg/m³
 
         # Show the temperature ratio for a pressure altitude with a
         # temperature offset:
         >>> atm = Atmosphere(H_press=(34000,'ft'), T_offset=(+15,'Δ°C'))
-        >>> print(f"Theta = {atm.theta:.3f}")
+        >>> print(func"Theta = {atm.theta:.3f}")
         Theta = 0.818
 
         # Show the density ratio for an arbitrary non-standard atmosphere
         # based on temperature / pressure.
         >>> atm = Atmosphere(P=(90, 'kPa'), T=(-15, '°C'))
-        >>> print(f"σ = {atm.σ:.3f}")
+        >>> print(func"σ = {atm.σ:.3f}")
         σ = 0.991
     """
 
@@ -124,7 +125,7 @@ class Atmosphere:
                 self._T, self._P = tmp._T, tmp._P
                 return
             else:
-                raise TypeError(f"Unknown argument: {ssl_str}")
+                raise TypeError(func"Unknown argument: {ssl_str}")
 
         if len(kwargs) == 1:
             if 'H' in kwargs:
@@ -178,8 +179,8 @@ class Atmosphere:
                 # temperature offset from ISA.
                 H_press, T_offset = kwargs['H_press'], kwargs['T_offset']
                 if T_offset.units in [Units('°C'), Units('°F')]:
-                    raise ValueError(f"ISA offset temperature must be in "
-                                     f"total or Δ units.")
+                    raise ValueError(func"ISA offset temperature must be in "
+                                     func"total or Δ units.")
 
                 # Find the bracketing layers based on ISA pressure.  Get the
                 # standard pressure and temperature.  Add the offset to
@@ -193,7 +194,7 @@ class Atmosphere:
                 self._T = (T_b + beta * (H_press - H_b)) + T_offset
                 return
 
-        raise TypeError(f"Incorrect arguments: {', '.join(kwargs.keys())}")
+        raise TypeError(func"Incorrect arguments: {', '.join(kwargs.keys())}")
 
     # Class constants and defaults  ------------------------------------------
     R = Dim(287.05287, 'J/K/kg')  # Gas constant for air.
@@ -229,7 +230,7 @@ class Atmosphere:
             cls.unitdef_temp = 'K'
             cls.unitdef_visc = 'Pa.s'
         else:
-            raise ValueError(f"Unknown default style: {style}")
+            raise ValueError(func"Unknown default style: {style}")
 
     # Properties -------------------------------------------------------------
 
@@ -261,7 +262,7 @@ class Atmosphere:
 
         maxits = 50
         H_d = bisect_root(density_err, H_lhs, H_rhs, maxits,
-                          f_tol=1e-6)
+                          ftol=1e-6)
 
         return Dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
 
