@@ -13,7 +13,7 @@ from math import log, exp
 from typing import Sequence
 
 from units import Dim, make_total_temp
-from util import fixed_point
+from solve import fixed_point
 
 __all__ = ['GasFlow', 'GasFlowWF', 'PerfectGasFlow']
 
@@ -50,7 +50,7 @@ class GasFlow(ABC):
 
     def __repr__(self):
         return type(self).__name__ + '(' + ', '.join(
-            [f'{p}={repr(getattr(self, p))}' for p in self.min_args()]) + ')'
+            [func'{p}={repr(getattr(self, p))}' for p in self.min_args()]) + ')'
 
     def __str__(self):
         return self.__format__('.5G')
@@ -79,7 +79,7 @@ class GasFlow(ABC):
                 fmt = ''
             else:
                 fmt = format_spec
-            prop_list += [f'{p}={val:{fmt}}']
+            prop_list += [func'{p}={val:{fmt}}']
         return ', '.join(prop_list)
 
     @property
@@ -110,17 +110,19 @@ class GasFlow(ABC):
 
     def replace(self, **kwargs) -> 'GasFlow':
         """Return a GasFlow object initialised to match self except for
-        keyword arguments from **kwargs.  If a new temperature or pressure
-        is specified, a proper pair of P, T, h or s properties must be
-        supplied (refer __init__ for the actual class)."""
+        keyword arguments from **kwargs.  New temperature or
+        pressure-like arguments must be given in a valid combination as all
+        similar arguments are cleared.  Refer to  __init__ for the derived
+        class for valid combinations."""
         # Build keywords.
         cls = type(self)
         new_kwargs = {k: getattr(self, k) for k in cls.min_args()}
 
-        # If new P, T, h, s type argument, clear existing P, T.
-        if any([k in ('P', 'T', 'P0', 'T0', 'h', 's') for k in kwargs.keys()]):
-            new_kwargs.pop('P', None)
-            new_kwargs.pop('T', None)
+        # If new P, T, h, s type argument, clear all existing.
+        ctrl_props = ('P', 'T', 'P0', 'T0', 'h', 's')
+        if any([k in ctrl_props for k in kwargs.keys()]):
+            for kw in ctrl_props:
+                new_kwargs.pop(kw, None)
 
         # Add / overwrite new args.
         for k, v in kwargs.items():
@@ -210,7 +212,7 @@ class GasFlow(ABC):
 # ----------------------------------------------------------------------------
 
 
-# noinspection PyPep8Naming,NonAsciiCharacters
+# noinspection PyPep8Naming
 class GasFlowWF(GasFlow):
     """
     Class representing airflow (with optional products of combustion) as a
@@ -276,7 +278,7 @@ class GasFlowWF(GasFlow):
         """
         self._M, self._FAR = M, FAR
         if not (0 <= self._FAR <= 0.05):
-            raise ValueError(f"Fuel-Air Ratio invalid: {self._FAR}")
+            raise ValueError(func"Fuel-Air Ratio invalid: {self._FAR}")
 
         # Set R, simple fixed values and gas model coefficients first.
         self._coeff_a, self._coeff_b = None, None
@@ -294,7 +296,7 @@ class GasFlowWF(GasFlow):
 
             R = Dim(R, 'J/kg/K')
         else:
-            raise ValueError(f"Invalid gas: {gas}")
+            raise ValueError(func"Invalid gas: {gas}")
 
         super().__init__(R=R, w=w, gas=gas)
 
@@ -332,7 +334,7 @@ class GasFlowWF(GasFlow):
             if P:
                 self._P = P  # Required for entropy computation.
             else:
-                raise TypeError(f"Entropy to set T also requires P argument.")
+                raise TypeError(func"Entropy to set T also requires P argument.")
 
             def refine_T(try_T):
                 self._lazy_reset()
@@ -341,7 +343,7 @@ class GasFlowWF(GasFlow):
                 return (s - self.s) * try_T / approx_cp + try_T
 
         else:
-            raise TypeError(f"Invalid temperature-type argument.")
+            raise TypeError(func"Invalid temperature-type argument.")
 
         if refine_T:
             fixed_point(refine_T, x0=Dim(288.15, 'K'), xtol=Dim(1e-6, 'K'))
@@ -367,12 +369,12 @@ class GasFlowWF(GasFlow):
             self._P = _WF_P_REF_S * exp((self._cptint - s) / self.R)
 
         else:
-            raise TypeError(f"Invalid pressure-type argument.")
+            raise TypeError(func"Invalid pressure-type argument.")
 
         if not (Dim(200, 'K') <= self._T <= Dim(2000, 'K')):
-            raise ValueError(f"Out of temperature range: {self._T}")
+            raise ValueError(func"Out of temperature range: {self._T}")
         if float(self._P) < 0:
-            raise ValueError(f"Cannot set negative P: {self._P}")
+            raise ValueError(func"Cannot set negative P: {self._P}")
 
     # Normal Methods / Properties --------------------------------------------
 
@@ -564,7 +566,7 @@ class PerfectGasFlow(GasFlow):
             self._h_ref = Dim(720.76, 'kJ/kg')
             self._s_ref = Dim(5.68226, 'kJ/kg/K')
         else:
-            raise TypeError(f"Unknown gas: {gas}")
+            raise TypeError(func"Unknown gas: {gas}")
 
         super().__init__(R=R, w=w, gas=gas)
 
@@ -574,7 +576,7 @@ class PerfectGasFlow(GasFlow):
         elif P0 and not P:
             self._P = P0 / self.P0_on_P
         else:
-            raise TypeError(f"Invalid pressure argument.")
+            raise TypeError(func"Invalid pressure argument.")
 
         # Set stream temperature based on T, T0, h or s.
         if T and not any([T0, h, s]):
@@ -588,10 +590,10 @@ class PerfectGasFlow(GasFlow):
                       log(self._P / self._P_ref)) / self.cp
             self._T = exp(lnterm) * self._T_ref
         else:
-            raise TypeError(f"Invalid T, T0, h, s argument.")
+            raise TypeError(func"Invalid T, T0, h, s argument.")
 
         if float(self._T) <= 0 or float(self._P) <= 0:
-            raise ValueError(f"Invalid temperature or pressure.")
+            raise ValueError(func"Invalid temperature or pressure.")
 
     @classmethod
     def min_args(cls):
@@ -628,8 +630,8 @@ class PerfectGasFlow(GasFlow):
         """Ratio of total (stagnation) pressure to static pressure computed
         using T0/T = (1 + 0.5 * (γ - 1) * M ** 2) ** (γ / (γ - 1)),
         which assumes a perfect gas."""
-        return (1 + 0.5 * (self._gamma - 1) * self._M ** 2) ** (self._gamma /
-                                                                (self._gamma - 1))
+        return (1 + 0.5 * (self._gamma - 1) *
+                self._M ** 2) ** (self._gamma / (self._gamma - 1))
 
     @property
     def s(self) -> Dim:
