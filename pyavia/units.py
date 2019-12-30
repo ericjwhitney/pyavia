@@ -1138,7 +1138,7 @@ set_conversion('sp', 'sr', fwd=4 * math.pi)  # 1 spat = 4*pr steradians.
 # -  A a variety of signature types / operators / unicode (*, /, ×, ²,
 # etc) are used in which acts as an automatic check on the parser.
 # - Exact standard for G = 9.80665 m/s/s (WGS-84 defn). Full float
-# conversion gives 32.17404855643045 f/s^2.
+# conversion gives 32.17404855643045 func/s^2.
 
 #
 # Area

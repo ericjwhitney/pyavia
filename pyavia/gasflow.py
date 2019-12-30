@@ -50,7 +50,7 @@ class GasFlow(ABC):
 
     def __repr__(self):
         return type(self).__name__ + '(' + ', '.join(
-            [func'{p}={repr(getattr(self, p))}' for p in self.min_args()]) + ')'
+            [f'{p}={repr(getattr(self, p))}' for p in self.min_args()]) + ')'
 
     def __str__(self):
         return self.__format__('.5G')
@@ -79,7 +79,7 @@ class GasFlow(ABC):
                 fmt = ''
             else:
                 fmt = format_spec
-            prop_list += [func'{p}={val:{fmt}}']
+            prop_list += [f'{p}={val:{fmt}}']
         return ', '.join(prop_list)
 
     @property
@@ -278,7 +278,7 @@ class GasFlowWF(GasFlow):
         """
         self._M, self._FAR = M, FAR
         if not (0 <= self._FAR <= 0.05):
-            raise ValueError(func"Fuel-Air Ratio invalid: {self._FAR}")
+            raise ValueError(f"Fuel-Air Ratio invalid: {self._FAR}")
 
         # Set R, simple fixed values and gas model coefficients first.
         self._coeff_a, self._coeff_b = None, None
@@ -296,7 +296,7 @@ class GasFlowWF(GasFlow):
 
             R = Dim(R, 'J/kg/K')
         else:
-            raise ValueError(func"Invalid gas: {gas}")
+            raise ValueError(f"Invalid gas: {gas}")
 
         super().__init__(R=R, w=w, gas=gas)
 
@@ -334,7 +334,7 @@ class GasFlowWF(GasFlow):
             if P:
                 self._P = P  # Required for entropy computation.
             else:
-                raise TypeError(func"Entropy to set T also requires P argument.")
+                raise TypeError(f"Entropy to set T also requires P argument.")
 
             def refine_T(try_T):
                 self._lazy_reset()
@@ -343,7 +343,7 @@ class GasFlowWF(GasFlow):
                 return (s - self.s) * try_T / approx_cp + try_T
 
         else:
-            raise TypeError(func"Invalid temperature-type argument.")
+            raise TypeError(f"Invalid temperature-type argument.")
 
         if refine_T:
             fixed_point(refine_T, x0=Dim(288.15, 'K'), xtol=Dim(1e-6, 'K'))
@@ -369,12 +369,12 @@ class GasFlowWF(GasFlow):
             self._P = _WF_P_REF_S * exp((self._cptint - s) / self.R)
 
         else:
-            raise TypeError(func"Invalid pressure-type argument.")
+            raise TypeError(f"Invalid pressure-type argument.")
 
         if not (Dim(200, 'K') <= self._T <= Dim(2000, 'K')):
-            raise ValueError(func"Out of temperature range: {self._T}")
+            raise ValueError(f"Out of temperature range: {self._T}")
         if float(self._P) < 0:
-            raise ValueError(func"Cannot set negative P: {self._P}")
+            raise ValueError(f"Cannot set negative P: {self._P}")
 
     # Normal Methods / Properties --------------------------------------------
 
@@ -566,7 +566,7 @@ class PerfectGasFlow(GasFlow):
             self._h_ref = Dim(720.76, 'kJ/kg')
             self._s_ref = Dim(5.68226, 'kJ/kg/K')
         else:
-            raise TypeError(func"Unknown gas: {gas}")
+            raise TypeError(f"Unknown gas: {gas}")
 
         super().__init__(R=R, w=w, gas=gas)
 
@@ -576,7 +576,7 @@ class PerfectGasFlow(GasFlow):
         elif P0 and not P:
             self._P = P0 / self.P0_on_P
         else:
-            raise TypeError(func"Invalid pressure argument.")
+            raise TypeError(f"Invalid pressure argument.")
 
         # Set stream temperature based on T, T0, h or s.
         if T and not any([T0, h, s]):
@@ -590,10 +590,10 @@ class PerfectGasFlow(GasFlow):
                       log(self._P / self._P_ref)) / self.cp
             self._T = exp(lnterm) * self._T_ref
         else:
-            raise TypeError(func"Invalid T, T0, h, s argument.")
+            raise TypeError(f"Invalid T, T0, h, s argument.")
 
         if float(self._T) <= 0 or float(self._P) <= 0:
-            raise ValueError(func"Invalid temperature or pressure.")
+            raise ValueError(f"Invalid temperature or pressure.")
 
     @classmethod
     def min_args(cls):

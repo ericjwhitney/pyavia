@@ -125,7 +125,7 @@ class Atmosphere:
                 self._T, self._P = tmp._T, tmp._P
                 return
             else:
-                raise TypeError(func"Unknown argument: {ssl_str}")
+                raise TypeError(f"Unknown argument: {ssl_str}")
 
         if len(kwargs) == 1:
             if 'H' in kwargs:
@@ -179,8 +179,8 @@ class Atmosphere:
                 # temperature offset from ISA.
                 H_press, T_offset = kwargs['H_press'], kwargs['T_offset']
                 if T_offset.units in [Units('°C'), Units('°F')]:
-                    raise ValueError(func"ISA offset temperature must be in "
-                                     func"total or Δ units.")
+                    raise ValueError(f"ISA offset temperature must be in "
+                                     f"total or Δ units.")
 
                 # Find the bracketing layers based on ISA pressure.  Get the
                 # standard pressure and temperature.  Add the offset to
@@ -194,7 +194,7 @@ class Atmosphere:
                 self._T = (T_b + beta * (H_press - H_b)) + T_offset
                 return
 
-        raise TypeError(func"Incorrect arguments: {', '.join(kwargs.keys())}")
+        raise TypeError(f"Incorrect arguments: {', '.join(kwargs.keys())}")
 
     # Class constants and defaults  ------------------------------------------
     R = Dim(287.05287, 'J/K/kg')  # Gas constant for air.
@@ -230,7 +230,7 @@ class Atmosphere:
             cls.unitdef_temp = 'K'
             cls.unitdef_visc = 'Pa.s'
         else:
-            raise ValueError(func"Unknown default style: {style}")
+            raise ValueError(f"Unknown default style: {style}")
 
     # Properties -------------------------------------------------------------
 
