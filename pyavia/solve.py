@@ -37,14 +37,14 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
     0.5
 
     Args:
-        func: Function to find root func(x_m) -> 0.
+        func: Function to find root f(x_m) -> 0.
         x_a, x_b: Each end of the search interval, in any order.
         maxits:  Maximum number of iterations.
-        ftol: End search when abs(func(x)) < ftol.
+        ftol: End search when abs(f(x)) < ftol.
         verbose: (bool) If True, print progress statements.
 
     Returns:
-        xm: Best estimate of root found i.e. func(x_m) approx = 0.0.
+        xm: Best estimate of root found i.e. f(x_m) approx = 0.0.
 
     Raises:
         RuntimeError is maxits is reached before a solution is found.
@@ -58,7 +58,7 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
         # multiplicationas it neatly cancels units if present.  But this
         # requires a check for func(x_b) == 0 first.
         if f_a_next/f_b_next >= 0:   # Sign comp. via division.
-            raise ValueError(f"func(x_a) and func(x_b) must have opposite "
+            raise ValueError(f"f(x_a) and f(x_b) must have opposite "
                              f"sign.")
     except ZeroDivisionError:
         raise ValueError(f"One of the start points is already zero.")
@@ -72,7 +72,7 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
 
         if verbose:
             print(f"... Iteration {it}: x = [{x_a_next}, {x_m}, {x_b_next}], "
-                  f"func = [{f_a_next}, {f_m}, {f_b_next}]")
+                  f"f = [{f_a_next}, {f_m}, {f_b_next}]")
 
         # Check stopping criteria.
         if abs(f_m) < ftol:
@@ -94,7 +94,7 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
 
 def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
     """
-    Find the fixed point of a scalar function x = func(x) by iteratively
+    Find the fixed point of a scalar function x = f(x) by iteratively
     passing an estimate through the function.  Return when the point
     stabilises.  Example:
     >>> def f(x): return (x + 10) ** 0.25
@@ -149,26 +149,47 @@ def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
 # ----------------------------------------------------------------------------
 
 
-def solve_dqnm(func, x0, xtol=1e-6, ftol=None, maxits=50, order=2,
-               verbose=False):
+def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
+               order=2, jacob_diag=None, verbose=False):
     """
     Solve nonlinear system of equations using diagonal quasi-Newton method
     from  Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton Method
     For Systems Of Nonlinear Equations", Applied Mathematical and
-    Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30. This
-    method only estimates the diagonal elements of the Jacobian.  As such it
-    only needs O(N) storage and does not require any matrix solution steps.
+    Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.
+
+    Notes:
+        - This method only estimates the diagonal elements of the Jacobian.
+            As such it only needs O(N) storage and does not require any
+            matrix solution steps.
+        - EJW Addition: Optional bounds check and adaptive scaling of move
+            s.  If bounds are exceeded the move is scaled back to a factor
+            of 0.9 the distance remaining to the boundary. In this way a
+            solution on the boundary can stil be approached via a number of
+            steps without the solver getting immediately stuck on the edge.
+        - EJW Addition: Check for extremely small moves where nu_0 approx
+            equals nu_1.  We drop back to first order for this step in this
+            case. 1e-20 is taken as a universally tiny number for the
+            comparison.
 
     Args:
         func: Vector valued function taking list-like x and returning
             list-like F(x).
-        x0: List-like starting value of x.
-        xtol: Stop when ||x' - x|| < xtol.
-        ftol: If not None also require ||F(x)|| <= ftol before stopping.
-        maxits: Maximum number of iterations allowed.
-        order: Next x position determined via a linear (order = 1) or
-            quadratic (order = 2) estimate.
-        verbose: Print status updates during run.
+        x0: List-like of numeric types as starting x value.  Not suitable
+            for use with user types due to matricies and norms,
+            etc.
+        xtol: (Opt) Stop when ||x' - x|| < xtol.  Default = 1e-6.
+        ftol: (Opt) when present we require ||F(x)|| <= ftol before
+            stopping.  Default = None.
+        bounds: (Opt) A tuple of list-like objects giving low and high
+            bounds respectively i.e. ([x_low, ...], [x_high, ...]) that
+            activates bounds checking.  If specific bounds are not required
+            these can be set to +/-inf.  Default = None.
+        maxits: (Opt) Maximum number of iterations allowed.  Default = 50.
+        order: (Opt) Next x position determined via a linear (order = 1) or
+            quadratic (order = 2) estimate.  Default = 2.
+        jacob_diag:  (Opt) Initial estimate of diagonal elements of
+            Jacobian.  If None, assumes D = I.  Default = None.
+        verbose: (Opt) Print status updates during run.  Default = False.
 
     Returns:
         x: Converged solution as list.
@@ -181,11 +202,21 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, maxits=50, order=2,
         raise ValueError(f"Order must be 1 or 2.")
 
     n = len(x0)
-    d = np.ones(n)  # [D] Diagonal approx. to Jacobian.
+    if jacob_diag is None:
+        d = np.ones(n)  # [D] Diagonal elements of Jacobian.  D = I.
+    else:
+        d = np.array(jacob_diag).astype(float)
     x = np.array(x0)
     fx = np.array(func(x))
     s, y = None, None
     it = 1
+
+    if len(fx) != n:
+        raise TypeError(f"Function result size ({len(fx)}) does not match "
+                        f"problem dimension ({n}).")
+    if len(d) != n:
+        raise TypeError(f"Number of Jacobian diagonals ({len(d)}) does not "
+                        f"match problem dimension ({n}).")
 
     if verbose:
         print(f"Diagonal Quasi-Newton Method - "
@@ -196,29 +227,48 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, maxits=50, order=2,
         if it >= maxits:
             raise RuntimeError(f"Reached maximum iteration limit: {maxits}")
 
-        # Generate new point.
-        x_prev, fx_prev = x, fx
-        s_prev, y_prev = s, y
-        x = x_prev - fx_prev / d
+        # Take step.
+        x_prev, fx_prev, s_prev, y_prev = x, fx, s, y
+        s = -fx_prev / d
+        x = x_prev + s
+
+        # EJW Addition: Bounds check.
+        if bounds is not None:
+            with np.errstate(invalid='ignore'):  # Handle +/-inf warning.
+                lo_mult = max(s / (bounds[0] - x_prev))
+                hi_mult = max(s / (bounds[1] - x_prev))
+
+            mult = max(1.0, lo_mult, hi_mult)  # Factor stepped over bound.
+            if mult > 1.0:
+                mult = 0.9 / mult
+                x = x_prev + mult * s
+                if verbose:
+                    print(f"*** Shortened step size by factor {mult:.5G} due "
+                          f"to boundary condition.")
+
+        # Evaluate new point.
         fx = np.array(func(x))
         fx_norm = np.linalg.norm(fx)
+        y = fx - fx_prev
         it += 1
-        s, y = x - x_prev, fx - fx_prev
 
         rho, mu, rho_norm = [None] * 3  # Reset for later calc.
         if s_prev is not None and order == 2:
             # Second order update scheme.
             nu1 = -np.linalg.norm(s)
             nu0 = -np.linalg.norm(s + s_prev)
-            beta = -nu0 / (nu1 - nu0)
-            alpha = (beta ** 2) / (1 + 2 * beta)
-            rho = s - alpha * s_prev
-            mu = y - alpha * y_prev
-            rho_norm = np.linalg.norm(rho)
 
-            if np.dot(rho, mu) < (xtol * rho_norm * np.linalg.norm(mu)):
-                # Fallback to first order.
-                rho = None
+            # EJW Addition: Check for extremely small moves.
+            if (nu1 - nu0) > 1e-20:
+                beta = -nu0 / (nu1 - nu0)
+                alpha = (beta ** 2) / (1 + 2 * beta)
+                rho = s - alpha * s_prev
+                mu = y - alpha * y_prev
+                rho_norm = np.linalg.norm(rho)
+
+                if np.dot(rho, mu) < (xtol * rho_norm * np.linalg.norm(mu)):
+                    # Fallback to first order.
+                    rho = None
 
         if rho is None:
             # First order update scheme.
@@ -226,8 +276,12 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, maxits=50, order=2,
             rho_norm = np.linalg.norm(rho)
 
         if verbose:
+            if n < 10:
+                x_str = f", x* = " + f', '.join(f"{x_i:.5G}" for x_i in x)
+            else:
+                x_str = ''
             print(f"... Iteration {it}: ||Fx|| = {fx_norm:.5G}, "
-                  f"||x' - x|| = {rho_norm:.5G}")
+                  f"||x' - x|| = {rho_norm:.5G}{x_str}")
 
         # Check stopping criteria.
         if rho_norm <= xtol and (fx_norm <= ftol if ftol else True):
