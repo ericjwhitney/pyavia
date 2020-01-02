@@ -11,13 +11,16 @@ Contains:
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from math import log, exp, inf
-from typing import Sequence
+from typing import Sequence, Tuple, List, Dict, Any
 from solve import fixed_point, solve_dqnm
 from units import Dim, make_total_temp
 from util import all_not_none, all_none
 
 __all__ = ['GasFlow', 'GasFlowWF', 'PerfectGasFlow']
 
+
+class GasError(Exception):
+    pass
 
 # ----------------------------------------------------------------------------
 
@@ -78,11 +81,11 @@ class GasFlow(ABC):
         """Local speed of sound a = (γRT)**0.5."""
         return (self.gamma * self._R * self.T) ** 0.5
 
-    def clone(self, **kwargs) -> GasFlow:
-        """Return a GasFlow object specialised to match 'self' except
+    def new_props(self, **kwargs) -> GasFlow:
+        """Return a new GasFlow object specialised to match 'self' except
         without any state properties T, T0, P, P0, h, h0, s or M, which are
         to be supplied by the user in **kwargs. This is used for making a
-        new GasFlow object with partially changed properties.
+        new GasFlow object from the current one but with changed properties.
 
         Note:
             - Any arguments in kwargs supersede any matching defaults
@@ -227,38 +230,40 @@ class PerfectGasFlow(GasFlow):
 
     Notes:
         - Internally, stream pressure, temperature, Mach number and ratio of
-         specific heats are the base flow properties (P, T, M, γ).
+         specific heats are the stored flow properties (P, T, M, γ).
         - Sepcific enthalpy computation is h = h0 + cp.(T - T_ref)
         - Specific entropy computation is s = s0 + cp.ln(T / T_ref) - self.R *
             ln(P / P_ref).
     """
 
     def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
-                 T0: Dim = None, h: Dim = None, s: Dim = None, M: float = 0,
-                 w: Dim = None, gas: str = 'air', gamma: float = 1.4):
+                 T0: Dim = None, h: Dim = None, h0: Dim = None, s: Dim =
+                 None, M: float = None, w: Dim = None, gas: str = 'air',
+                 gamma: float = 1.4):
         """
         Construct a thermally and calorically perfect, compressible gas
-        flowing in 1-D.  Arguments must completely specify the gas as follows:
-            - One from (P, P0) and one from (T, T0, h, s).
+        flowing in 1-D.  Three state property arguments must be given that
+        completely specify the gas state, e.g. T, P, M / T, s, M /
+        T0, P0, P, etc.
 
         Args:
-            P0: (Opt) (Dim) Total / stagnation pressure (also P0).
-            T0: (Opt) (Dim) Total /stagnation temperature (also T0).
+            P0: (Opt) (Dim) Total / stagnation pressure.
+            T0: (Opt) (Dim) Total / stagnation temperature.
             P: (Opt) (Dim) Stream / static pressure.
             T: (Opt) (Dim) Stream / static temperature.
             h: (Opt) (Dim) Specific enthalpy.
+            h0: (Opt) (Dim) Total / stagnation enthalpy.
             s: (Opt) (Dim) Specific entropy.
-            M: (Opt) (float) Mach number.  Default = 0.0
+            M: (Opt) (float) Mach number.
             w: (Opt) (Dim) Mass flowrate.
             gas: (str) Gas type.  Supported values are: air.
-            gamma: (float) Ratio of specific heats.  Commonly used
-            values for air are:
-                γ = 1.4     Atmospheric air, compressors (default).
-                γ = 1.33    Hot air, burners, turbines.
+            gamma: (float) Ratio of specific heats.  Commonly used values
+                for air are:
+                    γ = 1.4     Atmospheric air, compressors (default).
+                    γ = 1.33    Hot air, burners, turbines.
         """
         # Set basic constants.
-        self._M, self._gamma = M, gamma
-
+        self._gamma = gamma
         if gas == 'air':
             R = Dim(287.05287, 'J/kg/K')
 
@@ -269,34 +274,27 @@ class PerfectGasFlow(GasFlow):
             self._h_ref = Dim(720.76, 'kJ/kg')
             self._s_ref = Dim(5.68226, 'kJ/kg/K')
         else:
-            raise TypeError(f"Unknown gas: {gas}")
+            raise GasError(f"Unknown gas: {gas}")
 
         super().__init__(R=R, w=w, gas=gas)
 
-        # Set stream pressure (note γ, M fixed).
-        if P and not P0:
-            self._P = P
-        elif P0 and not P:
-            self._P = P0 / self.P0_on_P
-        else:
-            raise TypeError(f"Invalid pressure argument.")
+        # If T, P, M are supplied, set them directly.
+        if all_not_none(T, P, M) and all_none(P0, T0, h, h0, s):
+            self._T, self._P, self._M = make_total_temp(T), P, M
+            if float(self._T) < 0.0 or float(self._P) < 0.0 or self._M < 0.0:
+                raise GasError(f"Cannot set negative T, P or M.")
+            return
 
-        # Set stream temperature based on T, T0, h or s.
-        if T and all_none(T0, h, s):
-            self._T = make_total_temp(T).convert('K')
-        elif T0 and all_none(T, h, s):
-            self._T = make_total_temp(T0).convert('K') / self.T0_on_T
-        elif h and all_none(T, T0, s):
-            self._T = (h - self._h_ref) / self.cp + self._T_ref
-        elif s and all_none(T, T0, h):
-            lnterm = (s - self._s_ref + self.R *
-                      log(self._P / self._P_ref)) / self.cp
-            self._T = exp(lnterm) * self._T_ref
-        else:
-            raise TypeError(f"Invalid T, T0, h, s argument.")
-
-        if float(self._T) <= 0 or float(self._P) <= 0:
-            raise ValueError(f"Invalid temperature or pressure.")
+        # Otherwise, set stream T, P, M by converging given arguments.
+        reqd_props = {}
+        for prop_id in ('T', 'h', 'T0', 'h0', 's', 'P', 'P0', 'M'):
+            val = locals()[prop_id]
+            if val is not None:
+                reqd_props[prop_id] = val
+        TPM_bounds = ([0.0, 0.0, 0.0],  # [K], [kPa], (float)
+                      [+inf, +inf, +inf])
+        self._T, self._P, self._M = _converge_TPM(self, TPM_bounds,
+                                                  reqd_props)
 
     @classmethod
     def special_args(cls):
@@ -382,8 +380,6 @@ class GasFlowWF(GasFlow):
         internal reference states.
     """
 
-    # Magic methods ----------------------------------------------------------
-
     def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
                  T0: Dim = None, h: Dim = None, h0: Dim = None, s: Dim = None,
                  M: float = None, w: Dim = None, gas: str = 'air',
@@ -426,12 +422,12 @@ class GasFlowWF(GasFlow):
             FAR: (float) Fuel-Air Ratio.  Default = 0.0.
 
         Raises:
-            ValueError on invalid parameters.  TypeError on invalid arguments.
+            GasError on invalid arguments.
         """
         # Set simple fixed values and gas model coefficients first.
         self._FAR = FAR
         if not (0 <= self._FAR <= 0.05):
-            raise ValueError(f"Fuel-Air Ratio invalid: {self._FAR}")
+            raise GasError(f"Fuel-Air Ratio invalid: {self._FAR}")
 
         self._coeff_a, self._coeff_b = None, None
         if gas in ('air', 'burned_kerosene', 'burned_diesel'):
@@ -448,11 +444,11 @@ class GasFlowWF(GasFlow):
 
             R = Dim(R, 'J/kg/K')
         else:
-            raise ValueError(f"Invalid gas: {gas}")
+            raise GasError(f"Invalid gas: {gas}")
 
         super().__init__(R=R, w=w, gas=gas)
 
-        # Initialise lazily evaluted internal parameters.
+        # Setup lazily evaluted internal parameters.
         self._cp, self._gamma, self._h, self._cptint = [None] * 4
         self._T0, self._P0 = [None] * 2
 
@@ -461,51 +457,22 @@ class GasFlowWF(GasFlow):
             self._T, self._P, self._M = make_total_temp(T), P, M
 
             if not (Dim(200, 'K') <= self._T <= Dim(2000, 'K')):
-                raise ValueError(f"Out of temperature range (200 K -> 2000 "
-                                 f"K): {self._T}")
+                raise GasError(f"Out of temperature range (200 K -> 2000 "
+                               f"K): {self._T}")
             if float(self._P) < 0:
-                raise ValueError(f"Cannot set negative P: {self._P}")
+                raise GasError(f"Cannot set negative P or M.")
             return
 
-        # All other cases are solved by converging T, P, M.  Insert required
-        # properties into result vectors in order, observing the TPM
-        # sequence to acheive best equation ordering.  Note that entropy
-        # can be temperature or pressure like so it is placed between these
-        # two groups.
-        prop_id, prop_val = [], []
-        for ordered_id in ('T', 'h', 'T0', 'h0', 's', 'P', 'P0', 'M'):
-            val = locals()[ordered_id]
+        # All other cases are solved by converging T, P, M.
+        reqd_props = {}
+        for prop_id in ('T', 'h', 'T0', 'h0', 's', 'P', 'P0', 'M'):
+            val = locals()[prop_id]
             if val is not None:
-                prop_id += [ordered_id]
-                if ordered_id in ('T', 'T0'):
-                    prop_val += [make_total_temp(val)]
-                else:
-                    prop_val += [val]
-
-        arg_str = ', '.join(prop_id)
-        if len(prop_id) != 3:
-            raise TypeError(f"Three state properties required to define gas, "
-                            f"got: {arg_str}")
-
-        # noinspection PyPep8Naming
-        def prop_residual(try_TPM):
-            self._T = Dim(try_TPM[0], 'K')
-            self._P = Dim(try_TPM[1], 'kPa')
-            self._M = try_TPM[2]
-            self._reset_lazy()  # Reset to get new derived properties.
-            return [float(getattr(self, prop_id[i]) - prop_val[i])
-                    for i in (0, 1, 2)]
-
-        x0 = [288.15, 101.325, 0.5]
-        bounds = ([200.0, 0.0, 0.0], [2000.0, +inf, +inf])
-        try:
-            solve_dqnm(prop_residual, x0=x0, ftol=1e-5, xtol=1e-5,
-                       maxits=25, bounds=bounds)
-            # Note: No need to assign output of solve as last internal
-            # properties will already be correct.
-        except RuntimeError:
-            raise RuntimeError(f"Could not converge gas with requested "
-                               f"properties: {arg_str}")
+                reqd_props[prop_id] = val
+        TPM_bounds = ([200.0, 0.0, 0.0],  # [K], [kPa], (float)
+                      [2000.0, +inf, +inf])
+        self._T, self._P, self._M = _converge_TPM(self, TPM_bounds,
+                                                  reqd_props)
 
     # Normal Methods / Properties --------------------------------------------
 
@@ -655,3 +622,49 @@ _WF_A_COEFF = {
 _WF_B_COEFF = (
     -0.718874, 8.747481, -15.863157, 17.254096, -10.233795, 3.081778,
     -0.361112, -0.003919, 0.0555930, -0.0016079)
+
+
+# ----------------------------------------------------------------------------
+
+# noinspection PyPep8Naming
+def _converge_TPM(proto_gas: GasFlow, TPM_bounds: Tuple[List, List],
+                  reqd_props: Dict[str, Any]):
+    """
+    Function to converge T, P, M for a given prototype gas by satisfying the
+    required flow properties supplied.
+    """
+    # Insert required properties into result vectors in specific order,
+    # observing the TPM sequence to acheive best equation ordering.  Note that
+    # entropy can be temperature or pressure like so it is placed between
+    # these two groups.
+    prop_id, prop_val = [], []
+    for ordered_id in ('T', 'h', 'T0', 'h0', 's', 'P', 'P0', 'M'):
+        val = reqd_props.pop(ordered_id, None)
+        if val is not None:
+            prop_id += [ordered_id]
+            if ordered_id in ('T', 'T0'):
+                prop_val += [make_total_temp(val)]
+            else:
+                prop_val += [val]
+
+    arg_str = ', '.join(prop_id) if prop_id else 'None'
+    if len(prop_id) != 3:
+        raise GasError(f"Three state properties required to define gas, "
+                       f"got: {arg_str}")
+
+    # noinspection PyPep8Naming
+    def prop_residual(try_TPM):
+        try_gas = proto_gas.new_props(T=Dim(try_TPM[0], 'K'),
+                                      P=Dim(try_TPM[1], 'kPa'),
+                                      M=try_TPM[2])
+        return [float(getattr(try_gas, prop_id[i]) - prop_val[i])
+                for i in (0, 1, 2)]
+
+    x0 = [288.15, 101.325, 0.5]
+    try:
+        final_TPM = solve_dqnm(prop_residual, x0=x0, ftol=1e-5, xtol=1e-5,
+                               maxits=25, bounds=TPM_bounds)
+        return Dim(final_TPM[0], 'K'), Dim(final_TPM[1], 'kPa'), final_TPM[2]
+    except RuntimeError:
+        raise GasError(f"Could not converge gas with requested "
+                       f"properties: {arg_str}")
