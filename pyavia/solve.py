@@ -184,7 +184,7 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
             bounds respectively i.e. ([x_low, ...], [x_high, ...]) that
             activates bounds checking.  If specific bounds are not required
             these can be set to +/-inf.  Default = None.
-        maxits: (Opt) Maximum number of iterations allowed.  Default = 50.
+        maxits: (Opt) Maximum number of iterations allowed.  Default = 25.
         order: (Opt) Next x position determined via a linear (order = 1) or
             quadratic (order = 2) estimate.  Default = 2.
         jacob_diag:  (Opt) Initial estimate of diagonal elements of

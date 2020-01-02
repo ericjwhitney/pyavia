@@ -3,7 +3,7 @@
 # Examples of the solution of systems of equations.
 # Last updated: 30 December 2019 by Eric J. Whitney
 
-from math import cos
+from math import cos, inf
 from solve import solve_dqnm
 
 
@@ -33,8 +33,9 @@ def std_problem_3(x):
 
 
 # Solve one of the above problems at a given size.
-ndim = 100
+ndim = 500
 x0 = [0.87] * ndim
-x_result = solve_dqnm(std_problem_1, x0=x0, xtol=1e-4, maxits=500, order=2,
-                      verbose=True)
+bounds = ([-1] * ndim, [+inf] * ndim)
+x_result = solve_dqnm(std_problem_1, x0=x0, xtol=1e-4, bounds=bounds,
+                      maxits=500, order=2, verbose=True)
 print(f"\nResult x = {x_result}")
