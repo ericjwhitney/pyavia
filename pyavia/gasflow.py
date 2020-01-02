@@ -16,7 +16,7 @@ from solve import fixed_point, solve_dqnm
 from units import Dim, make_total_temp
 from util import all_not_none, all_none
 
-__all__ = ['GasFlow', 'GasFlowWF', 'PerfectGasFlow']
+__all__ = ['GasError', 'GasFlow', 'PerfectGasFlow', 'GasFlowWF']
 
 
 class GasError(Exception):

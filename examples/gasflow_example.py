@@ -3,7 +3,7 @@
 # Comparison of gas models.
 # Written by: Eric J. Whitney  Last updated: 28 December 2019.
 
-from gasflow import PerfectGasFlow, GasFlowWF
+from gasflow import PerfectGasFlow, GasFlowWF, GasError
 from units import Dim
 
 T, T_step = Dim(200, 'K'), Dim(100, 'K')
@@ -28,6 +28,6 @@ while True:  # Until model fails.
         print()
         T += T_step
 
-    except (RuntimeError, ValueError) as ex:
+    except GasError as ex:
         print(f"\nStopped -- {ex}")
         break
