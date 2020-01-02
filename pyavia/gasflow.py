@@ -6,19 +6,21 @@ Contains:
     GasFlowWF       Compressible gas, calorically imperfect, opt. fuel-air.
     PerfectGasFlow  Compressible gas, calorically perfect.
 """
-# Last updated: 18 December 2019 by Eric J. Whitney
+# Last updated: 2 January by Eric J. Whitney
 
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from math import log, exp
+from math import log, exp, inf
 from typing import Sequence
-
+from solve import fixed_point, solve_dqnm
 from units import Dim, make_total_temp
-from solve import fixed_point
+from util import all_not_none, all_none
 
 __all__ = ['GasFlow', 'GasFlowWF', 'PerfectGasFlow']
 
 
 # ----------------------------------------------------------------------------
+
 
 # noinspection PyPep8Naming
 class GasFlow(ABC):
@@ -46,11 +48,25 @@ class GasFlow(ABC):
         self._R, self._w, self._gas = R, w, gas
 
     def __format__(self, format_spec) -> str:
-        return type(self).__name__ + ': ' + self._fmt_str(format_spec)
+        """Formatted output string.  The defining state properties are
+        assumed to be T, P, M, w by default.  Format is applied to numeric
+        values only."""
+        arg_list = ['T', 'P', 'M', 'w'] + list(self.special_args())
+        prop_strs = []
+        for prop in arg_list:
+            val = getattr(self, prop)
+            try:
+                float(val)  # Try conversion.
+                fmt = format_spec
+            except (TypeError, ValueError):
+                fmt = ''  # Treat as plain value.
+            prop_strs += [f'{prop}={val:{fmt}}']
+        return type(self).__name__ + ': ' + ', '.join(prop_strs)
 
     def __repr__(self):
+        arg_list = ['T', 'P', 'M', 'w'] + list(self.special_args())
         return type(self).__name__ + '(' + ', '.join(
-            [f'{p}={repr(getattr(self, p))}' for p in self.min_args()]) + ')'
+            [f'{p}={repr(getattr(self, p))}' for p in arg_list]) + ')'
 
     def __str__(self):
         return self.__format__('.5G')
@@ -62,25 +78,33 @@ class GasFlow(ABC):
         """Local speed of sound a = (γRT)**0.5."""
         return (self.gamma * self._R * self.T) ** 0.5
 
+    def clone(self, **kwargs) -> GasFlow:
+        """Return a GasFlow object specialised to match 'self' except
+        without any state properties T, T0, P, P0, h, h0, s or M, which are
+        to be supplied by the user in **kwargs. This is used for making a
+        new GasFlow object with partially changed properties.
+
+        Note:
+            - Any arguments in kwargs supersede any matching defaults
+              supplied by clone.
+            - Mass flowrate w is also copied automatically.
+            - Refer to __init__ for the derived class for valid property
+              combinations."""
+        # Build keywords.
+        cls = type(self)
+        spec_kwargs = {k: getattr(self, k) for k in cls.special_args()}
+        spec_kwargs['w'] = self.w
+
+        # Add / overwrite new args.
+        for k, v in kwargs.items():
+            spec_kwargs[k] = v
+
+        return cls(**spec_kwargs)
+
     @property
     def cv(self):
         """Specific heat capacity at constant volume of the gas."""
         return self.cp - self.R
-
-    def _fmt_str(self, format_spec) -> str:
-        """Generate formatted string of minimum properties for use by
-        __format__, __str__, __repr__"""
-        prop_list = []
-        for p in self.min_args():
-            val = getattr(self, p)
-            if p == 'gas':
-                fmt = 's'
-            elif val is None:
-                fmt = ''
-            else:
-                fmt = format_spec
-            prop_list += [f'{p}={val:{fmt}}']
-        return ', '.join(prop_list)
 
     @property
     def gas(self) -> str:
@@ -107,28 +131,6 @@ class GasFlow(ABC):
         where R = 8.314462618 kg.m².s⁻².K⁻¹.mol⁻¹ and M is molar mass
         [kg/mol]. """
         return self._R
-
-    def replace(self, **kwargs) -> 'GasFlow':
-        """Return a GasFlow object initialised to match self except for
-        keyword arguments from **kwargs.  New temperature or
-        pressure-like arguments must be given in a valid combination as all
-        similar arguments are cleared.  Refer to  __init__ for the derived
-        class for valid combinations."""
-        # Build keywords.
-        cls = type(self)
-        new_kwargs = {k: getattr(self, k) for k in cls.min_args()}
-
-        # If new P, T, h, s type argument, clear all existing.
-        ctrl_props = ('P', 'T', 'P0', 'T0', 'h', 's')
-        if any([k in ctrl_props for k in kwargs.keys()]):
-            for kw in ctrl_props:
-                new_kwargs.pop(kw, None)
-
-        # Add / overwrite new args.
-        for k, v in kwargs.items():
-            new_kwargs[k] = v
-
-        return cls(**new_kwargs)
 
     @property
     def w(self):
@@ -163,14 +165,6 @@ class GasFlow(ABC):
         """Mach number."""
         pass
 
-    @classmethod
-    @abstractmethod
-    def min_args(cls) -> Sequence[str]:
-        """Return a sequence of strings giving a minimum list of keywords /
-         properties required to fully initialise the object.  Used by
-         __repr__, __str__, __format__, replace()."""
-        pass
-
     @property
     @abstractmethod
     def P(self):
@@ -188,6 +182,17 @@ class GasFlow(ABC):
     def s(self):
         """Specific entropy of the gas.  Note: The baseline is arbitrary and
         values from different formulations / classes should not be compared.
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def special_args(cls) -> Sequence[str]:
+        """Return a sequence of strings listing any additional arguments
+        specific to the derived class needed to fully fully initialise this
+        object.  Standard state properties T, T0, P, P0, h, h0, s or M and
+        mass flowrate w are not to be included.  Used by __repr__, __str__,
+        __format__, clone().
         """
         pass
 
@@ -209,309 +214,6 @@ class GasFlow(ABC):
         """Flow velocity."""
         pass
 
-# ----------------------------------------------------------------------------
-
-
-# noinspection PyPep8Naming
-class GasFlowWF(GasFlow):
-    """
-    Class representing airflow (with optional products of combustion) as a
-    compressible, imperfect gas, based on interpolating polynomials in Walsh
-    & Fletcher Chapter 3 and are fixed once initialised.
-
-    Notes:
-        - Temperature range is 200 K -> 2000 K.
-        - Fuel-Air ratio 0.00 -> 0.05
-        - Non-linear γ, cp, h, s dependent on temperature (i.e.
-        calorically imperfect).  Stagnation enthalpy, temperature, pressure
-        do not assume a perfect gas.
-        - Uses Dim values. Internal values stored as SI [K, kPa, ...].
-        - Stream / static temperature and pressure and Mach number are
-        internal reference states.
-    """
-
-    # Magic methods ----------------------------------------------------------
-
-    def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
-                 T0: Dim = None, h: Dim = None, h0: Dim = None, s: Dim = None,
-                 M: float = 0, w: Dim = None, gas: str = 'air',
-                 FAR: float = 0.0):
-
-        """
-        Construct a compressible, imperfect gas, based on interpolating
-        polynomials given in Walsh & Fletcher, "Gas Turbine Performance",
-        Second Edition, Chapter 3.
-
-        Notes:
-            - Arguments must combine one temperature-like and one
-            pressure-like:
-                * T-like: T, T0, h, h0, s.
-                * P-like: P, P0 or s.
-            - Mach number must have the correct value for initialisation
-            to give correct stagnation values.
-            - Non-zero FAR normally accompanies gases including products of
-            combustion but this is not enforced.  This is because this
-            combinatinon may be useful in some hypothetical or debugging
-            scenarios.
-
-        Args:
-            P: (Dim) Stream / static pressure.
-            P0: (Dim) Total / stagnation pressure (also P0).
-            T: (Dim) Stream / static temperature.
-            T0: (Dim) Total /stagnation temperature (also T0).
-            h: (Dim) Specific enthalpy.
-            h0: (Dim) Total / stagnation enthalpy.
-            s: (Dim) Specific entropy.
-            M: (float) Mach number.
-            w: (dim) Mass flowrate.
-            gas: (str) identifier (default = 'air').  Available 'gas' values
-                are:
-                    air             Dry air
-                    burned_kerosene Products of combustion for kerosene in
-                                    dry air
-                    burned_diesel   Products of combustion for diesel in
-                                    dry air
-            FAR: (float) Fuel-Air Ratio (default = 0.0)
-
-        Raises:
-            ValueError on invalid parameters.  TypeError on invalid arguments.
-        """
-        self._M, self._FAR = M, FAR
-        if not (0 <= self._FAR <= 0.05):
-            raise ValueError(f"Fuel-Air Ratio invalid: {self._FAR}")
-
-        # Set R, simple fixed values and gas model coefficients first.
-        self._coeff_a, self._coeff_b = None, None
-        if gas in ('air', 'burned_kerosene', 'burned_diesel'):
-            R = 287.05287  # J/kg/K.
-            self._coeff_a = _WF_A_COEFF['air']
-
-            if gas == 'burned_kerosene':
-                R += -0.00990 * self._FAR + 1e-7 * self._FAR ** 2
-                self._coeff_b = _WF_B_COEFF
-
-            elif gas == 'burned_diesel':
-                R += -8.0262 * self._FAR + 3e-7 * self._FAR ** 2
-                self._coeff_b = _WF_B_COEFF
-
-            R = Dim(R, 'J/kg/K')
-        else:
-            raise ValueError(f"Invalid gas: {gas}")
-
-        super().__init__(R=R, w=w, gas=gas)
-
-        # Initialise lazily evaluted internal parameters.
-        self._cp, self._gamma, self._h, self._cptint = [None] * 4
-        self._T0, self._P0 = [None] * 2
-
-        # Set temperature first from T, T0, h, h0 or s.
-        approx_cp = Dim(1005, 'J/kg/K')
-        if T and not any([T0, h, h0]):
-            self._T = make_total_temp(T)
-            refine_T = None
-
-        elif T0 and not any([T, h, h0]):
-            self._P = Dim(1, 'bar')  # Dummy for _set_stagnation()
-
-            def refine_T(try_T):
-                self._lazy_reset()
-                self._T = try_T
-                return (T0 - self.T0) + try_T
-
-        elif h and not any([T, T0, h0]):
-            def refine_T(try_T):
-                self._lazy_reset()
-                self._T = try_T
-                return (h - self.h) / approx_cp + try_T
-
-        elif h0 and not any([T, T0, h]):
-            def refine_T(try_T):
-                self._lazy_reset()
-                self._T = try_T
-                return (h0 - self.h0) / approx_cp + try_T
-
-        elif s and not any([T, T0, h, h0]):
-            if P:
-                self._P = P  # Required for entropy computation.
-            else:
-                raise TypeError(f"Entropy to set T also requires P argument.")
-
-            def refine_T(try_T):
-                self._lazy_reset()
-                self._T = try_T
-                # dT = (T/cp).ds for dp = 0.
-                return (s - self.s) * try_T / approx_cp + try_T
-
-        else:
-            raise TypeError(f"Invalid temperature-type argument.")
-
-        if refine_T:
-            fixed_point(refine_T, x0=Dim(288.15, 'K'), xtol=Dim(1e-6, 'K'))
-
-        # Set pressure last from P, P0 or s
-        if P and not P0:
-            # This also resets P when s is used to set temperature.
-            self._P = P
-
-        elif P0 and not P and not s:
-            def refine_P(try_P):
-                self._lazy_reset()
-                self._P = try_P
-                return (P0 - self.P0) + try_P
-
-            # Softer relaxation to stabilise stagnation pressure.
-            fixed_point(refine_P, x0=Dim(1, 'bar'), xtol=Dim(1e-6, 'bar'),
-                        relax=0.5)
-
-        elif s and not P and not P0:
-            self._cptint = self._cptint_from_T(self._T)
-            # P = P_ref * exp(int(cp/T).dT - s) / R
-            self._P = _WF_P_REF_S * exp((self._cptint - s) / self.R)
-
-        else:
-            raise TypeError(f"Invalid pressure-type argument.")
-
-        if not (Dim(200, 'K') <= self._T <= Dim(2000, 'K')):
-            raise ValueError(f"Out of temperature range: {self._T}")
-        if float(self._P) < 0:
-            raise ValueError(f"Cannot set negative P: {self._P}")
-
-    # Normal Methods / Properties --------------------------------------------
-
-    @property
-    def cp(self) -> Dim:
-        if self._cp is None:
-            self._cp = self._cp_from_T(self._T)
-        return self._cp
-
-    @property
-    def FAR(self) -> float:
-        """Fuel-Air Ratio FAR = w_f / w_total where w_f is the massflow of
-        fuel products of combustion and w_total is the total massflow.  E.G.
-        If the upstream flow was pure airflow of w_air then FAR = w_f / (w_f
-        + w_air) """
-        return self._FAR
-
-    @property
-    def gamma(self) -> float:
-        if self._gamma is None:
-            self._gamma = self.cp / (self.cp - self.R)
-        return self._gamma
-
-    @property
-    def h(self) -> Dim:
-        if self._h is None:
-            self._h = self._h_from_T(self._T)
-        return self._h
-
-    @property
-    def M(self) -> float:
-        return self._M
-
-    @classmethod
-    def min_args(cls):
-        return 'P', 'T', 'M', 'w', 'gas', 'FAR'
-
-    @property
-    def P(self) -> Dim:
-        return self._P
-
-    @property
-    def P0(self) -> Dim:
-        if self._P0 is None:
-            self._set_stagnation()
-        return self._P0
-
-    @property
-    def s(self) -> Dim:
-        if self._cptint is None:
-            self._cptint = self._cptint_from_T(self._T)
-        # s = int(cp/T).dT - R.ln(P/P_ref)
-        return self._cptint - self.R * log(self._P / _WF_P_REF_S)
-
-    @property
-    def T(self) -> Dim:
-        return self._T
-
-    @property
-    def T0(self) -> Dim:
-        if self._T0 is None:
-            self._set_stagnation()
-        return self._T0
-
-    @property
-    def u(self) -> Dim:
-        return self.a * self._M
-
-    # Protected --------------------------------------------------------------
-
-    def _cp_from_T(self, T: Dim) -> Dim:
-        """Compute cp [kJ/kg/K] using W&F Eqn F3.23, given T and return
-        J/kg/K.  self._coeff_a and self._coeff_b must be set prior to call."""
-        Tz = T.convert('K').value / 1000
-        cp = sum(
-            [a_i * Tz ** i for i, a_i in enumerate(self._coeff_a[0:9], 0)])
-        if self._coeff_b is not None:
-            cp += (self._FAR / (1 + self._FAR)) * sum(
-                [b_i * Tz ** i for i, b_i in
-                 enumerate(self._coeff_b[0:8], 0)])
-        return Dim(1000 * cp, 'J/kg/K')
-
-    def _cptint_from_T(self, T: Dim) -> Dim:
-        """Compute integral(cp/T) [kJ/kg/K] using W&F Eqn F3.28 with EJW
-        correction term given T, return kJ/kg/K. self._coeff_a and
-        self._coeff_b must be set prior to call."""
-        Tz = T.convert('K').value / 1000
-        EJW_A0_corr_term = self._coeff_a[0] * log(1000)
-        cptint = ((self._coeff_a[0] * log(Tz)) + sum(
-            [(a_i / i) * Tz ** i for i, a_i in
-             enumerate(self._coeff_a[1:9], 1)]) + self._coeff_a[
-                      10]) + EJW_A0_corr_term
-        if self._coeff_b is not None:
-            EJW_B0_corr_term = self._coeff_b[0] * log(1000)
-            # XXX TODO VERIFY FAR CORR TERM WITH EXAMPLES
-            cptint += (self._FAR / (1 + self._FAR)) * (
-                    self._coeff_b[0] * log(Tz) +
-                    sum([(b_i / i) * Tz ** i for i, b_i in
-                         enumerate(self._coeff_b[1:8], 1)]) + self._coeff_b[
-                        9] + EJW_B0_corr_term)
-        return Dim(cptint, 'kJ/kg/K')
-
-    def _h_from_T(self, T: Dim) -> Dim:
-        """Compute enthalpy [MJ/kg] using W&F Eqn F3.26, given T and return
-        kJ/kg/K.  self._coeff_a and self._coeff_b must be set prior to call."""
-        Tz = T.convert('K').value / 1000
-        h = self._coeff_a[9] + sum([(a_i / i) * Tz ** i for i, a_i in
-                                    enumerate(self._coeff_a[0:9], 1)])
-        if self._coeff_b is not None:
-            h += (self._FAR / (1 + self._FAR)) * (sum(
-                [(b_i / i) * Tz ** i for i, b_i in
-                 enumerate(self._coeff_b[0:7], 1)]) + self._coeff_b[8])
-        return Dim(1000 * h, 'kJ/kg')
-
-    def _lazy_reset(self):
-        self._cp, self._gamma, self._h, self._cptint = [None] * 4
-        self._T0, self._P0 = [None] * 2
-
-    def _set_stagnation(self) -> None:
-        stopped_flow = self.replace(h=self.h0, s=self.s, M=0)
-        self._T0, self._P0 = stopped_flow.T, stopped_flow.P
-
-
-_WF_P_REF_S = Dim(1, 'bar')  # Reference pressure for entropy.
-
-# Walsh & Fletcher Eqn F3.23 coefficients.
-_WF_A_COEFF = {
-    # Dry air with/without kerosene or diesel products of combustion.
-    'air': (0.992313, 0.236688, -1.852148, 6.083152, -8.893933, 7.097112,
-            -3.234725, 0.794571, -0.081873, 0.422178, 0.001053), }
-
-# 'B' coefficients for corrections due to kerosene / diesel products of
-# combustion.
-_WF_B_COEFF = (
-    -0.718874, 8.747481, -15.863157, 17.254096, -10.233795, 3.081778,
-    -0.361112, -0.003919, 0.0555930, -0.0016079)
-
 
 # ----------------------------------------------------------------------------
 
@@ -530,23 +232,24 @@ class PerfectGasFlow(GasFlow):
         - Specific entropy computation is s = s0 + cp.ln(T / T_ref) - self.R *
             ln(P / P_ref).
     """
-    # Magic methods ----------------------------------------------------------
+
     def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
                  T0: Dim = None, h: Dim = None, s: Dim = None, M: float = 0,
                  w: Dim = None, gas: str = 'air', gamma: float = 1.4):
         """
-        Construct a thermally and calorifically perfect, compressible gas
-        flowing in 1-D.
+        Construct a thermally and calorically perfect, compressible gas
+        flowing in 1-D.  Arguments must completely specify the gas as follows:
+            - One from (P, P0) and one from (T, T0, h, s).
 
         Args:
-            P0: (Dim) Total / stagnation pressure (also P0).
-            T0: (Dim) Total /stagnation temperature (also T0).
-            P: (Dim) Stream / static pressure.
-            T: (Dim) Stream / static temperature.
-            h: (Dim) Specific enthalpy.
-            s: (Dim) Specific entropy.
-            M: (float) Mach number.
-            w: (dim) Mass flowrate.
+            P0: (Opt) (Dim) Total / stagnation pressure (also P0).
+            T0: (Opt) (Dim) Total /stagnation temperature (also T0).
+            P: (Opt) (Dim) Stream / static pressure.
+            T: (Opt) (Dim) Stream / static temperature.
+            h: (Opt) (Dim) Specific enthalpy.
+            s: (Opt) (Dim) Specific entropy.
+            M: (Opt) (float) Mach number.  Default = 0.0
+            w: (Opt) (Dim) Mass flowrate.
             gas: (str) Gas type.  Supported values are: air.
             gamma: (float) Ratio of specific heats.  Commonly used
             values for air are:
@@ -579,13 +282,13 @@ class PerfectGasFlow(GasFlow):
             raise TypeError(f"Invalid pressure argument.")
 
         # Set stream temperature based on T, T0, h or s.
-        if T and not any([T0, h, s]):
+        if T and all_none(T0, h, s):
             self._T = make_total_temp(T).convert('K')
-        elif T0 and not any([T, h, s]):
+        elif T0 and all_none(T, h, s):
             self._T = make_total_temp(T0).convert('K') / self.T0_on_T
-        elif h and not any([T, T0, s]):
+        elif h and all_none(T, T0, s):
             self._T = (h - self._h_ref) / self.cp + self._T_ref
-        elif s and not any([T, T0, h]):
+        elif s and all_none(T, T0, h):
             lnterm = (s - self._s_ref + self.R *
                       log(self._P / self._P_ref)) / self.cp
             self._T = exp(lnterm) * self._T_ref
@@ -596,8 +299,8 @@ class PerfectGasFlow(GasFlow):
             raise ValueError(f"Invalid temperature or pressure.")
 
     @classmethod
-    def min_args(cls):
-        return 'P', 'T', 'M', 'w', 'gas', 'gamma'
+    def special_args(cls):
+        return 'gas', 'gamma'
 
     # Properties --------------------------------------------------------------
 
@@ -656,3 +359,299 @@ class PerfectGasFlow(GasFlow):
     @property
     def u(self) -> Dim:
         return self.a * self._M
+
+
+# ----------------------------------------------------------------------------
+
+
+# noinspection PyPep8Naming
+class GasFlowWF(GasFlow):
+    """
+    Class representing airflow (with optional products of combustion) as a
+    compressible, imperfect gas, based on interpolating polynomials in Walsh
+    & Fletcher Chapter 3 and are fixed once initialised.
+
+    Notes:
+        - Temperature range is 200 K -> 2000 K.
+        - Fuel-Air ratio 0.00 -> 0.05
+        - Non-linear γ, cp, h, s dependent on temperature (i.e.
+        calorically imperfect).  Stagnation enthalpy, temperature, pressure
+        do not assume a perfect gas.
+        - Uses Dim values. Internal values stored as SI [K, kPa, ...].
+        - Stream / static temperature and pressure and Mach number are
+        internal reference states.
+    """
+
+    # Magic methods ----------------------------------------------------------
+
+    def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
+                 T0: Dim = None, h: Dim = None, h0: Dim = None, s: Dim = None,
+                 M: float = None, w: Dim = None, gas: str = 'air',
+                 FAR: float = 0.0):
+        """
+        Construct a compressible, imperfect gas, based on interpolating
+        polynomials given in Walsh & Fletcher, "Gas Turbine Performance",
+        Second Edition, Chapter 3.
+
+        Notes:
+            - Three state property arguments ('T', 'h', 'T0', 'h0', 's',
+                'P', 'P0', 'M') are required, but can be supplied in any
+                combination that properly defines the gas.
+            - If P and T are supplied these are directly set and
+                initialisation is complete.  All other combinations result
+                in an iterative convergence using the values of T [K],
+                P [kPa] and M.
+            - Non-zero FAR normally accompanies gases including products of
+                combustion but this is not enforced.  This is because this
+                combinatinon may be useful in some hypothetical or debugging
+                scenarios.
+
+        Args:
+            P: (Dim) Stream / static pressure.
+            P0: (Dim) Total / stagnation pressure (also P0).
+            T: (Dim) Stream / static temperature.
+            T0: (Dim) Total /stagnation temperature (also T0).
+            h: (Dim) Specific enthalpy.
+            h0: (Dim) Total / stagnation enthalpy.
+            s: (Dim) Specific entropy.
+            M: (Opt) (float) Mach number.
+            w: (Opt) (Dim) Mass flowrate.
+            gas: (str) identifier.  Default = 'air'.  Available 'gas' values
+                are:
+                    air             Dry air
+                    burned_kerosene Products of combustion for kerosene in
+                                    dry air
+                    burned_diesel   Products of combustion for diesel in
+                                    dry air
+            FAR: (float) Fuel-Air Ratio.  Default = 0.0.
+
+        Raises:
+            ValueError on invalid parameters.  TypeError on invalid arguments.
+        """
+        # Set simple fixed values and gas model coefficients first.
+        self._FAR = FAR
+        if not (0 <= self._FAR <= 0.05):
+            raise ValueError(f"Fuel-Air Ratio invalid: {self._FAR}")
+
+        self._coeff_a, self._coeff_b = None, None
+        if gas in ('air', 'burned_kerosene', 'burned_diesel'):
+            R = 287.05287  # J/kg/K.
+            self._coeff_a = _WF_A_COEFF['air']
+
+            if gas == 'burned_kerosene':
+                R += -0.00990 * self._FAR + 1e-7 * self._FAR ** 2
+                self._coeff_b = _WF_B_COEFF
+
+            elif gas == 'burned_diesel':
+                R += -8.0262 * self._FAR + 3e-7 * self._FAR ** 2
+                self._coeff_b = _WF_B_COEFF
+
+            R = Dim(R, 'J/kg/K')
+        else:
+            raise ValueError(f"Invalid gas: {gas}")
+
+        super().__init__(R=R, w=w, gas=gas)
+
+        # Initialise lazily evaluted internal parameters.
+        self._cp, self._gamma, self._h, self._cptint = [None] * 4
+        self._T0, self._P0 = [None] * 2
+
+        # If T, P, M are supplied, set them directly.
+        if all_not_none(T, P, M) and all_none(T0, P0, h, h0, s):
+            self._T, self._P, self._M = make_total_temp(T), P, M
+
+            if not (Dim(200, 'K') <= self._T <= Dim(2000, 'K')):
+                raise ValueError(f"Out of temperature range (200 K -> 2000 "
+                                 f"K): {self._T}")
+            if float(self._P) < 0:
+                raise ValueError(f"Cannot set negative P: {self._P}")
+            return
+
+        # All other cases are solved by converging T, P, M.  Insert required
+        # properties into result vectors in order, observing the TPM
+        # sequence to acheive best equation ordering.  Note that entropy
+        # can be temperature or pressure like so it is placed between these
+        # two groups.
+        prop_id, prop_val = [], []
+        for ordered_id in ('T', 'h', 'T0', 'h0', 's', 'P', 'P0', 'M'):
+            val = locals()[ordered_id]
+            if val is not None:
+                prop_id += [ordered_id]
+                if ordered_id in ('T', 'T0'):
+                    prop_val += [make_total_temp(val)]
+                else:
+                    prop_val += [val]
+
+        arg_str = ', '.join(prop_id)
+        if len(prop_id) != 3:
+            raise TypeError(f"Three state properties required to define gas, "
+                            f"got: {arg_str}")
+
+        # noinspection PyPep8Naming
+        def prop_residual(try_TPM):
+            self._T = Dim(try_TPM[0], 'K')
+            self._P = Dim(try_TPM[1], 'kPa')
+            self._M = try_TPM[2]
+            self._reset_lazy()  # Reset to get new derived properties.
+            return [float(getattr(self, prop_id[i]) - prop_val[i])
+                    for i in (0, 1, 2)]
+
+        x0 = [288.15, 101.325, 0.5]
+        bounds = ([200.0, 0.0, 0.0], [2000.0, +inf, +inf])
+        try:
+            solve_dqnm(prop_residual, x0=x0, ftol=1e-5, xtol=1e-5,
+                       maxits=25, bounds=bounds)
+            # Note: No need to assign output of solve as last internal
+            # properties will already be correct.
+        except RuntimeError:
+            raise RuntimeError(f"Could not converge gas with requested "
+                               f"properties: {arg_str}")
+
+    # Normal Methods / Properties --------------------------------------------
+
+    @property
+    def cp(self) -> Dim:
+        if self._cp is None:
+            self._cp = self._cp_from_T(self._T)
+        return self._cp
+
+    @property
+    def FAR(self) -> float:
+        """Fuel-Air Ratio FAR = w_f / w_total where w_f is the massflow of
+        fuel products of combustion and w_total is the total massflow.  E.G.
+        If the upstream flow was pure airflow of w_air then FAR = w_f / (w_f
+        + w_air) """
+        return self._FAR
+
+    @property
+    def gamma(self) -> float:
+        if self._gamma is None:
+            self._gamma = self.cp / (self.cp - self.R)
+        return self._gamma
+
+    @property
+    def h(self) -> Dim:
+        if self._h is None:
+            self._h = self._h_from_T(self._T)
+        return self._h
+
+    @property
+    def M(self) -> float:
+        return self._M
+
+    @property
+    def P(self) -> Dim:
+        return self._P
+
+    @property
+    def P0(self) -> Dim:
+        if self._P0 is None:
+            self._set_stagnation()
+        return self._P0
+
+    @property
+    def s(self) -> Dim:
+        if self._cptint is None:
+            self._cptint = self._cptint_from_T(self._T)
+        # s = int(cp/T).dT - R.ln(P/P_ref)
+        return self._cptint - self.R * log(self._P / _WF_P_REF_S)
+
+    @classmethod
+    def special_args(cls):
+        return 'gas', 'FAR'
+
+    @property
+    def T(self) -> Dim:
+        return self._T
+
+    @property
+    def T0(self) -> Dim:
+        if self._T0 is None:
+            self._set_stagnation()
+        return self._T0
+
+    @property
+    def u(self) -> Dim:
+        return self.a * self._M
+
+    # Protected --------------------------------------------------------------
+
+    def _cp_from_T(self, T: Dim) -> Dim:
+        """Compute cp [kJ/kg/K] using W&F Eqn F3.23, given T and return
+        J/kg/K.  self._coeff_a and self._coeff_b must be set prior to call."""
+        Tz = T.convert('K').value / 1000
+        cp = sum([a_i * Tz ** i
+                  for i, a_i in enumerate(self._coeff_a[0:9], 0)])
+        if self._coeff_b is not None:
+            cp += (self._FAR / (1 + self._FAR)) * sum(
+                [b_i * Tz ** i
+                 for i, b_i in enumerate(self._coeff_b[0:8], 0)])
+        return Dim(1000 * cp, 'J/kg/K')
+
+    def _cptint_from_T(self, T: Dim) -> Dim:
+        """Compute integral(cp/T) [kJ/kg/K] using W&F Eqn F3.28 with EJW
+        correction term given T, return kJ/kg/K. self._coeff_a and
+        self._coeff_b must be set prior to call."""
+        Tz = T.convert('K').value / 1000
+        EJW_A0_corr_term = self._coeff_a[0] * log(1000)
+        cptint = ((self._coeff_a[0] * log(Tz)) + sum(
+            [(a_i / i) * Tz ** i
+             for i, a_i in enumerate(self._coeff_a[1:9], 1)]) +
+                  self._coeff_a[10]) + EJW_A0_corr_term
+        if self._coeff_b is not None:
+            EJW_B0_corr_term = self._coeff_b[0] * log(1000)
+            # XXX TODO VERIFY FAR CORR TERM WITH EXAMPLES
+            cptint += (self._FAR / (1 + self._FAR)) * (
+                    self._coeff_b[0] * log(Tz) +
+                    sum([(b_i / i) * Tz ** i
+                         for i, b_i in enumerate(self._coeff_b[1:8], 1)]) +
+                    self._coeff_b[9] + EJW_B0_corr_term)
+        return Dim(cptint, 'kJ/kg/K')
+
+    def _h_from_T(self, T: Dim) -> Dim:
+        """Compute enthalpy [MJ/kg] using W&F Eqn F3.26, given T and return
+        kJ/kg/K.  self._coeff_a and self._coeff_b must be set prior to call."""
+        Tz = T.convert('K').value / 1000
+        h = self._coeff_a[9] + sum([(a_i / i) * Tz ** i for i, a_i in
+                                    enumerate(self._coeff_a[0:9], 1)])
+        if self._coeff_b is not None:
+            h += (self._FAR / (1 + self._FAR)) * (sum(
+                [(b_i / i) * Tz ** i
+                 for i, b_i in enumerate(self._coeff_b[0:7], 1)]) +
+                                                  self._coeff_b[8])
+        return Dim(1000 * h, 'kJ/kg')
+
+    def _reset_lazy(self):
+        self._cp, self._gamma, self._h, self._cptint = [None] * 4
+        self._T0, self._P0 = [None] * 2
+
+    def _set_stagnation(self) -> None:
+        h0_target = self.h0
+        s0_target = self.s
+
+        # Find T that gives h0 using fixed point method and approx cp.
+        def update_T(try_T):
+            return ((h0_target - self._h_from_T(try_T)) / Dim(1005, 'J/kg/K')
+                    + try_T)
+
+        self._T0 = fixed_point(update_T, x0=self._T, xtol=Dim(1e-5, 'K'))
+
+        # Calculate P to give equal entropy.
+        # P0 = P_Ref * exp((int(cp/T).dT - s0) / R)
+        cptint0 = self._cptint_from_T(self._T0)
+        self._P0 = _WF_P_REF_S * exp((cptint0 - s0_target) / self.R)
+
+
+_WF_P_REF_S = Dim(1, 'bar')  # Reference pressure for entropy.
+
+# Walsh & Fletcher Eqn F3.23 coefficients.
+_WF_A_COEFF = {
+    # Dry air with/without kerosene or diesel products of combustion.
+    'air': (0.992313, 0.236688, -1.852148, 6.083152, -8.893933, 7.097112,
+            -3.234725, 0.794571, -0.081873, 0.422178, 0.001053), }
+
+# 'B' coefficients for corrections due to kerosene / diesel products of
+# combustion.
+_WF_B_COEFF = (
+    -0.718874, 8.747481, -15.863157, 17.254096, -10.233795, 3.081778,
+    -0.361112, -0.003919, 0.0555930, -0.0016079)

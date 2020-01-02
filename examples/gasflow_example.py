@@ -7,8 +7,8 @@ from gasflow import PerfectGasFlow, GasFlowWF
 from units import Dim
 
 T, T_step = Dim(200, 'K'), Dim(100, 'K')
-P = Dim(0.5, 'atm')
-M = 0.85
+P = Dim(1.0, 'atm')
+M = 0.5
 
 prop_list = ['T0', 'P0', 'h', 's']
 units = ['K', 'kPa', 'kJ/kg', 'kJ/kg/K']
