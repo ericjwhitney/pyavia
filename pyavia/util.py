@@ -10,6 +10,8 @@ Contains:
     UCODE_SS_CHARS      List of unicode superscript characters.
     from_ucode_super    Convert unicode sueprscripts to an ASCII string.
     to_ucode_super      Convert an ASCII string to unicode superscripts.
+    all_none            Check all elements == None.
+    all_not_none        Check all elements != None.
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
@@ -31,9 +33,9 @@ from math import log, exp
 from typing import Union
 
 __all__ = ['kind_div', 'force_type', 'coax_type', 'UCODE_SS_CHARS',
-           'from_ucode_super', 'to_ucode_super', 'bounded_by',
-           'bracket_list', 'line_pt', 'linear_int_ext', 'min_max',
-           'monotonic', 'strict_decrease', 'strict_increase']
+           'from_ucode_super', 'to_ucode_super', 'all_none', 'all_not_none',
+           'bounded_by', 'bracket_list', 'line_pt', 'linear_int_ext',
+           'min_max', 'monotonic', 'strict_decrease', 'strict_increase']
 
 
 # ----------------------------------------------------------------------------
@@ -157,6 +159,18 @@ def to_ucode_super(ss: str) -> str:
 
 # ----------------------------------------------------------------------------
 # Simple search and interpolation functions.
+
+def all_none(*args):
+    """Shorthand function.  Returns True if all args are None, otherwise
+    False."""
+    return all(x is None for x in args)
+
+
+def all_not_none(*args):
+    """Shorthand function.  Returns True if all args are not None, otherwise
+    False."""
+    return all(x is not None for x in args)
+
 
 def bounded_by(x, iterable, key=None):
     """Returns True the value x is bounded by the given iterable it, i.e.
