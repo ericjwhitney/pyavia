@@ -158,7 +158,7 @@ def to_ucode_super(ss: str) -> str:
 
 
 # ----------------------------------------------------------------------------
-# Simple search and interpolation functions.
+# Shorthand functions for checking lists for None.
 
 def all_none(*args):
     """Shorthand function.  Returns True if all args are None, otherwise
@@ -171,6 +171,9 @@ def all_not_none(*args):
     False."""
     return all(x is not None for x in args)
 
+
+# ----------------------------------------------------------------------------
+# Simple search and interpolation functions.
 
 def bounded_by(x, iterable, key=None):
     """Returns True the value x is bounded by the given iterable it, i.e.

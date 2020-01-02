@@ -204,7 +204,6 @@ class Atmosphere:
     unitdef_kine = 'ft²/s'
     unitdef_press = 'psf'
     unitdef_spd = 'ft/s'
-    unitdef_spheat = 'ft.lbf/slug/°R'
     unitdef_temp = '°R'
     unitdef_visc = 'psf.s'
 
@@ -217,7 +216,6 @@ class Atmosphere:
             cls.unitdef_kine = 'ft²/s'
             cls.unitdef_press = 'psf'
             cls.unitdef_spd = 'ft/s'
-            cls.unitdef_spheat = 'ft.lbf/slug/°R'
             cls.unitdef_temp = '°R'
             cls.unitdef_visc = 'psf.s'  # Also = slug/ft/s.
         elif style == 'SI':
@@ -226,7 +224,6 @@ class Atmosphere:
             cls.unitdef_kine = 'm²/s'
             cls.unitdef_press = 'kPa'
             cls.unitdef_spd = 'm/s'
-            cls.unitdef_spheat = 'J/kg/K'
             cls.unitdef_temp = 'K'
             cls.unitdef_visc = 'Pa.s'
         else:
