@@ -123,14 +123,18 @@ class TestPerfectGasFlow(TestCase):
             self.assertAlmostEqual(test_gas.cp.convert('Btu/lbm/°R').value,
                                    0.240, places=3)
 
-        # Check standard temp. properties (Ps = 1 bar i.e. not relevant to
+        # Check standard temp. properties (Ps = 1 bar) i.e. not relevant to
         # this).  Default gas is air.
-        gas = PerfectGasFlow(P=Dim(1, 'bar'), T=Dim(15, '°C'))
+        gas = PerfectGasFlow(P=Dim(1, 'bar'), T=Dim(15, '°C'), M=0.0)
         stp_checks(gas)
 
         # Test entropy in = entropy out.
-        gas = PerfectGasFlow(P=Dim(20, 'bar'), T=Dim(800, 'K'))
+        gas = PerfectGasFlow(P=Dim(20, 'bar'), T=Dim(800, 'K'), M=0.0)
         P, s = gas.P, gas.s
-        newgas = PerfectGasFlow(P=P, s=s)
-        self.assertAlmostEqual(float(gas.P), float(newgas.P), places=6)
-        self.assertAlmostEqual(float(gas.T), float(newgas.T), places=6)
+        newgas = PerfectGasFlow(P=P, s=s, M=0.0)
+        self.assertAlmostEqual(gas.P.convert('kPa').value,
+                               newgas.P.convert('kPa').value,
+                               places=6)
+        self.assertAlmostEqual(gas.T.convert('K').value,
+                               newgas.T.convert('K').value,
+                               places=6)
