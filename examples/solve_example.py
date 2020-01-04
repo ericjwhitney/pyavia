@@ -34,8 +34,8 @@ def std_problem_3(x):
 
 # Solve one of the above problems at a given size.
 ndim = 500
-x0 = [0.87] * ndim
+x0 = [0.5] * ndim
 bounds = ([-1] * ndim, [+inf] * ndim)
-x_result = solve_dqnm(std_problem_1, x0=x0, xtol=1e-4, bounds=bounds,
-                      maxits=500, order=2, verbose=True)
+x_result = solve_dqnm(std_problem_1, x0=x0, ftol=1e-5, xtol=1e-6,
+                      bounds=bounds, maxits=50, order=2, verbose=True)
 print(f"\nResult x = {x_result}")
