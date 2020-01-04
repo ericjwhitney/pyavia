@@ -181,6 +181,11 @@ class GasFlow(ABC):
         pass
 
     @property
+    def rho(self):
+        """Density ρ = P/(R.T)."""
+        return self.P / (self.R * self.T)
+
+    @property
     @abstractmethod
     def s(self):
         """Specific entropy of the gas.  Note: The baseline is arbitrary and
