@@ -601,7 +601,8 @@ class GasFlowWF(GasFlow):
             return ((h0_target - self._h_from_T(try_T)) / Dim(1005, 'J/kg/K')
                     + try_T)
 
-        self._T0 = fixed_point(update_T, x0=self._T, xtol=Dim(1e-5, 'K'))
+        self._T0 = fixed_point(update_T, x0=self._T, xtol=Dim(1e-5, 'K'),
+                               maxits=15)
 
         # Calculate P to give equal entropy.
         # P0 = P_Ref * exp((int(cp/T).dT - s0) / R)
@@ -631,40 +632,60 @@ def _converge_TPM(proto_gas: GasFlow, TPM_bounds: Tuple[List, List],
                   reqd_props: Dict[str, Any]):
     """
     Function to converge T, P, M for a given prototype gas by satisfying the
-    required flow properties supplied.
+    required flow properties using an iterative equation solver.  Any offset
+    temperatures in reqd_props will be converted to total.
     """
-    # Insert required properties into result vectors in specific order,
-    # observing the TPM sequence to acheive best equation ordering.  Note that
-    # entropy can be temperature or pressure like so it is placed between
-    # these two groups.
-    prop_id, prop_val = [], []
-    for ordered_id in ('T', 'h', 'T0', 'h0', 's', 'P', 'P0', 'M'):
-        val = reqd_props.pop(ordered_id, None)
-        if val is not None:
-            prop_id += [ordered_id]
-            if ordered_id in ('T', 'T0'):
-                prop_val += [make_total_temp(val)]
-            else:
-                prop_val += [val]
+    for k in reqd_props:
+        if k == 'T' or k == 'T0':
+            reqd_props[k] = make_total_temp(reqd_props[k])
 
-    arg_str = ', '.join(prop_id) if prop_id else 'None'
-    if len(prop_id) != 3:
-        raise GasError(f"Three state properties required to define gas, "
-                       f"got: {arg_str}")
+    # Put required properties into pools corresponding to T, P and M to
+    # align them best with the property they affect.  This algorithm was
+    # inspired by Zoe Whitney (3 Jan 2020).
+    prop_pools = [[], [], []]
+    for k, v in reqd_props.items():
+        if k in ('T', 'T0', 'h', 'h0', 's'):
+            prop_pools[0].append(k)
+        if k in ('P', 'P0', 's'):
+            prop_pools[1].append(k)
+        if k in ('M', 'T0', 'P0', 'h0'):
+            prop_pools[2].append(k)
+
+    prop_id = ['', '', '']
+    while any(prop_pools):
+        # Insert the property from the smallest remaining pool.
+        pool_sizes = [len(x_i) for x_i in prop_pools]
+        pool_idx = pool_sizes.index(max(min(pool_sizes), 1))
+        next_prop = prop_pools[pool_idx][0]
+        prop_id[pool_idx] = next_prop
+
+        # Now clear that property from all pools.
+        for pool in prop_pools:
+            try:
+                pool.remove(next_prop)
+            except ValueError:
+                pass
+
+    argreq_str = ', '.join(prop_id)
+    if len(reqd_props) != 3 or not all(prop_id):
+        raise GasError(f"Could not assemble three element function vector "
+                       f"from parameters: {argreq_str}")
 
     # noinspection PyPep8Naming
     def prop_residual(try_TPM):
         try_gas = proto_gas.new_props(T=Dim(try_TPM[0], 'K'),
                                       P=Dim(try_TPM[1], 'kPa'),
                                       M=try_TPM[2])
-        return [float(getattr(try_gas, prop_id[i]) - prop_val[i])
+        return [float(getattr(try_gas, prop_id[i]) - reqd_props[prop_id[i]])
                 for i in (0, 1, 2)]
 
-    x0 = [288.15, 101.325, 0.5]
     try:
-        final_TPM = solve_dqnm(prop_residual, x0=x0, ftol=1e-5, xtol=1e-5,
-                               maxits=25, bounds=TPM_bounds)
+        x0 = [288.15, 101.325, 0.5]
+        jacob_diag = [1.0, 1.0, 2.0]
+        final_TPM = solve_dqnm(prop_residual, x0=x0, ftol=1e-3, xtol=1e-5,
+                               maxits=100, order=2, bounds=TPM_bounds,
+                               jacob_diag=jacob_diag)
         return Dim(final_TPM[0], 'K'), Dim(final_TPM[1], 'kPa'), final_TPM[2]
     except RuntimeError:
-        raise GasError(f"Could not converge gas with requested "
-                       f"properties: {arg_str}")
+        raise GasError(f"Could not converge gas with requested properties "
+                       f"(in TPM order): {argreq_str}")
