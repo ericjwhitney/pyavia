@@ -12,6 +12,7 @@ Contains:
     to_ucode_super      Convert an ASCII string to unicode superscripts.
     all_none            Check all elements == None.
     all_not_none        Check all elements != None.
+    first               Return first element matching a condition.
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
                         of the given value.
@@ -158,7 +159,7 @@ def to_ucode_super(ss: str) -> str:
 
 
 # ----------------------------------------------------------------------------
-# Shorthand functions for checking lists for None.
+# Shorthand functions for examining lists.
 
 def all_none(*args):
     """Shorthand function.  Returns True if all args are None, otherwise
@@ -171,6 +172,35 @@ def all_not_none(*args):
     False."""
     return all(x is not None for x in args)
 
+
+def first(it, condition=lambda x: True):
+    # noinspection PyUnresolvedReferences
+    """
+    Function returning the first item in the iterable that satisfies the
+    condition.  This function is taken directly from:
+    https://stackoverflow.com/a/35513376
+
+    >>> first((1,2,3), condition=lambda x: x % 2 == 0)
+    2
+    >>> first(range(3, 100))
+    3
+    >>> first(())
+    Traceback (most recent call last):
+    ...
+    StopIteration
+
+    Args:
+        it: Iterable to search.
+        condition: (Opt) Boolean condition applied to each iterable.  If the
+            condition is not given, the first item is returned.
+
+    Returns:
+        First item in the iterable 'it' that satisfying the condition.
+
+    Raises:
+        StopIteration if no item satysfing the condition is found.
+    """
+    return next(x for x in it if condition(x))
 
 # ----------------------------------------------------------------------------
 # Simple search and interpolation functions.
