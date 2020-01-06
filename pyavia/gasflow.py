@@ -11,7 +11,7 @@ Contains:
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from math import log, exp, inf
-from typing import Sequence, Tuple, List, Dict, Any
+from typing import Sequence, Tuple, List, Dict
 from solve import fixed_point, solve_dqnm
 from units import Dim, make_total_temp
 from util import all_not_none, all_none
@@ -608,7 +608,6 @@ class GasFlowWF(GasFlow):
 
         self._T0 = fixed_point(update_T, x0=self._T, xtol=Dim(1e-5, 'K'),
                                maxits=15)
-
         # Calculate P to give equal entropy.
         # P0 = P_Ref * exp((int(cp/T).dT - s0) / R)
         cptint0 = self._cptint_from_T(self._T0)
@@ -629,52 +628,54 @@ _WF_B_COEFF = (
     -0.718874, 8.747481, -15.863157, 17.254096, -10.233795, 3.081778,
     -0.361112, -0.003919, 0.0555930, -0.0016079)
 
-
 # ----------------------------------------------------------------------------
+
+_last_TPM = None  # Last converged gas solution [K, kPa, M].
+
 
 # noinspection PyPep8Naming
 def _converge_TPM(proto_gas: GasFlow, TPM_bounds: Tuple[List, List],
-                  reqd_props: Dict[str, Any]):
+                  reqd_props: Dict[str, Dim]):
     """
     Function to converge T, P, M for a given prototype gas by satisfying the
-    required flow properties using an iterative equation solver.  Any offset
-    temperatures in reqd_props will be converted to total.
+    required flow properties using an iterative equation solver.
+
+    Any T value in reqd_props will be converted to a total temperature.
+
+    Because it is  likely that the next requested gasflow will be similar to
+    the last, if the last convergence was successful we use the previous T,
+    P and M and use this as a starting point.  We also try the standard
+    atmosphere, M=0.5 starting point if that does not converge.
     """
+    global _last_TPM
+
+    # Make up pools with all the possible flow properties that can be
+    # affected by T, P or M.  This algorithm was inspired by Zoe Whitney
+    # (3 January 2020).
+    reqd_ids = set(reqd_props.keys())
+    draft_ids = [reqd_ids & {'T', 'T0', 'h', 'h0', 's'},
+                 reqd_ids & {'P', 'P0', 's'},
+                 reqd_ids & {'M', 'T0', 'P0', 'h0'}]
+
+    # Move first element from shortest pool to final prop list until done.
+    prop_id = [None, None, None]
+    while any(draft_ids):
+        draft_sizes = [len(x) for x in draft_ids]
+        short_idx = draft_sizes.index(max(min(draft_sizes), 1))
+        next_prop = draft_ids[short_idx].pop()
+        prop_id[short_idx] = next_prop
+        for idx in 0, 1, 2:  # Remove from all pools.
+            draft_ids[idx].discard(next_prop)
+
+    argreq_str = ', '.join(x if x else 'None' for x in prop_id)
+    if len(reqd_props) != 3 or not all(prop_id):
+        raise GasError(f"Could not make required property vector from "
+                       f"arguments (in TPM order): {argreq_str}")
+
+    # Subtractions require total temperatures.
     for k in reqd_props:
         if k == 'T' or k == 'T0':
             reqd_props[k] = make_total_temp(reqd_props[k])
-
-    # Put required properties into pools corresponding to T, P and M to
-    # align them best with the property they affect.  This algorithm was
-    # inspired by Zoe Whitney (3 Jan 2020).
-    prop_pools = [[], [], []]
-    for k, v in reqd_props.items():
-        if k in ('T', 'T0', 'h', 'h0', 's'):
-            prop_pools[0].append(k)
-        if k in ('P', 'P0', 's'):
-            prop_pools[1].append(k)
-        if k in ('M', 'T0', 'P0', 'h0'):
-            prop_pools[2].append(k)
-
-    prop_id = ['', '', '']
-    while any(prop_pools):
-        # Insert the property from the smallest remaining pool.
-        pool_sizes = [len(x_i) for x_i in prop_pools]
-        pool_idx = pool_sizes.index(max(min(pool_sizes), 1))
-        next_prop = prop_pools[pool_idx][0]
-        prop_id[pool_idx] = next_prop
-
-        # Now clear that property from all pools.
-        for pool in prop_pools:
-            try:
-                pool.remove(next_prop)
-            except ValueError:
-                pass
-
-    argreq_str = ', '.join(prop_id)
-    if len(reqd_props) != 3 or not all(prop_id):
-        raise GasError(f"Could not assemble three element function vector "
-                       f"from parameters: {argreq_str}")
 
     # noinspection PyPep8Naming
     def prop_residual(try_TPM):
@@ -684,13 +685,34 @@ def _converge_TPM(proto_gas: GasFlow, TPM_bounds: Tuple[List, List],
         return [float(getattr(try_gas, prop_id[i]) - reqd_props[prop_id[i]])
                 for i in (0, 1, 2)]
 
-    try:
-        x0 = [288.15, 101.325, 0.5]
-        jacob_diag = [1.0, 1.0, 2.0]
-        final_TPM = solve_dqnm(prop_residual, x0=x0, ftol=1e-3, xtol=1e-5,
-                               maxits=100, order=2, bounds=TPM_bounds,
-                               jacob_diag=jacob_diag)
-        return Dim(final_TPM[0], 'K'), Dim(final_TPM[1], 'kPa'), final_TPM[2]
-    except RuntimeError:
-        raise GasError(f"Could not converge gas with requested properties "
-                       f"(in TPM order): {argreq_str}")
+    # Build a list of possible starting points.
+    x0_list = []
+    if _last_TPM is not None:
+        # Add last point if converged.  Refine it using direct values from
+        # required properties if available.
+        if 'T' in reqd_props:
+            _last_TPM[0] = reqd_props['T'].convert('K').value
+        if 'P' in reqd_props:
+            _last_TPM[1] = reqd_props['P'].convert('kPa').value
+        if 'M' in reqd_props:
+            _last_TPM[2] = reqd_props['M']
+        x0_list.append(_last_TPM)
+    x0_list.append([288.15, 101.325, 0.2])  # SSL (1st iter or fallback).
+
+    for x0 in x0_list:
+        try:
+            # Most points only require a few iterations.  The maxits value
+            # used represents a few weakly convergent combinations e.g.
+            # h0, s, P, etc.
+            final_TPM = solve_dqnm(prop_residual, x0=x0, ftol=1e-3, xtol=1e-4,
+                                   jacob_diag=[1.0, 1.0, 5.0], order=2,
+                                   bounds=TPM_bounds, maxits=50)
+            # Converged.  Move the start point and return.
+            _last_TPM = final_TPM
+            return (Dim(final_TPM[0], 'K'), Dim(final_TPM[1], 'kPa'),
+                    final_TPM[2])
+        except (RuntimeError, GasError):
+            _last_TPM = None  # Failed, reset start point.
+
+    raise GasError(f"Could not converge gas with requested properties "
+                   f"(in TPM order): {argreq_str}")
