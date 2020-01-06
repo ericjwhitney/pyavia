@@ -9,7 +9,6 @@ Contains:
                     Quasi-Newton Merhod.
 """
 # Last updated: 30 December 2019 ny Eric J. Whitney
-from typing import Iterable
 
 import numpy as np
 
@@ -170,7 +169,6 @@ def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
 
 # ----------------------------------------------------------------------------
 
-
 def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
                order=2, jacob_diag=None, verbose=False):
     """
@@ -185,7 +183,7 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
             matrix solution steps.
         - EJW Addition: Optional bounds check and adaptive scaling of move
             s.  If bounds are exceeded the move is scaled back to a factor
-            of 0.9 the distance remaining to the boundary. In this way a
+            of 0.75 of the distance remaining to the boundary. In this way a
             solution on the boundary can stil be approached via a number of
             steps without the solver getting immediately stuck on the edge.
         - EJW Addition: Check for extremely small moves where nu0 approx
@@ -223,9 +221,9 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
         RuntimeError if maximum iterations reached before convergence.
     """
 
-    def verbose_print(s):
+    def verbose_print(info):
         if verbose:
-            print(s)
+            print(info)
 
     if order != 1 and order != 2:
         raise ValueError(f"Order must be 1 or 2.")
@@ -270,7 +268,7 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
 
             mult = max(1.0, lo_mult, hi_mult)  # Factor stepped over bound.
             if mult > 1.0:
-                mult = 0.9 / mult
+                mult = 0.75 / mult  # 0.75 seems a bit more stable than 0.9.
                 if mult < tiny:
                     raise RuntimeError(f"Resting on boundary, terminating.")
                 s *= mult
@@ -326,7 +324,7 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
             rho_norm = np.linalg.norm(rho)
 
         if n < 10:
-            x_str = f", x* = " + f', '.join(f"{x_i:.5G}" for x_i in x)
+            x_str = f", x* = " + f', '.join(f"{x_i:.6G}" for x_i in x)
         else:
             x_str = ''
         verbose_print(f"... Iteration {it}: ||F(x)|| = {fx_norm:.5G}, "
