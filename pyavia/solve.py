@@ -92,7 +92,8 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
 
 # ----------------------------------------------------------------------------
 
-def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
+def fixed_point(func, x0, xtol, relax=1.0, relax2=1.0, maxits: int = 15,
+                verbose=False):
     """
     Find the fixed point of a function x = f(x) by repeatedly passing x
     through the function, and return when the result stabilises.  Here is an
@@ -133,12 +134,21 @@ def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
             Numpy arrays.
         xtol: (Scalar / List) Stop when abs(x' - x) < xtol.  The type/s or
             element/s of xtol should correspond to x.
-        relax: (Float) Relaxation factor.  The next estimate of x is
-            computed as follows:
-               x' = (1 - relax) * x + relax * f(x)
-           If relax = 1 this is equivalent to the standard iteration of
-            x' = f(x). When relax < 1 (e.g. 0.5) this is an under-
-            relaxation which can add stability.
+        relax: (Float) First order relaxation factor.  The next estimate of
+            x' = x[n+1] is computed as follows:
+               x[n+1] = relax * f(x[n]) + relax2 * (1 - relax) * x[n] +
+                    (1 - relax2) * (1 - relax) * x[n-1]
+            'relax' represents the proportion of f(x) in the next point,
+            and if relax = 1 this is the equivalent to the direct iteration of
+            x' = f(x). When relax < 1 (e.g. 0.5) this is an under-relaxation
+            which can add stability.
+        relax2: (Float) Second order relaxation factor.  This represents a
+            sharing factor between x[n] and x[n-1] in the above equation.
+            If relax2 = 1 then this is the equivalent of omitting x[n-1].
+            Including a small proportion of x[n-1] e.g. relax2 = 0.75 is
+            equivalent to adding some damping to the convergence which can
+            stabilise some borderline problems.  It also allows 'relax' to
+            be increased which can speed up the overall convergence.
         maxits: (int) Iteration limit.
         verbose: (bool) If True, print iterations.
 
@@ -155,7 +165,9 @@ def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
 
         x_old = x
         fx = np.atleast_1d(func(x) if len(x) > 1 else func(x.item()))
-        x = (1 - relax) * x + relax * fx
+        # x = (1 - relax) * x + relax * fx
+        x = (relax * fx + relax2 * (1 - relax) * x +
+             (1 - relax2) * (1 - relax) * x_old)
         its += 1
         if verbose:
             print(f"... Iteration {its}: x = {x}")
@@ -169,8 +181,8 @@ def fixed_point(func, x0, xtol, relax=1.0, maxits: int = 15, verbose=False):
 
 # ----------------------------------------------------------------------------
 
-def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
-               order=2, jacob_diag=None, verbose=False):
+def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25, order=2,
+               jacob_diag=None, verbose=False):
     """
     Solve nonlinear system of equations using diagonal quasi-Newton method
     from  Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton Method
