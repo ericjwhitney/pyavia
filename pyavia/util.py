@@ -12,6 +12,7 @@ Contains:
     to_ucode_super      Convert an ASCII string to unicode superscripts.
     all_none            Check all elements == None.
     all_not_none        Check all elements != None.
+    any_none            Check if any element is None.
     first               Return first element matching a condition.
     bounded_by          Function checking if a value is bounded by a range.
     bracket_list        Function to find the sorted list entries either side
@@ -27,16 +28,17 @@ Contains:
     strict_increase     Specialisation of monotonic.
 """
 
-# Last updated: 26 December 2019 by Eric J. Whitney.
+# Last updated: 4 January 2019 by Eric J. Whitney.
 
 import operator as op
 from math import log, exp
-from typing import Union
+from typing import Union, Iterable
 
 __all__ = ['kind_div', 'force_type', 'coax_type', 'UCODE_SS_CHARS',
            'from_ucode_super', 'to_ucode_super', 'all_none', 'all_not_none',
-           'bounded_by', 'bracket_list', 'line_pt', 'linear_int_ext',
-           'min_max', 'monotonic', 'strict_decrease', 'strict_increase']
+           'any_none', 'bounded_by', 'bracket_list', 'line_pt',
+           'linear_int_ext', 'min_max', 'monotonic', 'strict_decrease',
+           'strict_increase']
 
 
 # ----------------------------------------------------------------------------
@@ -173,11 +175,17 @@ def all_not_none(*args):
     return all(x is not None for x in args)
 
 
-def first(it, condition=lambda x: True):
+def any_none(*args):
+    """Shorthand function.  Returns True if any of the args are None,
+    otherwise False."""
+    return any(x is None for x in args)
+
+
+def first(it: Iterable, condition=lambda x: True):
     # noinspection PyUnresolvedReferences
     """
     Function returning the first item in the iterable that satisfies the
-    condition.  This function is taken directly from:
+    condition.  This function is taken almost directly from:
     https://stackoverflow.com/a/35513376
 
     >>> first((1,2,3), condition=lambda x: x % 2 == 0)
@@ -201,6 +209,7 @@ def first(it, condition=lambda x: True):
         StopIteration if no item satysfing the condition is found.
     """
     return next(x for x in it if condition(x))
+
 
 # ----------------------------------------------------------------------------
 # Simple search and interpolation functions.
