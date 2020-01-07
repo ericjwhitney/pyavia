@@ -117,7 +117,7 @@ class GasFlow(ABC):
     @property
     def h0(self):
         """Total / stagnation enthalpy of the gas, assuming it is brought to
-        rest with losses or heat transfer computed as h_0 = h + (1/2)*u**2.
+        rest with losses or heat transfer computed as h_0 = h + (1/2)*u_n**2.
         Like all enthalpy values the baseline is arbitrary and values from
         different formulations / classes should not be compared."""
         return self.h + 0.5 * self.u ** 2
@@ -607,7 +607,7 @@ class GasFlowWF(GasFlow):
                     + try_T)
 
         self._T0 = fixed_point(update_T, x0=self._T, xtol=Dim(1e-5, 'K'),
-                               maxits=15)
+                               maxits=20)
         # Calculate P to give equal entropy.
         # P0 = P_Ref * exp((int(cp/T).dT - s0) / R)
         cptint0 = self._cptint_from_T(self._T0)

@@ -41,7 +41,7 @@ def main():
           f"it!")
     print(f"(In more conventional units this is equal to"
           f" {mileage.convert('mi/US_gal'):.5f} or "
-          f"{(1 / mileage).convert('L/100km'):.1f}")
+          f"{(1 / mileage).convert('L/100km'):.1f})")
 
 
 # -----------------------------------------------------------------------------

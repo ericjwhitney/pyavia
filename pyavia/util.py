@@ -266,7 +266,7 @@ def line_pt(a, b, p, scale=None):
     function can also be used for extrapolation as required.
 
     Args:
-        a: Two distinct points on the line (x_1, ... x_n)
+        a: Two distinct points on the line (x_1, ..., x_n)
         b: Ditto.
         p: Required point on the line with at least a single known
             component, i.e. (..., None, p_i, None, ...).  If more
@@ -274,7 +274,7 @@ def line_pt(a, b, p, scale=None):
         scale: If supplied, a list corresponding to each axis. Options:
             - None: No scaling performed.
             - 'log': This axis is linear on a log scale.  In practice
-                log(x_i) is performed on this axis prior to doing the
+                log(x) is performed on this axis prior to doing the
                 interpolation / extrapolation, then exp(x) is done prior to
                 returning.
     Returns:

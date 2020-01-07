@@ -1230,5 +1230,3 @@ add_unit('hp', '550×ft.lbf/s')
 #
 
 add_unit('lm', 'cd.sr')  # Lumen.
-
-
