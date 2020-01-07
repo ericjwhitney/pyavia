@@ -92,37 +92,57 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
 
 # ----------------------------------------------------------------------------
 
-def fixed_point(func, x0, xtol, relax=1.0, relax2=1.0, maxits: int = 15,
+def fixed_point(func, x0, xtol, h: float = 1.0, maxits: int = 15,
                 verbose=False):
     """
-    Find the fixed point of a function x = f(x) by repeatedly passing x
-    through the function, and return when the result stabilises.  Here is an
-    example with a scalar function:
+    Find the fixed point of a function x = f(x) by iterative a damped
+    second-order ODE.  The ODE is solved as two equations using
+    the forward Euler iteration:
+
+        x' = x + u.h                    (1)
+        u' = u + h(f(x') - x) - 2hu     (2)
+
+    Note that the equation (2) for u' above is a simplification of the
+    following:
+
+        u' = u + (h / m)(f(x') - x) - (2ζh / √m)u
+
+    Where:
+        m       Fictitious 'mass' to give inertia to the solution x.
+        ζ       Damping ratio.
+
+    For practical problems we take m = 1 because the 'force' (correction
+    size f(x') - x) is of the same magnitude as x.  We take ζ = 1 because
+    critical damping is generally the shortest path to convergence.
+
+    An example of a fixed-point iteration of a scalar function:
 
     >>> def f(x): return (x + 10) ** 0.25
     >>> x_scalar = fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
-    Fixed Point Iteration: x0 = -3
-    ... Iteration 1: x = [1.62657656]
-    ... Iteration 2: x = [1.84655805]
-    ... Iteration 3: x = [1.85523123]
-    ... Iteration 4: x = [1.8555707]
-    ... Iteration 5: x = [1.85558399]
-    ... Iteration 6: x = [1.85558451]
+    Second-Order Damped Fixed Point Iteration:
+    ... Iteration 1: x = [   -3.0000]
+    ... Iteration 2: x = [    1.6266]
+    ... Iteration 3: x = [    1.8466]
+    ... Iteration 4: x = [    1.8552]
+    ... Iteration 5: x = [    1.8556]
+    ... Iteration 6: x = [    1.8556]
+    ... Iteration 7: x = [    1.8556]
     ... Converged.
 
     This example uses the same function however x is now a list.  Note
-    that this only works because internally everything is converted to NumPy
-    arrays so that component-wise operations are valid and f() also returns an
-    array:
+    that this works because internally everything is converted to NumPy
+    arrays,provided component-wise operations are valid and f() can
+    also return an array:
 
     >>> x_vector = fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2, verbose=True)
-    Fixed Point Iteration: x0 = [-3, -4]
-    ... Iteration 1: x = [1.62657656 1.56508458]
-    ... Iteration 2: x = [1.84655805 1.84411162]
-    ... Iteration 3: x = [1.85523123 1.85513544]
-    ... Iteration 4: x = [1.8555707  1.85556696]
-    ... Iteration 5: x = [1.85558399 1.85558384]
-    ... Iteration 6: x = [1.85558451 1.8555845 ]
+    Second-Order Damped Fixed Point Iteration:
+    ... Iteration 1: x = [   -3.0000    -4.0000]
+    ... Iteration 2: x = [    1.6266     1.5651]
+    ... Iteration 3: x = [    1.8466     1.8441]
+    ... Iteration 4: x = [    1.8552     1.8551]
+    ... Iteration 5: x = [    1.8556     1.8556]
+    ... Iteration 6: x = [    1.8556     1.8556]
+    ... Iteration 7: x = [    1.8556     1.8556]
     ... Converged.
 
     Args:
@@ -134,50 +154,132 @@ def fixed_point(func, x0, xtol, relax=1.0, relax2=1.0, maxits: int = 15,
             Numpy arrays.
         xtol: (Scalar / List) Stop when abs(x' - x) < xtol.  The type/s or
             element/s of xtol should correspond to x.
-        relax: (Float) First order relaxation factor.  The next estimate of
-            x' = x[n+1] is computed as follows:
-               x[n+1] = relax * f(x[n]) + relax2 * (1 - relax) * x[n] +
-                    (1 - relax2) * (1 - relax) * x[n-1]
-            'relax' represents the proportion of f(x) in the next point,
-            and if relax = 1 this is the equivalent to the direct iteration of
-            x' = f(x). When relax < 1 (e.g. 0.5) this is an under-relaxation
-            which can add stability.
-        relax2: (Float) Second order relaxation factor.  This represents a
-            sharing factor between x[n] and x[n-1] in the above equation.
-            If relax2 = 1 then this is the equivalent of omitting x[n-1].
-            Including a small proportion of x[n-1] e.g. relax2 = 0.75 is
-            equivalent to adding some damping to the convergence which can
-            stabilise some borderline problems.  It also allows 'relax' to
-            be increased which can speed up the overall convergence.
+        h: (Float) Step size (time-like) to advance x to next estimate.  The
+            default value of 1.0 should be acceptable in most cases.  Reduce
+            if instability is suspected (e.g. 0.5, 0.25, etc).
         maxits: (int) Iteration limit.
-        verbose: (bool) If True, print iterations.
+        verbose:  (bool) If True, print iterations.
 
     Returns:
         (Scalar / List) Converged x value.
+
+    Raises:
+        RuntimeError if maxits is exceeded.
     """
-    if verbose:
-        print(f"Fixed Point Iteration: x0 = {x0}")
-    x = np.atleast_1d(x0)
+    x, xtol_ = np.atleast_1d(x0), np.atleast_1d(xtol)
+    u = x - x  # This makes a zero array of arbitrary objects.
     its = 0
-    while True:
-        if its >= maxits:
-            raise RuntimeError(f"Limit of {maxits} iterations exceeded.")
+    if verbose:
+        print(f"Second-Order Damped Fixed Point Iteration:")
 
-        x_old = x
-        fx = np.atleast_1d(func(x) if len(x) > 1 else func(x.item()))
-        # x = (1 - relax) * x + relax * fx
-        x = (relax * fx + relax2 * (1 - relax) * x +
-             (1 - relax2) * (1 - relax) * x_old)
+    while its < maxits:
+        x_n = x + u * h
+        fx_n = np.atleast_1d(func(x_n) if len(x_n) > 1 else func(x_n.item()))
+        delta = fx_n - x
+        u_n = u + h * delta - 2 * h * u
+        x, u = x_n, u_n
         its += 1
-        if verbose:
-            print(f"... Iteration {its}: x = {x}")
 
-        if np.all(abs(x - x_old) < xtol):
+        if verbose:
+            with np.printoptions(threshold=5,
+                                 formatter={'float_kind':
+                                            lambda num: f'{num:#10.5G}'}):
+                print(f"... Iteration {its}: x = {x}")
+
+        if np.all(abs(delta) < xtol):
             if verbose:
                 print(f"... Converged.")
-            break
-    return x.tolist() if len(x) > 1 else x.item()
+            return x.tolist() if len(x) > 1 else x.item()
 
+    raise RuntimeError(f"Limit of {maxits} iterations exceeded.")
+
+# def old_fixed_point(func, x0, xtol, relax=1.0, relax2=1.0, maxits: int = 15,
+#                 verbose=False):
+#     """
+#     Find the fixed point of a function x = f(x) by repeatedly passing x
+#     through the function, and return when the result stabilises.  Here is an
+#     example with a scalar function:
+#
+#     >>> def f(x): return (x + 10) ** 0.25
+#     >>> x_scalar = fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
+#     Fixed Point Iteration: x0 = -3
+#     ... Iteration 1: x = [1.62657656]
+#     ... Iteration 2: x = [1.84655805]
+#     ... Iteration 3: x = [1.85523123]
+#     ... Iteration 4: x = [1.8555707]
+#     ... Iteration 5: x = [1.85558399]
+#     ... Iteration 6: x = [1.85558451]
+#     ... Converged.
+#
+#     This example uses the same function however x is now a list.  Note
+#     that this only works because internally everything is converted to NumPy
+#     arrays so that component-wise operations are valid and f() also returns an
+#     array:
+#
+#     >>> x_vector = fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2, verbose=True)
+#     Fixed Point Iteration: x0 = [-3, -4]
+#     ... Iteration 1: x = [1.62657656 1.56508458]
+#     ... Iteration 2: x = [1.84655805 1.84411162]
+#     ... Iteration 3: x = [1.85523123 1.85513544]
+#     ... Iteration 4: x = [1.8555707  1.85556696]
+#     ... Iteration 5: x = [1.85558399 1.85558384]
+#     ... Iteration 6: x = [1.85558451 1.8555845 ]
+#     ... Converged.
+#
+#     Args:
+#         func: (Scalar / List) Function that returns a better estimate of x.
+#         x0: (Scalar / List) Starting value for x. Any numeric type
+#             including user types may be used, provided they support
+#             component-wise mathematical operations.  Individual elements
+#             need not be the same type.  Internally they are converted to
+#             Numpy arrays.
+#         xtol: (Scalar / List) Stop when abs(x' - x) < xtol.  The type/s or
+#             element/s of xtol should correspond to x.
+#         relax: (Float) First order relaxation factor.  The next estimate of
+#             x' = x[n+1] is computed as follows:
+#                x[n+1] = relax * f(x[n]) + relax2 * (1 - relax) * x[n] +
+#                     (1 - relax2) * (1 - relax) * x[n-1]
+#             'relax' represents the proportion of f(x) in the next point,
+#             and if relax = 1 this is the equivalent to the direct iteration
+#             of x' = f(x). When relax < 1 (e.g. 0.5) this is an
+#             under-relaxation which can add stability.
+#         relax2: (Float) Second order relaxation factor.  This represents a
+#             sharing factor between x[n] and x[n-1] in the above equation.
+#             If relax2 = 1 then this is the equivalent of omitting x[n-1].
+#             Including a small proportion of x[n-1] e.g. relax2 = 0.75 is
+#             equivalent to adding some damping to the convergence which can
+#             stabilise some borderline problems.  It also allows 'relax' to
+#             be increased which can speed up the overall convergence.
+#         maxits: (int) Iteration limit.
+#         verbose: (bool) If True, print iterations.
+#
+#     Returns:
+#         (Scalar / List) Converged x value.
+#     """
+#     if verbose:
+#         print(f"Fixed Point Iteration: x0 = {x0}")
+#     x = np.atleast_1d(x0)
+#     its = 0
+#     while True:
+#         if its >= maxits:
+#             raise RuntimeError(f"Limit of {maxits} iterations exceeded.")
+#
+#         x_old = x
+#         fx = np.atleast_1d(func(x) if len(x) > 1 else func(x.item()))
+#         # x = (1 - relax) * x + relax * fx
+#         x = (relax * fx + relax2 * (1 - relax) * x +
+#              (1 - relax2) * (1 - relax) * x_old)
+#         its += 1
+#         if verbose:
+#             with np.printoptions(precision=5, floatmode='fixed'):
+#                 print(f"... Iteration {its}: x = {x}")
+#
+#         if np.all(abs(x - x_old) < xtol):
+#             if verbose:
+#                 print(f"... Converged.")
+#             break
+#     return x.tolist() if len(x) > 1 else x.item()
+#
 
 # ----------------------------------------------------------------------------
 
