@@ -27,7 +27,11 @@ happen frequently.*
 
 
 ## Installation
-Use the typical pip installation methods, for example:
+NumPy needs to be installed prior to installing PyAvia (*because setuptools
+ is not completely working*), <a href="https://docs.scipy.org/doc/numpy/user/install.html">see this link</a>.
+
+Once NumPy is installed, install PyAvia using the typical pip installation
+ methods, for example:
 - Using a shell with pip directly and root access:
 ```console
 $ pip install pyavia

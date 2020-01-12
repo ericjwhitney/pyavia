@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pyavia",
+    name="pyavia3",
     version="0.0.1",
     author="Eric J. Whitney",
     author_email="eric.j.whitney@optusnet.removethispart.com.au",
@@ -16,6 +16,7 @@ setuptools.setup(
     keywords='aerospace engineering tools',
     long_description=long_description,
     long_description_content_type="text/markdown",
+    setup_requires=["numpy"],
     url="https://github.com/ericjwhitney/pyavia",
     packages=setuptools.find_packages(include=['pyavia', 'pyavia.*']),
     python_requires='>=3.7',
