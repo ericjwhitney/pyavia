@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 # Examples of atmosphere usage.
-# Written by: Eric J. Whitney  Last updated: 26 November 2019
+# Written by: Eric J. Whitney  Last updated: 8 January 2020
 
-from atmosphere import Atmosphere
-from units import Dim
+from pyavia import Dim
+from pyavia.aero import Atmosphere
 
 # Set default result units US or SI.  Individual defaults can be set for
 # each unit type.
