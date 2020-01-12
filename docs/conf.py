@@ -48,14 +48,13 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-autodoc_default_options = {'members': True,  # EJW Fix?
+autodoc_default_options = {'members': None,  # EJW Fix 2?
                            'special-members': True,
-                           'exclude-members': '__dict__, __hash__, '
+                           'exclude-members': '__abstractmethods__, '
+                                              '__dict__, __hash__, '
                                               '__weakref__, __module__, '
                                               '__slots__'
                            }
-
-print(f"EXCLUDE MEMBERS: {autodoc_default_options}")
 
 # -- Options for HTML output -------------------------------------------------
 
