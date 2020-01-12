@@ -10,6 +10,9 @@ setuptools.setup(
     author_email="eric.j.whitney@optusnet.removethispart.com.au",
     description="Useful functions commonly used in aerospace engineering.",
     include_package_data=True,  # <<< Note!
+    install_requires=[
+        'numpy',
+    ],
     keywords='aerospace engineering tools',
     long_description=long_description,
     long_description_content_type="text/markdown",
