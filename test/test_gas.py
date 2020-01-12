@@ -3,8 +3,8 @@ from unittest import TestCase
 
 class TestGasFlowWF(TestCase):
     def test_all(self):
-        from gasflow import GasFlowWF
-        from units import Dim, Units
+        from pyavia.aero import GasFlowWF
+        from pyavia import Dim, Units
 
         def stp_checks(test_gas):
             self.assertEqual(test_gas.gas, 'air')
@@ -106,8 +106,8 @@ class TestGasFlowWF(TestCase):
 # noinspection PyPep8Naming
 class TestPerfectGasFlow(TestCase):
     def test_all(self):
-        from gasflow import PerfectGasFlow
-        from units import Dim, Units
+        from pyavia.aero import PerfectGasFlow
+        from pyavia import Dim, Units
 
         def stp_checks(test_gas):
             self.assertAlmostEqual(test_gas.gamma, 1.400, places=3)

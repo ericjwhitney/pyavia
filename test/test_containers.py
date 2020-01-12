@@ -7,8 +7,8 @@ class TestMultiBiDict(TestCase):
 
 class TestWeightedDirGraph(TestCase):
     def test___init__(self):
-        from containers import WeightedDirGraph, link
-        wdg = WeightedDirGraph()
+        from pyavia import WtDirgraph, g_link
+        wdg = WtDirgraph()
 
         # Test basic functions.
         wdg['a':'b'] = 'somevalue'
@@ -32,8 +32,8 @@ class TestWeightedDirGraph(TestCase):
 
         # Test key deletion and contains.
         del wdg['a':'b']  # Specific x -> y
-        self.assertNotIn(link('a', 'b'), wdg)
-        self.assertIn(link('b', 'a'), wdg)  # Reverse should not be deleted.
+        self.assertNotIn(g_link('a', 'b'), wdg)
+        self.assertIn(g_link('b', 'a'), wdg)  # Reverse should not be deleted.
         del wdg[456]  # Entire x-key.
         with self.assertRaises(KeyError):
             del wdg[3.14159, 'a']  # Reverse should not exist.
@@ -44,14 +44,14 @@ class TestWeightedDirGraph(TestCase):
             wdg['a':'a'] = 666
 
         # Test construction with forwards dict.
-        wdg = WeightedDirGraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
+        wdg = WtDirgraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
         self.assertEqual(wdg['c':'a'], 4)
         with self.assertRaises(KeyError):
             print(wdg['b':'a'])
 
     def test_trace(self):
-        from containers import WeightedDirGraph
-        wdg = WeightedDirGraph()
+        from pyavia import WtDirgraph
+        wdg = WtDirgraph()
         wdg[1:2] = 0.5
         wdg[1:3] = 0.2
         wdg[1:4] = 5

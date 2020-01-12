@@ -3,7 +3,7 @@ from unittest import TestCase
 
 class TestDim(TestCase):
     def test___init__(self):
-        from units import Dim, Units, UnitsError
+        from pyavia import Dim, Units, UnitsError
 
         # Test no arguments:  Value = 1, no units.
         x = Dim()
@@ -37,7 +37,7 @@ class TestDim(TestCase):
 
     def test___add__(self):
         # Also tests __radd__
-        from units import Dim, Units, UnitsError
+        from pyavia import Dim, Units, UnitsError
 
         # Test addition of like units, preserving character.
         x, y = Dim(1, 'ft'), Dim(12, 'in')
@@ -63,7 +63,7 @@ class TestDim(TestCase):
 
     def test__sub__(self):
         # Also tests __rsub__
-        from units import Dim, Units, UnitsError
+        from pyavia import Dim, Units, UnitsError
 
         # Test subtraction of imcompatible units disallowed.
         with self.assertRaises(UnitsError):
@@ -82,7 +82,7 @@ class TestDim(TestCase):
         self.assertEqual(x.units, Units('Δ°F'))
 
     def test___mul__(self):
-        from units import Dim, Units
+        from pyavia import Dim, Units
 
         # Check multiply by plain units gives Dim result.
         x = 7.5 * Units('km')
@@ -136,7 +136,7 @@ class TestDim(TestCase):
         self.assertEqual(x, 12)
 
     def test___truediv__(self):
-        from units import Dim, Units
+        from pyavia import Dim, Units
 
         # Check value type follows division rules.
         x = Dim(4, 'm') / 2
@@ -150,7 +150,7 @@ class TestDim(TestCase):
         self.assertEqual(x.units, Units('kg'))
 
     def test_convert(self):
-        from units import Dim, Units, UnitsError
+        from pyavia import Dim, Units, UnitsError
 
         # Test conversion to lhs does nothing.
         x = Dim(3, 'kg').convert('kg')

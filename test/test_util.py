@@ -3,7 +3,7 @@ from unittest import TestCase
 
 class TestForceType(TestCase):
     def test_force_type(self):
-        from util import force_type
+        from pyavia import force_type
 
         x = force_type(3.5, int, float)
         self.assertIsInstance(x, int)  # int(3.5) -> 3 (int)
@@ -23,7 +23,7 @@ class TestForceType(TestCase):
 
 class TestCoaxType(TestCase):
     def test_coax_type(self):
-        from util import coax_type
+        from pyavia import coax_type
 
         x = coax_type(3.5, int, float)
         self.assertIsInstance(x, float)  # Because int(3.5) != 3.5
@@ -42,26 +42,9 @@ class TestCoaxType(TestCase):
         self.assertEqual(y, 3 + 2j)
 
 
-class TestBisectRoot(TestCase):
-    def test_bisect_root(self):
-        from solve import bisect_root
-
-        def f(g):
-            return g ** 2 - g - 1
-        exact = 1.618033988749895
-
-        # Normal operation.
-        x = bisect_root(f, 1.0, 2.0, ftol=1e-15)
-        self.assertAlmostEqual(x, exact, places=15)
-
-        # Failure to converge.
-        with self.assertRaises(RuntimeError):
-            bisect_root(f, 1.0, 2.0, maxits=10, ftol=1e-15)
-
-
 class TestLinearInterp(TestCase):
     def test_linear_interp(self):
-        from util import linear_int_ext
+        from pyavia import linear_int_ext
 
         # Also checks line_pt by proxy.
 
