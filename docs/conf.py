@@ -30,7 +30,8 @@ release = '0.0.1'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
+extensions = ['numpydoc',
+              'sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.napoleon']
 
@@ -48,8 +49,8 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-autodoc_default_options = {'members': None,  # EJW Fix 3?
-                           'special-members': None,  # EJW Fix 3?
+autodoc_default_options = {'members': None,  # << Sphinx Bug use None for True
+                           'special-members': None,  # "" "" Ditto.
                            'exclude-members': '__abstractmethods__, '
                                               '__dict__, __hash__, '
                                               '__weakref__, __module__, '
