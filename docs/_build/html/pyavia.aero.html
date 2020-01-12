@@ -1,0 +1,978 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>pyavia.aero &#8212; PyAvia 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pyavia.solve" href="pyavia.solve.html" />
+    <link rel="prev" title="Utilities" href="pyavia.core.util.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pyavia.solve.html" title="pyavia.solve"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pyavia.core.util.html" title="Utilities"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyavia-aero">
+<span id="id1"></span><h1>pyavia.aero<a class="headerlink" href="#pyavia-aero" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.aero.Atmosphere" title="pyavia.aero.Atmosphere"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.Atmosphere</span></code></a></p></td>
+<td><p>An Atmosphere class giving a fixed representation of atmospheric conditions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.aero.geo_alt_to_pot" title="pyavia.aero.geo_alt_to_pot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.geo_alt_to_pot</span></code></a></p></td>
+<td><p>Convert geometric altitude to geopotential h → H per ISO 2533-1975 Eqn 8.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.aero.pot_alt_to_geo" title="pyavia.aero.pot_alt_to_geo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.pot_alt_to_geo</span></code></a></p></td>
+<td><p>Convert geopotential altitude to geometric H → h per ISO 2533-1975 Eqn 9.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.aero.GasError" title="pyavia.aero.GasError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.GasError</span></code></a></p></td>
+<td><p>Exception class specific to gas computations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.aero.GasFlow" title="pyavia.aero.GasFlow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.GasFlow</span></code></a></p></td>
+<td><p>Abstract base class representing common properties of gases flowing in 1-D.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.aero.PerfectGasFlow" title="pyavia.aero.PerfectGasFlow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.PerfectGasFlow</span></code></a></p></td>
+<td><p>A simplified compressible gas, thermally and calorically perfect.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.aero.GasFlowWF" title="pyavia.aero.GasFlowWF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.aero.GasFlowWF</span></code></a></p></td>
+<td><p>Compressible, imperfect gas using polynomials from Walsh &amp; Fletcher §3.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-pyavia.aero">
+<span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.aero" title="Permalink to this headline">¶</a></h2>
+<p><strong>pyavia.aero</strong> provides functions relating to aerodynamics, thermodynamics and
+fluid dynamics in general.</p>
+<dl class="class">
+<dt id="pyavia.aero.Atmosphere">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">Atmosphere</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.Atmosphere" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An Atmosphere class giving a fixed representation of atmospheric
+conditions.  Once constructed, all of the regular assosicated atmospheric
+properties are then made available through class properties.</p>
+<p class="rubric">Example</p>
+<p>Set default result units as US or SI.  Individual defaults can be
+set for each unit type:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="o">.</span><span class="n">set_default_style</span><span class="p">(</span><span class="s1">&#39;SI&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="o">.</span><span class="n">unitdef_press</span> <span class="o">=</span> <span class="s1">&#39;psi&#39;</span>
+</pre></div>
+</div>
+<p>Show some ISA SSL values:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">atm</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="p">(</span><span class="n">H</span><span class="o">=</span><span class="s1">&#39;SSL&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;P = </span><span class="si">{atm.pressure:.3f}</span><span class="s2">, T = </span><span class="si">{atm.temperature:.2f}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">P = 14.696 psi, T = 288.15 K</span>
+</pre></div>
+</div>
+<p>Show density for an ISA standard altitude (note that these are
+formally geopotential altitudes):</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">atm</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="p">(</span><span class="n">H</span><span class="o">=</span><span class="n">Dim</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="s1">&#39;ft&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ρ = </span><span class="si">{atm.ρ:.3f}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">ρ = 0.905 kg/m³</span>
+</pre></div>
+</div>
+<p>Show the temperature ratio for a pressure altitude with a
+temperature offset:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">atm</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="p">(</span><span class="n">H_press</span><span class="o">=</span><span class="n">Dim</span><span class="p">(</span><span class="mi">34000</span><span class="p">,</span><span class="s1">&#39;ft&#39;</span><span class="p">),</span>
+<span class="gp">... </span><span class="n">T_offset</span><span class="o">=</span><span class="n">Dim</span><span class="p">(</span><span class="o">+</span><span class="mi">15</span><span class="p">,</span><span class="s1">&#39;Δ°C&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Theta = </span><span class="si">{atm.theta:.3f}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">Theta = 0.818</span>
+</pre></div>
+</div>
+<p>Show the density ratio for an arbitrary non-standard atmosphere
+based on temperature / pressure:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">atm</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="p">(</span><span class="n">P</span><span class="o">=</span><span class="n">Dim</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="s1">&#39;kPa&#39;</span><span class="p">),</span> <span class="n">T</span><span class="o">=</span><span class="n">Dim</span><span class="p">(</span><span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="s1">&#39;°C&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;σ = </span><span class="si">{atm.σ:.3f}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">σ = 0.991</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.P">
+<em class="property">property </em><code class="sig-name descname">P</code><a class="headerlink" href="#pyavia.aero.Atmosphere.P" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.R">
+<code class="sig-name descname">R</code><em class="property"> = Dim(287.05287, 'J/K/kg')</em><a class="headerlink" href="#pyavia.aero.Atmosphere.R" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.T">
+<em class="property">property </em><code class="sig-name descname">T</code><a class="headerlink" href="#pyavia.aero.Atmosphere.T" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.Atmosphere.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an atmosphere using a variety of possible methods,
+depending on the arguments provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – <p>The following keyword combinations can be used.  In each case
+the associated value must be a Dim object, e.g. <code class="docutils literal notranslate"><span class="pre">H</span> <span class="pre">=</span>
+<span class="pre">Dim(5000,</span> <span class="pre">'ft')</span></code>:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>H</strong>:</dt><dd><ul>
+<li><p>If <cite>H</cite> == ‘SSL’:  Construct an ISA standard sea level
+atmosphere..</p></li>
+<li><p>If ‘H’ is a Dim object:  Construct an ISA standard
+atmosphere corresponding to a given geopotential altitude.
+This is generally what is used in most texts (assumes
+gravity fixed across altitudes).  Note the uppercase <cite>H</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p><strong>h_geometric</strong>:  ISA standard atmosphere corresponding
+to a given geometric altitude.</p></li>
+<li><p><strong>T</strong>, <strong>P</strong>: Arbitrary atmosphere with given temperature and
+pressure.</p></li>
+<li><p><strong>H_press</strong>, <strong>T</strong>: Arbitrary atmosphere based on pressure
+altitude (altimeter set to 1013 mb / 29.92 in-Hg) and a given
+temperature.</p></li>
+<li><p><strong>H_press</strong>, <strong>T_offset</strong>: Same as <cite>H_press</cite>, <cite>T</cite> except
+temperature is given as an offset from the ISA standard value
+at that pressure altitude.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.a">
+<em class="property">property </em><code class="sig-name descname">a</code><a class="headerlink" href="#pyavia.aero.Atmosphere.a" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(a = \sqrt{\gamma RT}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.delta">
+<em class="property">property </em><code class="sig-name descname">delta</code><a class="headerlink" href="#pyavia.aero.Atmosphere.delta" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(δ = P / P_{SSL}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.density">
+<em class="property">property </em><code class="sig-name descname">density</code><a class="headerlink" href="#pyavia.aero.Atmosphere.density" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.density_altitude">
+<em class="property">property </em><code class="sig-name descname">density_altitude</code><a class="headerlink" href="#pyavia.aero.Atmosphere.density_altitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>After finding the correct altitude range, density altitude is
+computed using a root bisection method, as it is non-linear.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.dynamic_viscosity">
+<em class="property">property </em><code class="sig-name descname">dynamic_viscosity</code><a class="headerlink" href="#pyavia.aero.Atmosphere.dynamic_viscosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dynamic viscosity (μ) also just called ‘viscosity’.  It is
+computed using the empirical Sutherland equation shown in ISO
+2533-1975 Eqn 22.  It is invalid for very high or low temperatures and
+conditions at altitudes above 90 km.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.gamma">
+<em class="property">property </em><code class="sig-name descname">gamma</code><a class="headerlink" href="#pyavia.aero.Atmosphere.gamma" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\gamma = c_p/c_v\)</span> ratio of specific heats.  This is
+presently set to a constant <span class="math notranslate nohighlight">\(γ = 1.4\)</span> which is valid for all
+ambient atmospheres which are relatively cold.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.kinematic_viscosity">
+<em class="property">property </em><code class="sig-name descname">kinematic_viscosity</code><a class="headerlink" href="#pyavia.aero.Atmosphere.kinematic_viscosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kinematic viscosity <span class="math notranslate nohighlight">\(ν = μ/ρ\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.pressure">
+<em class="property">property </em><code class="sig-name descname">pressure</code><a class="headerlink" href="#pyavia.aero.Atmosphere.pressure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.pressure_altitude">
+<em class="property">property </em><code class="sig-name descname">pressure_altitude</code><a class="headerlink" href="#pyavia.aero.Atmosphere.pressure_altitude" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.set_default_style">
+<em class="property">classmethod </em><code class="sig-name descname">set_default_style</code><span class="sig-paren">(</span><em class="sig-param">style: str = 'US'</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.Atmosphere.set_default_style" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setting to give default results in style=’US’ or ‘SI’ units.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.sigma">
+<em class="property">property </em><code class="sig-name descname">sigma</code><a class="headerlink" href="#pyavia.aero.Atmosphere.sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\sigma = \rho/\rho_{SSL}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.speed_of_sound">
+<em class="property">property </em><code class="sig-name descname">speed_of_sound</code><a class="headerlink" href="#pyavia.aero.Atmosphere.speed_of_sound" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(a = \sqrt{\gamma RT}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.temperature">
+<em class="property">property </em><code class="sig-name descname">temperature</code><a class="headerlink" href="#pyavia.aero.Atmosphere.temperature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.theta">
+<em class="property">property </em><code class="sig-name descname">theta</code><a class="headerlink" href="#pyavia.aero.Atmosphere.theta" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\theta = T/T_{SSL}\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_alt">
+<code class="sig-name descname">unitdef_alt</code><em class="property"> = 'ft'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_alt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_dens">
+<code class="sig-name descname">unitdef_dens</code><em class="property"> = 'slug/ft^3'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_dens" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_kine">
+<code class="sig-name descname">unitdef_kine</code><em class="property"> = 'ft²/s'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_kine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_press">
+<code class="sig-name descname">unitdef_press</code><em class="property"> = 'psf'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_press" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_spd">
+<code class="sig-name descname">unitdef_spd</code><em class="property"> = 'ft/s'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_spd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_temp">
+<code class="sig-name descname">unitdef_temp</code><em class="property"> = '°R'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_temp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.Atmosphere.unitdef_visc">
+<code class="sig-name descname">unitdef_visc</code><em class="property"> = 'psf.s'</em><a class="headerlink" href="#pyavia.aero.Atmosphere.unitdef_visc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.γ">
+<em class="property">property </em><code class="sig-name descname">γ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.γ" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\gamma = c_p/c_v\)</span> ratio of specific heats.  This is
+presently set to a constant <span class="math notranslate nohighlight">\(γ = 1.4\)</span> which is valid for all
+ambient atmospheres which are relatively cold.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.δ">
+<em class="property">property </em><code class="sig-name descname">δ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.δ" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(δ = P / P_{SSL}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.θ">
+<em class="property">property </em><code class="sig-name descname">θ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.θ" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\theta = T/T_{SSL}\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.μ">
+<em class="property">property </em><code class="sig-name descname">μ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.μ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dynamic viscosity (μ) also just called ‘viscosity’.  It is
+computed using the empirical Sutherland equation shown in ISO
+2533-1975 Eqn 22.  It is invalid for very high or low temperatures and
+conditions at altitudes above 90 km.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.ν">
+<em class="property">property </em><code class="sig-name descname">ν</code><a class="headerlink" href="#pyavia.aero.Atmosphere.ν" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kinematic viscosity <span class="math notranslate nohighlight">\(ν = μ/ρ\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.ρ">
+<em class="property">property </em><code class="sig-name descname">ρ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.ρ" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.Atmosphere.σ">
+<em class="property">property </em><code class="sig-name descname">σ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.σ" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\sigma = \rho/\rho_{SSL}\)</span>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="pyavia.aero.GasError">
+<em class="property">exception </em><code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">GasError</code><a class="headerlink" href="#pyavia.aero.GasError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Exception class specific to gas computations.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyavia.aero.GasFlow">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">GasFlow</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">R</em>, <em class="sig-param">w=None</em>, <em class="sig-param">gas: Optional[str] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>Abstract base class representing common properties of gases flowing in
+1-D. Once any gas is initialised, properties are fixed.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This base class does not provide properties such as <cite>T0/T</cite> or
+<cite>P0/T</cite> because non-linearities in imperfect gas models may make these
+ratios moot.  Refer to the specific derived class.</p>
+</div>
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.M">
+<em class="property">abstract property </em><code class="sig-name descname">M</code><a class="headerlink" href="#pyavia.aero.GasFlow.M" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mach number <span class="math notranslate nohighlight">\(M = u/a\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.P">
+<em class="property">abstract property </em><code class="sig-name descname">P</code><a class="headerlink" href="#pyavia.aero.GasFlow.P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream / ambient pressure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.P0">
+<em class="property">abstract property </em><code class="sig-name descname">P0</code><a class="headerlink" href="#pyavia.aero.GasFlow.P0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation pressure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.Q">
+<em class="property">property </em><code class="sig-name descname">Q</code><a class="headerlink" href="#pyavia.aero.GasFlow.Q" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enthalpy flowrate Q = h * w.  Units determined by
+multiplication.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.R">
+<em class="property">property </em><code class="sig-name descname">R</code><a class="headerlink" href="#pyavia.aero.GasFlow.R" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gas constant R for the specific gas. R_specific = R_universal / M
+where R = 8.314462618 kg.m².s⁻².K⁻¹.mol⁻¹ and M is molar mass
+[kg/mol].</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.T">
+<em class="property">abstract property </em><code class="sig-name descname">T</code><a class="headerlink" href="#pyavia.aero.GasFlow.T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream / ambient temperature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.T0">
+<em class="property">abstract property </em><code class="sig-name descname">T0</code><a class="headerlink" href="#pyavia.aero.GasFlow.T0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation temperature.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.GasFlow.__abstractmethods__">
+<code class="sig-name descname">__abstractmethods__</code><em class="property"> = frozenset({'M', 'P', 'P0', 'T', 'T0', 'cp', 'gamma', 'h', 's', 'special_args', 'u'})</em><a class="headerlink" href="#pyavia.aero.GasFlow.__abstractmethods__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.__format__">
+<code class="sig-name descname">__format__</code><span class="sig-paren">(</span><em class="sig-param">format_spec</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#pyavia.aero.GasFlow.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formatted output string.  The defining state properties are
+assumed to be T, P, M, w by default.  Format is applied to numeric
+values only.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">R</em>, <em class="sig-param">w=None</em>, <em class="sig-param">gas: Optional[str] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlow.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an abstract base representation of flowing compressible
+gas.  Once constructed, the properties of the gas are fixed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R</strong> – Gas constant for this particular gas (i.e.
+<span class="math notranslate nohighlight">\(R = R_{univ}/n\)</span>).</p></li>
+<li><p><strong>w</strong> – Mass flowrate</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlow.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.__str__">
+<code class="sig-name descname">__str__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlow.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return str(self).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.a">
+<em class="property">property </em><code class="sig-name descname">a</code><a class="headerlink" href="#pyavia.aero.GasFlow.a" title="Permalink to this definition">¶</a></dt>
+<dd><p>Local speed of sound a = (γRT)**0.5.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.cp">
+<em class="property">abstract property </em><code class="sig-name descname">cp</code><a class="headerlink" href="#pyavia.aero.GasFlow.cp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific heat capacity at constant pressure of the gas.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.cv">
+<em class="property">property </em><code class="sig-name descname">cv</code><a class="headerlink" href="#pyavia.aero.GasFlow.cv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific heat capacity at constant volume of the gas.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.gamma">
+<em class="property">abstract property </em><code class="sig-name descname">gamma</code><a class="headerlink" href="#pyavia.aero.GasFlow.gamma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ratio of specific heats <span class="math notranslate nohighlight">\(\gamma = c_p/c_v.\)</span></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.gas">
+<em class="property">property </em><code class="sig-name descname">gas</code><a class="headerlink" href="#pyavia.aero.GasFlow.gas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifier for the gas.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.h">
+<em class="property">abstract property </em><code class="sig-name descname">h</code><a class="headerlink" href="#pyavia.aero.GasFlow.h" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific enthalpy of the gas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The baseline is arbitrary and values from different
+formulations / classes should not be compared.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.h0">
+<em class="property">property </em><code class="sig-name descname">h0</code><a class="headerlink" href="#pyavia.aero.GasFlow.h0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation enthalpy of the gas, assuming it is brought to
+rest with losses or heat transfer computed as <span class="math notranslate nohighlight">\(h_0 = h +
+\frac{1}{2}u^2\)</span>. Like all enthalpy values the baseline is arbitrary
+and values from different formulations / classes should not be
+compared.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.new_props">
+<code class="sig-name descname">new_props</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span> &#x2192; pyavia.aero._gasflow.GasFlow<a class="headerlink" href="#pyavia.aero.GasFlow.new_props" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new GasFlow object specialised to match <cite>self</cite> except
+without any state properties <cite>T</cite>, <cite>T0</cite>, <cite>P</cite>, <cite>P0</cite>, <cite>h</cite>, <cite>h0</cite>, <cite>s</cite> or
+<cite>M</cite>, which are to be supplied by the user in <cite>**kwargs</cite>. This is used
+for making a new GasFlow object from the current one but with
+changed properties.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Any arguments in <cite>**kwargs</cite> supersedes any matching defaults
+supplied by new_props.</p></li>
+<li><p>Mass flowrate <cite>w</cite> is also copied automatically.</p></li>
+<li><p>Refer to __init__ for the derived class for valid property
+combinations.</p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.rho">
+<em class="property">property </em><code class="sig-name descname">rho</code><a class="headerlink" href="#pyavia.aero.GasFlow.rho" title="Permalink to this definition">¶</a></dt>
+<dd><p>Density ρ = P/(R.T).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.s">
+<em class="property">abstract property </em><code class="sig-name descname">s</code><a class="headerlink" href="#pyavia.aero.GasFlow.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific entropy of the gas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The baseline is arbitrary and values from different
+formulations / classes should not be compared.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.special_args">
+<em class="property">abstract classmethod </em><code class="sig-name descname">special_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Sequence[str]<a class="headerlink" href="#pyavia.aero.GasFlow.special_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a sequence of strings listing any additional arguments
+specific to the derived class needed to fully fully initialise this
+object.  Standard state properties <cite>T</cite>, <cite>T0</cite>, <cite>P</cite>, <cite>P0</cite>, <cite>h</cite>, <cite>h0</cite>,
+<cite>s</cite> or <cite>M</cite> and mass flowrate <cite>w</cite> are not to be included.  Used by
+__repr__, __str__, __format__, new_props().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.u">
+<em class="property">abstract property </em><code class="sig-name descname">u</code><a class="headerlink" href="#pyavia.aero.GasFlow.u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flow velocity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlow.w">
+<em class="property">property </em><code class="sig-name descname">w</code><a class="headerlink" href="#pyavia.aero.GasFlow.w" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mass flowrate.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyavia.aero.GasFlowWF">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">GasFlowWF</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">P: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">P0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">s: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">M: Optional[float] = None</em>, <em class="sig-param">w: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">gas: str = 'air'</em>, <em class="sig-param">FAR: float = 0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlowWF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyavia.aero._gasflow.GasFlow</span></code></p>
+<blockquote>
+<div><p>Compressible, imperfect gas using polynomials from Walsh &amp; Fletcher §3.
+Includes optional products of combustion.  Properties are fixed once
+initialised.</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Temperature range is 200 K → 2000 K.</p></li>
+<li><p>Fuel-Air Ratio <cite>FAR</cite> = 0.00 → 0.05</p></li>
+<li><p>Non-linear <span class="math notranslate nohighlight">\(\gamma\)</span>, <span class="math notranslate nohighlight">\(c_p\)</span>, <cite>h</cite>, <cite>s</cite> dependent on
+temperature (i.e. calorically imperfect).  Stagnation enthalpy,
+temperature and pressure also do not assume a perfect gas.  Stagnation
+properties are computed by bringing the flow to rest isentropically.</p></li>
+<li><p>Internal values stored as SI [K, kPa, …].</p></li>
+<li><p>Stream / static temperature and pressure and Mach number are the
+internal reference states.</p></li>
+</ul>
+</div>
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.FAR">
+<em class="property">property </em><code class="sig-name descname">FAR</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.FAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fuel-Air Ratio <span class="math notranslate nohighlight">\(FAR = w_f / w_{total}\)</span> where <span class="math notranslate nohighlight">\(w_f\)</span> is
+the massflow of fuel products of combustion and <span class="math notranslate nohighlight">\(w_{total}\)</span> is
+the total massflow.  E.G. If the upstream flow was pure airflow of
+<span class="math notranslate nohighlight">\(w_{air}\)</span> then <span class="math notranslate nohighlight">\(FAR = w_f / (w_f + w_{air})\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.M">
+<em class="property">property </em><code class="sig-name descname">M</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.M" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mach number <span class="math notranslate nohighlight">\(M = u/a\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.P">
+<em class="property">property </em><code class="sig-name descname">P</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream / ambient pressure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.P0">
+<em class="property">property </em><code class="sig-name descname">P0</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.P0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation pressure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.T">
+<em class="property">property </em><code class="sig-name descname">T</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream / ambient temperature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.T0">
+<em class="property">property </em><code class="sig-name descname">T0</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.T0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation temperature.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.GasFlowWF.__abstractmethods__">
+<code class="sig-name descname">__abstractmethods__</code><em class="property"> = frozenset({})</em><a class="headerlink" href="#pyavia.aero.GasFlowWF.__abstractmethods__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">P: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">P0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">s: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">M: Optional[float] = None</em>, <em class="sig-param">w: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">gas: str = 'air'</em>, <em class="sig-param">FAR: float = 0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlowWF.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a compressible, imperfect gas, based on interpolating
+polynomials given in Walsh &amp; Fletcher, “Gas Turbine Performance”,
+Second Edition, Chapter 3.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Three state property arguments (<cite>T</cite>, <cite>h</cite>, <cite>T0</cite>, <cite>h0</cite>, <cite>s</cite>,
+<cite>P</cite>, <cite>P0</cite>, <cite>M</cite>) are required, but can be supplied in any
+combination that properly defines the gas.</p></li>
+<li><p>If <cite>P</cite> and <cite>T</cite> are supplied these are directly set and
+initialisation is complete.  All other combinations result in
+an iterative convergence using the values of <cite>T</cite> [K],
+<cite>P</cite> [kPa] and <cite>M</cite>.</p></li>
+<li><p>Non-zero <cite>FAR</cite> normally accompanies gases including products of
+combustion but this is not enforced.  This is because this
+combinatinon may be useful in some hypothetical or
+debugging scenarios.</p></li>
+</ul>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Stream / static pressure.</p></li>
+<li><p><strong>P0</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Total / stagnation pressure (also P0).</p></li>
+<li><p><strong>T</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Stream / static temperature.</p></li>
+<li><p><strong>T0</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Total /stagnation temperature (also T0).</p></li>
+<li><p><strong>h</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Specific enthalpy.</p></li>
+<li><p><strong>h0</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Total / stagnation enthalpy.</p></li>
+<li><p><strong>s</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Specific entropy.</p></li>
+<li><p><strong>M</strong> (<em>float</em><em>, </em><em>optional</em>) – Mach number.</p></li>
+<li><p><strong>w</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Mass flowrate.  Default = None.</p></li>
+<li><p><strong>gas</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Gas identifier.  Default = ‘air’.  Available <cite>gas</cite> values are:</p>
+<ul>
+<li><p>’air’: Dry air</p></li>
+<li><p>’burned_kerosene’: Products of combustion for kerosene in dry
+air.</p></li>
+<li><p>’burned_diesel’: Products of combustion for diesel in dry air.</p></li>
+</ul>
+</p></li>
+<li><p><strong>FAR</strong> (<em>float</em><em>, </em><em>optional</em>) – Fuel-Air Ratio.  Default = 0.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#pyavia.aero.GasError" title="pyavia.aero.GasError"><strong>GasError</strong></a> – On invalid arguments.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.cp">
+<em class="property">property </em><code class="sig-name descname">cp</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.cp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific heat capacity at constant pressure of the gas.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.gamma">
+<em class="property">property </em><code class="sig-name descname">gamma</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.gamma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ratio of specific heats <span class="math notranslate nohighlight">\(\gamma = c_p/c_v.\)</span></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.h">
+<em class="property">property </em><code class="sig-name descname">h</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.h" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific enthalpy of the gas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The baseline is arbitrary and values from different
+formulations / classes should not be compared.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.s">
+<em class="property">property </em><code class="sig-name descname">s</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific entropy of the gas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The baseline is arbitrary and values from different
+formulations / classes should not be compared.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.special_args">
+<em class="property">classmethod </em><code class="sig-name descname">special_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlowWF.special_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a sequence of strings listing any additional arguments
+specific to the derived class needed to fully fully initialise this
+object.  Standard state properties <cite>T</cite>, <cite>T0</cite>, <cite>P</cite>, <cite>P0</cite>, <cite>h</cite>, <cite>h0</cite>,
+<cite>s</cite> or <cite>M</cite> and mass flowrate <cite>w</cite> are not to be included.  Used by
+__repr__, __str__, __format__, new_props().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.GasFlowWF.u">
+<em class="property">property </em><code class="sig-name descname">u</code><a class="headerlink" href="#pyavia.aero.GasFlowWF.u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flow velocity.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyavia.aero.PerfectGasFlow">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">PerfectGasFlow</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">P: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">P0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">s: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">M: Optional[float] = None</em>, <em class="sig-param">w: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">gas: str = 'air'</em>, <em class="sig-param">gamma: float = 1.4</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.PerfectGasFlow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyavia.aero._gasflow.GasFlow</span></code></p>
+<blockquote>
+<div><p>A simplified compressible gas, thermally and calorically perfect.
+I.E. cp and R are constant.  Once initialised, properties are fixed.</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>Internally, stream pressure, temperature, Mach number and ratio of
+specific heats are the stored flow properties (<cite>P</cite>, <cite>T</cite>, <cite>M</cite>, <cite>γ</cite>).</p></li>
+<li><p>Sepcific enthalpy computation is <span class="math notranslate nohighlight">\(h = h_0 + c_p.(T - T_{ref})\)</span>.</p></li>
+<li><p>Specific entropy computation is <span class="math notranslate nohighlight">\(s = s_0 + c_p.ln(T / T_{ref}) -
+R.ln(P / P_{ref})\)</span>.</p></li>
+</ul>
+</div>
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.M">
+<em class="property">property </em><code class="sig-name descname">M</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.M" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mach number <span class="math notranslate nohighlight">\(M = u/a\)</span>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.P">
+<em class="property">property </em><code class="sig-name descname">P</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream / ambient pressure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.P0">
+<em class="property">property </em><code class="sig-name descname">P0</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.P0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation pressure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.P0_on_P">
+<em class="property">property </em><code class="sig-name descname">P0_on_P</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.P0_on_P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ratio of total (stagnation) pressure to static pressure computed
+using <span class="math notranslate nohighlight">\(\frac{P_0}{P} = (1 + \frac{1}{2}(γ - 1)M^2)^{\frac{γ}{γ -
+1}}\)</span>, which assumes a perfect gas.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.T">
+<em class="property">property </em><code class="sig-name descname">T</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stream / ambient temperature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.T0">
+<em class="property">property </em><code class="sig-name descname">T0</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.T0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Total / stagnation temperature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.T0_on_T">
+<em class="property">property </em><code class="sig-name descname">T0_on_T</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.T0_on_T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ratio of total (stagnation) pressure to static temperature
+computed using <span class="math notranslate nohighlight">\(\frac{T_0}{T} = 1 + \frac{1}{2}(γ - 1)M^2\)</span>,
+which assumes a perfect gas.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.aero.PerfectGasFlow.__abstractmethods__">
+<code class="sig-name descname">__abstractmethods__</code><em class="property"> = frozenset({})</em><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.__abstractmethods__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">P: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">P0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">s: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">M: Optional[float] = None</em>, <em class="sig-param">w: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">gas: str = 'air'</em>, <em class="sig-param">gamma: float = 1.4</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a thermally and calorically perfect, compressible gas
+flowing in 1-D.  Three state property arguments must be given that
+completely specify the gas state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P0</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Total / stagnation pressure.</p></li>
+<li><p><strong>T0</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Total / stagnation temperature.</p></li>
+<li><p><strong>P</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Stream / static pressure.</p></li>
+<li><p><strong>T</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Stream / static temperature.</p></li>
+<li><p><strong>h</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Specific enthalpy.</p></li>
+<li><p><strong>h0</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Total / stagnation enthalpy.</p></li>
+<li><p><strong>s</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Specific entropy.</p></li>
+<li><p><strong>M</strong> (<em>float</em><em>, </em><em>optional</em>) – Mach number.</p></li>
+<li><p><strong>w</strong> (<a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>, </em><em>optional</em>) – Mass flowrate.  Default = None.</p></li>
+<li><p><strong>gas</strong> (<em>str</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>Gas idenfitifer.  Supported values are:</dt><dd><ul>
+<li><p>’air’.</p></li>
+</ul>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>gamma</strong> (<em>float</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>Ratio of specific heats.  Commonly used values for air are:</dt><dd><ul>
+<li><p>γ = 1.4: Atmospheric air, compressors (default).</p></li>
+<li><p>γ = 1.33: Hot air, burners, turbines.</p></li>
+</ul>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.cp">
+<em class="property">property </em><code class="sig-name descname">cp</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.cp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific heat capacity at constant pressure of the gas.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.gamma">
+<em class="property">property </em><code class="sig-name descname">gamma</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.gamma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ratio of specific heats <span class="math notranslate nohighlight">\(\gamma = c_p/c_v.\)</span></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.h">
+<em class="property">property </em><code class="sig-name descname">h</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.h" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific enthalpy of the gas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The baseline is arbitrary and values from different
+formulations / classes should not be compared.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.s">
+<em class="property">property </em><code class="sig-name descname">s</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specific entropy of the gas.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The baseline is arbitrary and values from different
+formulations / classes should not be compared.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.special_args">
+<em class="property">classmethod </em><code class="sig-name descname">special_args</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.special_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a sequence of strings listing any additional arguments
+specific to the derived class needed to fully fully initialise this
+object.  Standard state properties <cite>T</cite>, <cite>T0</cite>, <cite>P</cite>, <cite>P0</cite>, <cite>h</cite>, <cite>h0</cite>,
+<cite>s</cite> or <cite>M</cite> and mass flowrate <cite>w</cite> are not to be included.  Used by
+__repr__, __str__, __format__, new_props().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.aero.PerfectGasFlow.u">
+<em class="property">property </em><code class="sig-name descname">u</code><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.u" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flow velocity.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="pyavia.aero.geo_alt_to_pot">
+<code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">geo_alt_to_pot</code><span class="sig-paren">(</span><em class="sig-param">geo_alt</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.geo_alt_to_pot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert geometric altitude to geopotential h → H per ISO 2533-1975 Eqn
+8.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyavia.aero.pot_alt_to_geo">
+<code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">pot_alt_to_geo</code><span class="sig-paren">(</span><em class="sig-param">pot_alt</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.pot_alt_to_geo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert geopotential altitude to geometric H → h per ISO 2533-1975 Eqn
+9.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyavia.aero</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#module-pyavia.aero">Members</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pyavia.core.util.html"
+                        title="previous chapter">Utilities</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pyavia.solve.html"
+                        title="next chapter">pyavia.solve</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/pyavia.aero.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pyavia.solve.html" title="pyavia.solve"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pyavia.core.util.html" title="Utilities"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eric J. Whitney.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,453 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Containers &#8212; PyAvia 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Units" href="pyavia.core.units.html" />
+    <link rel="prev" title="Core Modules" href="pyavia.core.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pyavia.core.units.html" title="Units"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pyavia.core.html" title="Core Modules"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="containers">
+<span id="pyavia-core-containers"></span><h1>Containers<a class="headerlink" href="#containers" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.MultiBiDict" title="pyavia.core.containers.MultiBiDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.MultiBiDict</span></code></a></p></td>
+<td><p>Bi-directional dict class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.g_link" title="pyavia.core.containers.g_link"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.g_link</span></code></a></p></td>
+<td><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">builtins.slice</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.WtDirgraph" title="pyavia.core.containers.WtDirgraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.WtDirgraph</span></code></a></p></td>
+<td><p>A weighted directed graph where a value / weight can be assigned to any link / edge between any two hashable nodes / keys.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten" title="pyavia.core.containers.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten</span></code></a></p></td>
+<td><p>Generator returning entries from a flattened representation of any sequence container (except strings).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten_list" title="pyavia.core.containers.flatten_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten_list</span></code></a></p></td>
+<td><p>Generator similar to <code class="docutils literal notranslate"><span class="pre">flatten</span></code>, however only flattens lists until a non-list element is found.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-pyavia.core.containers">
+<span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.core.containers" title="Permalink to this headline">¶</a></h2>
+<p>Adds useful, less common containers not available in the standard library.</p>
+<dl class="class">
+<dt id="pyavia.core.containers.MultiBiDict">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">MultiBiDict</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>Bi-directional dict class.</p>
+<p>A forward and inverse dictionary are synchronised to allow searching by
+either key or value to get the corresponding value / key.
+Implementation from this StackOverflow answer:
+<a class="reference external" href="https://stackoverflow.com/a/21894086">https://stackoverflow.com/a/21894086</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>The inverse dict bidict_multi.inverse auto-updates itself when the
+normal dict bidict_multi is modified.</p></li>
+<li><p>Inverse directory entries bidict_multi.inverse[value] are always lists
+of key such that bidict_multi[key] == value.</p></li>
+<li><p>Multiple keys can have the same value.</p></li>
+</ul>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">MultiBiDict</span><span class="p">({</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
+<span class="go">{&#39;a&#39;: 1, &#39;b&#39;: 2}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="o">.</span><span class="n">inverse</span><span class="p">)</span>
+<span class="go">{1: [&#39;a&#39;], 2: [&#39;b&#39;]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>         <span class="c1"># Now two keys have the same value (= 1)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
+<span class="go">{&#39;a&#39;: 1, &#39;b&#39;: 2, &#39;c&#39;: 1}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="o">.</span><span class="n">inverse</span><span class="p">)</span>
+<span class="go">{1: [&#39;a&#39;, &#39;c&#39;], 2: [&#39;b&#39;]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bd</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
+<span class="go">{&#39;a&#39;: 1, &#39;b&#39;: 2}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="o">.</span><span class="n">inverse</span><span class="p">)</span>
+<span class="go">{1: [&#39;a&#39;], 2: [&#39;b&#39;]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">bd</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
+<span class="go">{&#39;b&#39;: 2}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="o">.</span><span class="n">inverse</span><span class="p">)</span>
+<span class="go">{2: [&#39;b&#39;]}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
+<span class="go">{&#39;b&#39;: 3}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="o">.</span><span class="n">inverse</span><span class="p">)</span>
+<span class="go">{2: [], 3: [&#39;b&#39;]}</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyavia.core.containers.MultiBiDict.__delitem__">
+<code class="sig-name descname">__delitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete self[key].</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.MultiBiDict.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>args</strong><strong>,</strong><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Initialise the forward dict as dict(<cite>*args</cite>, <cite>**kwargs</cite>) if
+supplied.  The inverse dict is then constructed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.MultiBiDict.__setitem__">
+<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set self[key] to value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyavia.core.containers.WtDirgraph">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">WtDirgraph</code><span class="sig-paren">(</span><em class="sig-param">links: Dict[Hashable</em>, <em class="sig-param">Dict[Hashable</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A weighted directed graph where a value / weight can be assigned to any
+link / edge between any two hashable nodes / keys.
+Link values can be different in each direction (or completely absent),
+i.e. x →[value]→ y and x ←[reverse_value2]← y.  Intended for sparse
+graphs.  Implemented as a dict(x-keys)-of-dicts(y-keys), both forward
+and reverse values are therefore stored independently for each pair of
+keys.</p>
+<p>Access to all links from a given key is the same as a dict, but access to
+a specific link between two keys uses the slice [:] notation.
+e.g.: <code class="docutils literal notranslate"><span class="pre">wdg['a':'b']</span></code> returns the value between <cite>a</cite> → <cite>b</cite>, whereas
+<code class="docutils literal notranslate"><span class="pre">wdg['a']</span></code> returns a dict of all link / edge values starting at <cite>a</cite>
+i.e. <code class="docutils literal notranslate"><span class="pre">{'b':</span> <span class="pre">'somevalue',</span> <span class="pre">'c':</span> <span class="pre">'anotherval'}</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Where slice / square bracket syntax cannot be used, module
+function g_link(a, b) is defined as an alias of the builtin slice
+function. This is the equivalent of a graph link.  e.g.: <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">link(a,</span>
+<span class="pre">b)</span> <span class="pre">in</span> <span class="pre">wdg:</span></code>.</p>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">wdg</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">WtDirgraph</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">:</span><span class="s1">&#39;b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Here&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">wdg</span><span class="p">)</span>
+<span class="go">WtDirgraph({&#39;a&#39;: {&#39;b&#39;: &#39;Here&#39;}, &#39;b&#39;: {}})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">:</span><span class="s1">&#39;b&#39;</span><span class="p">])</span>
+<span class="go">Here</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">:</span><span class="s1">&#39;a&#39;</span><span class="p">])</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">KeyError</span>: <span class="n">&#39;a&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">:</span><span class="mf">3.14159</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">:</span><span class="s1">&#39;c&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;it&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">:</span><span class="s1">&#39;d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;is.&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">path</span><span class="p">,</span> <span class="n">joined</span> <span class="o">=</span> <span class="n">wdg</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">joined</span><span class="p">)</span>
+<span class="go">[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;] Here it is.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">wdg</span><span class="p">)</span>
+<span class="go">WtDirgraph({&#39;b&#39;: {&#39;c&#39;: &#39;it&#39;}, 3.14159: {}, &#39;c&#39;: {&#39;d&#39;: &#39;is.&#39;}, &#39;d&#39;: {}})</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.__contains__">
+<code class="sig-name descname">__contains__</code><span class="sig-paren">(</span><em class="sig-param">arg</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if a link value x → y exists (slice arg), or True if
+key exists (single arg).  Because standalone slice notation is  not
+available on the LHS, use the following syntax:
+<code class="docutils literal notranslate"><span class="pre">g_link(x,</span> <span class="pre">y)</span> <span class="pre">in</span> <span class="pre">wdg</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arg</strong> (<em>slice</em><em> or </em><em>key</em>) – If slice, [from:to] otherwise key value <cite>x</cite>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>Slice arg: True if a link value <cite>x</cite> → <cite>y</cite> exists, else False.</p></li>
+<li><p>Key arg: True if key exists (single arg), else False.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.__delitem__">
+<code class="sig-name descname">__delitem__</code><span class="sig-paren">(</span><em class="sig-param">arg</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete link value for x → y (slice arg) or delete key <cite>x</cite> and all
+associated links (single arg).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arg</strong> (<em>slice</em><em> or </em><em>key</em>) – If slice, [from:to] otherwise key value <cite>x</cite>.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – Invalid slice argument or if link/s do not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.__getitem__">
+<code class="sig-name descname">__getitem__</code><span class="sig-paren">(</span><em class="sig-param">arg: slice</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get link value for x → y.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arg</strong> (<em>slice</em>) – [from:to].</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Link value.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>KeyError</strong> – Invalid slice argument or link does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">links: Dict[Hashable</em>, <em class="sig-param">Dict[Hashable</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a weighted directional graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>links</strong> – <p>If provided this is to be a dict-of-dicts representing forward
+links.  Each key corresponds to a dict holding other keys and
+the link value.  Example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">wdg</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">WtDirgraph</span><span class="p">({</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">wdg</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">:</span><span class="s1">&#39;a&#39;</span><span class="p">])</span>
+<span class="go">4</span>
+</pre></div>
+</div>
+<p>Creates a graph with linkages of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>a -→ b  link value = 2
+  |→ c  link value = 5
+b -→    (no links)
+c -→ a  link value = 4
+</pre></div>
+</div>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.__setitem__">
+<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param">arg: slice</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set / overwrite link value for x → y.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arg</strong> (<em>slice</em>) – [from:to]</p></li>
+<li><p><strong>value</strong> – Link value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – Invalid slice argument (including path to nowhere <cite>x</cite> == <cite>y</cite>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.WtDirgraph.trace">
+<code class="sig-name descname">trace</code><span class="sig-paren">(</span><em class="sig-param">x: Hashable, y: Hashable, op: Optional[Callable[[Any, Any], Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trace shortest path between two existing keys x and y using a
+breath-first search (refer
+<a class="reference external" href="https://en.wikipedia.org/wiki/Breadth-first_search">https://en.wikipedia.org/wiki/Breadth-first_search</a> and
+<a class="reference external" href="https://www.python.org/doc/essays/graphs/">https://www.python.org/doc/essays/graphs/</a>).</p>
+<p>If <cite>op</cite> is supplied, calculate the combined link / edge value by
+successively applying operator op to intermediate link values. E.G.
+To determine xz_val x →[xz_val]→ z we can compute xz_val =
+op(xy_val, yz_val) if we have x →[xy_val]→ y and y →[yz_val]→ z.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong><strong>,</strong><strong>y</strong> (<em>Hashable</em>) – Starting and ending node / vertex / key.</p></li>
+<li><p><strong>op</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>Any</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Operator that produces a combined value valid for any two link /
+edge values, i.e. <code class="docutils literal notranslate"><span class="pre">result</span> <span class="pre">=</span> <span class="pre">op(val1,</span> <span class="pre">val2)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>path</strong> (<em>List</em>) – List of all points visited along the path including the end
+nodes, i.e. from x → y: [x, i, j, k, y].  If no path is found it
+is None.</p></li>
+<li><p><strong>path,value</strong> (<em>Tuple[List, Any]</em>) – If <cite>op</cite> is given, the path value is computed and returned along
+with the path list (as above), if the path covers more than
+one link. For direct links, the link value is returned. If <cite>op</cite>
+is given but no path is found this is also None.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>KeyError</strong> – If <cite>x</cite> or <cite>y</cite> are not verticies, or if <cite>x</cite> == <cite>y</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyavia.core.containers.g_link">
+<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">g_link</code><a class="headerlink" href="#pyavia.core.containers.g_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">builtins.slice</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyavia.core.containers.flatten">
+<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">flatten</code><span class="sig-paren">(</span><em class="sig-param">seq</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning entries from a flattened representation of any
+sequence container (except strings).  Taken from
+<a class="reference external" href="https://stackoverflow.com/a/2158532">https://stackoverflow.com/a/2158532</a></p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">flatten</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="mi">6</span><span class="p">),</span> <span class="mi">7</span><span class="p">)):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="go">234567</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>seq</strong> (<em>list_like</em>) – Sequence container</p>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p>Each entry in turn.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyavia.core.containers.flatten_list">
+<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">flatten_list</code><span class="sig-paren">(</span><em class="sig-param">li</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.flatten_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator similar to <code class="docutils literal notranslate"><span class="pre">flatten</span></code>, however only flattens lists until a
+non-list element is found.  Note that non-lsits may contain sub-lists
+and these are not flattened.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>li</strong> (<em>List</em>) – List to flatten.</p>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p>Each non-list entry in turn.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Containers</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#module-pyavia.core.containers">Members</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pyavia.core.html"
+                        title="previous chapter">Core Modules</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pyavia.core.units.html"
+                        title="next chapter">Units</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/pyavia.core.containers.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pyavia.core.units.html" title="Units"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pyavia.core.html" title="Core Modules"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eric J. Whitney.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+    </div>
+  </body>
+</html>
