@@ -3,7 +3,7 @@
 **PyAvia** is a collection of modules useful for common tasks in aerospace
 engineering or engineering in general.  
 
-- **Documentation**: See here.
+- **Documentation**: <a href="https://pyavia.readthedocs.io/en/latest/">PyAvia on ReadTheDocs.</a>
 - **Repository**: <a href="https://github.com/ericjwhitney/pyavia">PyAvia on
  Github</a>
 - **Current version**: 0.0.1
