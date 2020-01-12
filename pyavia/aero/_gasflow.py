@@ -1,25 +1,21 @@
 """
 Equations and constants relating to gases and compressible flow.
-
-Contains:
-    GasFlow         Abstract class for compressible gas flows.
-    GasFlowWF       Compressible gas, calorically imperfect, opt. fuel-air.
-    PerfectGasFlow  Compressible gas, calorically perfect.
 """
-# Last updated: 2 January by Eric J. Whitney
+# Last updated: 11 January by Eric J. Whitney
 
 from __future__ import annotations
+from pyavia.solve import fixed_point, solve_dqnm
+from pyavia.core.units import Dim, make_total_temp
+from pyavia.core.util import all_not_none, all_none
 from abc import ABC, abstractmethod
 from math import log, exp, inf
 from typing import Sequence, Tuple, List, Dict
-from solve import fixed_point, solve_dqnm
-from units import Dim, make_total_temp
-from util import all_not_none, all_none
 
 __all__ = ['GasError', 'GasFlow', 'PerfectGasFlow', 'GasFlowWF']
 
 
 class GasError(Exception):
+    """Exception class specific to gas computations."""
     pass
 
 # ----------------------------------------------------------------------------
@@ -31,9 +27,9 @@ class GasFlow(ABC):
     Abstract base class representing common properties of gases flowing in
     1-D. Once any gas is initialised, properties are fixed.
 
-    Note: This base class does not provide properties such as T0/T or P0/T
-    because non-linearities in imperfect gas models may make these ratios
-    moot.  Refer to the specific derived class.
+    .. note:: This base class does not provide properties such as `T0/T` or
+       `P0/T` because non-linearities in imperfect gas models may make these
+       ratios moot.  Refer to the specific derived class.
     """
 
     # Magic methods ----------------------------------------------------------
@@ -43,10 +39,13 @@ class GasFlow(ABC):
         Construct an abstract base representation of flowing compressible
         gas.  Once constructed, the properties of the gas are fixed.
 
-        Args:
-            R: (Opt Type) Gas constant for this particular gas (i.e. R =
-            R_universal / n).
-            w: (Opt Type) Mass flowrate
+        Parameters
+        ----------
+        R :
+            Gas constant for this particular gas (i.e.
+            :math:`R = R_{univ}/n`).
+        w :
+            Mass flowrate
         """
         self._R, self._w, self._gas = R, w, gas
 
@@ -82,15 +81,17 @@ class GasFlow(ABC):
         return (self.gamma * self._R * self.T) ** 0.5
 
     def new_props(self, **kwargs) -> GasFlow:
-        """Return a new GasFlow object specialised to match 'self' except
-        without any state properties T, T0, P, P0, h, h0, s or M, which are
-        to be supplied by the user in **kwargs. This is used for making a
-        new GasFlow object from the current one but with changed properties.
+        """Return a new GasFlow object specialised to match `self` except
+        without any state properties `T`, `T0`, `P`, `P0`, `h`, `h0`, `s` or
+        `M`, which are to be supplied by the user in `**kwargs`. This is used
+        for making a new GasFlow object from the current one but with
+        changed properties.
 
-        Note:
-            - Any arguments in kwargs supersede any matching defaults
-              supplied by clone.
-            - Mass flowrate w is also copied automatically.
+        .. note::
+
+            - Any arguments in `**kwargs` supersedes any matching defaults
+              supplied by new_props.
+            - Mass flowrate `w` is also copied automatically.
             - Refer to __init__ for the derived class for valid property
               combinations."""
         # Build keywords.
@@ -116,10 +117,11 @@ class GasFlow(ABC):
 
     @property
     def h0(self):
-        """Total / stagnation enthalpy of the gas, assuming it is brought to
-        rest with losses or heat transfer computed as h_0 = h + (1/2)*u_n**2.
-        Like all enthalpy values the baseline is arbitrary and values from
-        different formulations / classes should not be compared."""
+        r"""Total / stagnation enthalpy of the gas, assuming it is brought to
+        rest with losses or heat transfer computed as :math:`h_0 = h +
+        \frac{1}{2}u^2`. Like all enthalpy values the baseline is arbitrary
+        and values from different formulations / classes should not be
+        compared."""
         return self.h + 0.5 * self.u ** 2
 
     @property
@@ -151,21 +153,23 @@ class GasFlow(ABC):
     @property
     @abstractmethod
     def gamma(self) -> float:
-        """Ratio of specific heats γ = cp / cv."""
+        r"""Ratio of specific heats :math:`\gamma = c_p/c_v.`"""
         pass
 
     @property
     @abstractmethod
     def h(self):
-        """Specific enthalpy of the gas. Note: The baseline is arbitrary and
-        values from different formulations / classes should not be compared.
+        """Specific enthalpy of the gas.
+
+        .. note:: The baseline is arbitrary and values from different
+           formulations / classes should not be compared.
         """
         pass
 
     @property
     @abstractmethod
     def M(self) -> float:
-        """Mach number."""
+        """Mach number :math:`M = u/a`."""
         pass
 
     @property
@@ -188,8 +192,10 @@ class GasFlow(ABC):
     @property
     @abstractmethod
     def s(self):
-        """Specific entropy of the gas.  Note: The baseline is arbitrary and
-        values from different formulations / classes should not be compared.
+        """Specific entropy of the gas.
+
+        .. note:: The baseline is arbitrary and values from different
+           formulations / classes should not be compared.
         """
         pass
 
@@ -198,9 +204,9 @@ class GasFlow(ABC):
     def special_args(cls) -> Sequence[str]:
         """Return a sequence of strings listing any additional arguments
         specific to the derived class needed to fully fully initialise this
-        object.  Standard state properties T, T0, P, P0, h, h0, s or M and
-        mass flowrate w are not to be included.  Used by __repr__, __str__,
-        __format__, clone().
+        object.  Standard state properties `T`, `T0`, `P`, `P0`, `h`, `h0`,
+        `s` or `M` and mass flowrate `w` are not to be included.  Used by
+        __repr__, __str__, __format__, new_props().
         """
         pass
 
@@ -228,17 +234,16 @@ class GasFlow(ABC):
 
 # noinspection PyPep8Naming
 class PerfectGasFlow(GasFlow):
-    """
-    Class representing a simplified compressible gas which is thermally and
-    calorically perfect. i.e. cp and R are constant.  Once initialised,
-    properties are fixed.
+    r"""
+    A simplified compressible gas, thermally and calorically perfect.
+    I.E. cp and R are constant.  Once initialised, properties are fixed.
 
-    Notes:
-        - Internally, stream pressure, temperature, Mach number and ratio of
-         specific heats are the stored flow properties (P, T, M, γ).
-        - Sepcific enthalpy computation is h = h0 + cp.(T - T_ref)
-        - Specific entropy computation is s = s0 + cp.ln(T / T_ref) - self.R *
-            ln(P / P_ref).
+.. note::
+    - Internally, stream pressure, temperature, Mach number and ratio of
+      specific heats are the stored flow properties (`P`, `T`, `M`, `γ`).
+    - Sepcific enthalpy computation is :math:`h = h_0 + c_p.(T - T_{ref})`.
+    - Specific entropy computation is :math:`s = s_0 + c_p.ln(T / T_{ref}) -
+      R.ln(P / P_{ref})`.
     """
 
     def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
@@ -248,24 +253,35 @@ class PerfectGasFlow(GasFlow):
         """
         Construct a thermally and calorically perfect, compressible gas
         flowing in 1-D.  Three state property arguments must be given that
-        completely specify the gas state, e.g. T, P, M / T, s, M /
-        T0, P0, P, etc.
+        completely specify the gas state.
 
-        Args:
-            P0: (Opt) (Dim) Total / stagnation pressure.
-            T0: (Opt) (Dim) Total / stagnation temperature.
-            P: (Opt) (Dim) Stream / static pressure.
-            T: (Opt) (Dim) Stream / static temperature.
-            h: (Opt) (Dim) Specific enthalpy.
-            h0: (Opt) (Dim) Total / stagnation enthalpy.
-            s: (Opt) (Dim) Specific entropy.
-            M: (Opt) (float) Mach number.
-            w: (Opt) (Dim) Mass flowrate.
-            gas: (str) Gas type.  Supported values are: air.
-            gamma: (float) Ratio of specific heats.  Commonly used values
-                for air are:
-                    γ = 1.4     Atmospheric air, compressors (default).
-                    γ = 1.33    Hot air, burners, turbines.
+        Parameters
+        ----------
+        P0 : Dim, optional
+            Total / stagnation pressure.
+        T0 : Dim, optional
+            Total / stagnation temperature.
+        P : Dim, optional
+            Stream / static pressure.
+        T : Dim, optional
+            Stream / static temperature.
+        h : Dim, optional
+            Specific enthalpy.
+        h0 : Dim, optional
+            Total / stagnation enthalpy.
+        s : Dim, optional
+            Specific entropy.
+        M : float, optional
+            Mach number.
+        w : Dim, optional
+            Mass flowrate.  Default = None.
+        gas : str, optional
+            Gas idenfitifer.  Supported values are:
+                - 'air'.
+        gamma : float, optional
+            Ratio of specific heats.  Commonly used values for air are:
+                - γ = 1.4: Atmospheric air, compressors (default).
+                - γ = 1.33: Hot air, burners, turbines.
         """
         # Set basic constants.
         self._gamma = gamma
@@ -333,9 +349,9 @@ class PerfectGasFlow(GasFlow):
 
     @property
     def P0_on_P(self) -> float:
-        """Ratio of total (stagnation) pressure to static pressure computed
-        using T0/T = (1 + 0.5 * (γ - 1) * M ** 2) ** (γ / (γ - 1)),
-        which assumes a perfect gas."""
+        r"""Ratio of total (stagnation) pressure to static pressure computed
+        using :math:`\frac{P_0}{P} = (1 + \frac{1}{2}(γ - 1)M^2)^{\frac{γ}{γ -
+        1}}`, which assumes a perfect gas."""
         return (1 + 0.5 * (self._gamma - 1) *
                 self._M ** 2) ** (self._gamma / (self._gamma - 1))
 
@@ -354,9 +370,9 @@ class PerfectGasFlow(GasFlow):
 
     @property
     def T0_on_T(self) -> float:
-        """Ratio of total (stagnation) pressure to static temperature
-        computed using T0/T = 1 + 0.5 * (γ - 1) * M ** 2, which assumes a
-        perfect gas."""
+        r"""Ratio of total (stagnation) pressure to static temperature
+        computed using :math:`\frac{T_0}{T} = 1 + \frac{1}{2}(γ - 1)M^2`,
+        which assumes a perfect gas."""
         return 1 + 0.5 * (self._gamma - 1) * self._M ** 2
 
     @property
@@ -369,20 +385,21 @@ class PerfectGasFlow(GasFlow):
 
 # noinspection PyPep8Naming
 class GasFlowWF(GasFlow):
-    """
-    Class representing airflow (with optional products of combustion) as a
-    compressible, imperfect gas, based on interpolating polynomials in Walsh
-    & Fletcher Chapter 3 and are fixed once initialised.
+    r"""
+    Compressible, imperfect gas using polynomials from Walsh & Fletcher §3.
+    Includes optional products of combustion.  Properties are fixed once
+    initialised.
 
-    Notes:
-        - Temperature range is 200 K -> 2000 K.
-        - Fuel-Air ratio 0.00 -> 0.05
-        - Non-linear γ, cp, h, s dependent on temperature (i.e.
-        calorically imperfect).  Stagnation enthalpy, temperature, pressure
-        do not assume a perfect gas.
-        - Uses Dim values. Internal values stored as SI [K, kPa, ...].
-        - Stream / static temperature and pressure and Mach number are
-        internal reference states.
+.. note::
+    - Temperature range is 200 K → 2000 K.
+    - Fuel-Air Ratio `FAR` = 0.00 → 0.05
+    - Non-linear :math:`\gamma`, :math:`c_p`, `h`, `s` dependent on
+      temperature (i.e. calorically imperfect).  Stagnation enthalpy,
+      temperature and pressure also do not assume a perfect gas.  Stagnation
+      properties are computed by bringing the flow to rest isentropically.
+    - Internal values stored as SI [K, kPa, ...].
+    - Stream / static temperature and pressure and Mach number are the
+      internal reference states.
     """
 
     def __init__(self, *, P: Dim = None, P0: Dim = None, T: Dim = None,
@@ -394,40 +411,53 @@ class GasFlowWF(GasFlow):
         polynomials given in Walsh & Fletcher, "Gas Turbine Performance",
         Second Edition, Chapter 3.
 
-        Notes:
-            - Three state property arguments ('T', 'h', 'T0', 'h0', 's',
-                'P', 'P0', 'M') are required, but can be supplied in any
-                combination that properly defines the gas.
-            - If P and T are supplied these are directly set and
-                initialisation is complete.  All other combinations result
-                in an iterative convergence using the values of T [K],
-                P [kPa] and M.
-            - Non-zero FAR normally accompanies gases including products of
-                combustion but this is not enforced.  This is because this
-                combinatinon may be useful in some hypothetical or debugging
-                scenarios.
+        .. note::
+            - Three state property arguments (`T`, `h`, `T0`, `h0`, `s`,
+              `P`, `P0`, `M`) are required, but can be supplied in any
+              combination that properly defines the gas.
+            - If `P` and `T` are supplied these are directly set and
+              initialisation is complete.  All other combinations result in
+              an iterative convergence using the values of `T` [K],
+              `P` [kPa] and `M`.
+            - Non-zero `FAR` normally accompanies gases including products of
+              combustion but this is not enforced.  This is because this
+              combinatinon may be useful in some hypothetical or
+              debugging scenarios.
 
-        Args:
-            P: (Dim) Stream / static pressure.
-            P0: (Dim) Total / stagnation pressure (also P0).
-            T: (Dim) Stream / static temperature.
-            T0: (Dim) Total /stagnation temperature (also T0).
-            h: (Dim) Specific enthalpy.
-            h0: (Dim) Total / stagnation enthalpy.
-            s: (Dim) Specific entropy.
-            M: (Opt) (float) Mach number.
-            w: (Opt) (Dim) Mass flowrate.
-            gas: (str) identifier.  Default = 'air'.  Available 'gas' values
-                are:
-                    air             Dry air
-                    burned_kerosene Products of combustion for kerosene in
-                                    dry air
-                    burned_diesel   Products of combustion for diesel in
-                                    dry air
-            FAR: (float) Fuel-Air Ratio.  Default = 0.0.
+        Parameters
+        ----------
+        P : Dim, optional
+            Stream / static pressure.
+        P0: Dim, optional
+            Total / stagnation pressure (also P0).
+        T : Dim, optional
+            Stream / static temperature.
+        T0 : Dim, optional
+            Total /stagnation temperature (also T0).
+        h : Dim, optional
+            Specific enthalpy.
+        h0 : Dim, optional
+            Total / stagnation enthalpy.
+        s : Dim, optional
+            Specific entropy.
+        M : float, optional
+            Mach number.
+        w: Dim, optional
+            Mass flowrate.  Default = None.
+        gas : str, optional
+            Gas identifier.  Default = 'air'.  Available `gas` values are:
 
-        Raises:
-            GasError on invalid arguments.
+            - 'air': Dry air
+            - 'burned_kerosene': Products of combustion for kerosene in dry
+              air.
+            - 'burned_diesel': Products of combustion for diesel in dry air.
+        FAR : float, optional
+            Fuel-Air Ratio.  Default = 0.0.
+
+        Raises
+        ------
+        GasError
+            On invalid arguments.
         """
         # Set simple fixed values and gas model coefficients first.
         self._FAR = FAR
@@ -489,10 +519,10 @@ class GasFlowWF(GasFlow):
 
     @property
     def FAR(self) -> float:
-        """Fuel-Air Ratio FAR = w_f / w_total where w_f is the massflow of
-        fuel products of combustion and w_total is the total massflow.  E.G.
-        If the upstream flow was pure airflow of w_air then FAR = w_f / (w_f
-        + w_air) """
+        """Fuel-Air Ratio :math:`FAR = w_f / w_{total}` where :math:`w_f` is
+        the massflow of fuel products of combustion and :math:`w_{total}` is
+        the total massflow.  E.G. If the upstream flow was pure airflow of
+        :math:`w_{air}` then :math:`FAR = w_f / (w_f + w_{air})`."""
         return self._FAR
 
     @property
@@ -633,7 +663,7 @@ _WF_B_COEFF = (
 _last_TPM = None  # Last converged gas solution [K, kPa, M].
 
 
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,PyUnresolvedReferences
 def _converge_TPM(proto_gas: GasFlow, TPM_bounds: Tuple[List, List],
                   reqd_props: Dict[str, Dim]):
     """

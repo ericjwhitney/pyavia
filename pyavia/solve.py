@@ -1,14 +1,10 @@
 """
-Functions for finding solutions to various types of equations. These are
-included when not covered by NumPy or different variant is required.
-
-Contains:
-    bisect_root     Find scalar equation root via bisection.
-    fixed_point		Iterate for the fixed point of a scalar equation.
-    solve_dqnm      Solve a system of nonlinear equations using the Diagonal
-                    Quasi-Newton Merhod.
+**pyavia.solve** provides functions for finding solutions to various types of
+equations. These are included when not covered by NumPy or different variant
+is required.
 """
-# Last updated: 30 December 2019 ny Eric J. Whitney
+
+# Last updated: 11 January 2020 by Eric J. Whitney
 
 import numpy as np
 
@@ -20,34 +16,48 @@ __all__ = ['bisect_root', 'fixed_point', 'solve_dqnm']
 
 def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
     # noinspection PyUnresolvedReferences
-    """
-    Approximate solution of func(x)=0 on interval [x_a, x_b] by bisection
-    method. For bisection to work func(x) must change sign across the interval,
-    i.e. func(x_a) and func(x_b) must have opposite sign.
+    r"""
+    Approximate solution of :math:`f(x) = 0` on interval :math:`x \in [x_a,
+    x_b]` by the bisection method. For bisection to work :math:`f(x)` must
+    change sign across the interval, i.e. ``func(x_a)`` and ``func(x_b)`` must
+    return values of opposite sign.
 
-    Note: This function is able to be used with arbirary units.
+    .. note: This function is able to be used with arbirary units.
+
+    ..
+        >>> import pyavia as pa
 
     Examples
     --------
     >>> f = lambda x: x**2 - x - 1
-    >>> bisect_root(f, 1, 2, 25)  # This will take 17 iterations.
+    >>> pa.solve.bisect_root(f, 1, 2, 25)  # This will take 17 iterations.
     1.6180343627929688
     >>> f = lambda x: (2*x - 1)*(x - 3)
-    >>> bisect_root(f, 0, 1, 10)  # Only takes 1 iteration (in middle).
+    >>> pa.solve.bisect_root(f, 0, 1, 10)  # Only 1 it. (soln was in centre).
     0.5
 
-    Args:
-        func: Function to find root f(x_m) -> 0.
-        x_a, x_b: Each end of the search interval, in any order.
-        maxits:  Maximum number of iterations.
-        ftol: End search when abs(f(x)) < ftol.
-        verbose: (bool) If True, print progress statements.
+    Parameters
+    ----------
+    func : Callable[scalar]
+        Function which we are searching for root.
+    x_a,x_b : scalar
+        Each end of the search interval, in any order.
+    maxits : int
+        Maximum number of iterations.
+    ftol : scalar
+        End search when :math:`|f(x)| < f_{tol}`.
+    verbose : bool
+        If True, print progress statements.
 
-    Returns:
-        xm: Best estimate of root found i.e. f(x_m) approx = 0.0.
+    Returns
+    -------
+    x_m : scalar
+        Best estimate of root found i.e. :math:`f(x_m) \approx 0`.
 
-    Raises:
-        RuntimeError is maxits is reached before a solution is found.
+    Raises
+    ------
+    RuntimeError
+        If maxits is reached before a solution is found.
     """
     if verbose:
         print(f"Bisecting Root:")
@@ -94,77 +104,95 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
 
 def fixed_point(func, x0, xtol, h: float = 1.0, maxits: int = 15,
                 verbose=False):
-    """
-    Find the fixed point of a function x = f(x) by iterative a damped
-    second-order ODE.  The ODE is solved as two equations using
-    the forward Euler iteration:
+    # noinspection PyTypeChecker
+    r"""
+    Find the fixed point of a function :math:`x = f(x)` by iterating a
+    damped second-order ODE.  The ODE is solved as two equations using the
+    forward Euler method:
 
-        x' = x + u.h                    (1)
-        u' = u + h(f(x') - x) - 2hu     (2)
+        1. :math:`x' = x + uh`
+        2. :math:`u' = u + h(f(x') - x) - 2hu`
 
-    Note that the equation (2) for u' above is a simplification of the
-    following:
+    Note that equation 2 for `u'` above is a simplification of the following:
 
-        u' = u + (h / m)(f(x') - x) - (2ζh / √m)u
+        2. :math:`u' = u + (h / m)(f(x') - x) - (2{\zeta}h / \sqrt{m})u`
 
     Where:
-        m       Fictitious 'mass' to give inertia to the solution x.
-        ζ       Damping ratio.
 
-    For practical problems we take m = 1 because the 'force' (correction
-    size f(x') - x) is of the same magnitude as x.  We take ζ = 1 because
-    critical damping is generally the shortest path to convergence.
+        - m: Fictitious 'mass' to give inertia to the solution x.
+        - :math:`\zeta`: Damping ratio.
 
-    An example of a fixed-point iteration of a scalar function:
+    For practical problems we take :math:`m = 1` because the 'force'
+    (correction size :math:`f(x') - x`) is of the same magnitude as :math:`x`.
+    We take :math:`\zeta = 1` because critical damping is generally the
+    shortest path to convergence.
 
-    >>> def f(x): return (x + 10) ** 0.25
-    >>> x_scalar = fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
-    Second-Order Damped Fixed Point Iteration:
-    ... Iteration 1: x = [   -3.0000]
-    ... Iteration 2: x = [    1.6266]
-    ... Iteration 3: x = [    1.8466]
-    ... Iteration 4: x = [    1.8552]
-    ... Iteration 5: x = [    1.8556]
-    ... Iteration 6: x = [    1.8556]
-    ... Iteration 7: x = [    1.8556]
-    ... Converged.
+    ..
+        >>> import pyavia as pa
 
-    This example uses the same function however x is now a list.  Note
+    Examples
+    --------
+        A fixed-point iteration of a scalar function:
+
+        >>> def f(x): return (x + 10) ** 0.25
+        >>> x_scalar = pa.solve.fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
+        Second-Order Damped Fixed Point Iteration:
+        ... Iteration 1: x = [   -3.0000]
+        ... Iteration 2: x = [    1.6266]
+        ... Iteration 3: x = [    1.8466]
+        ... Iteration 4: x = [    1.8552]
+        ... Iteration 5: x = [    1.8556]
+        ... Iteration 6: x = [    1.8556]
+        ... Iteration 7: x = [    1.8556]
+        ... Converged.
+
+    This example uses the same function however `x` is now a list.  Note
     that this works because internally everything is converted to NumPy
-    arrays,provided component-wise operations are valid and f() can
-    also return an array:
+    arrays, provided component-wise operations are valid and `func(x)` can
+    also return a list:
 
-    >>> x_vector = fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2, verbose=True)
-    Second-Order Damped Fixed Point Iteration:
-    ... Iteration 1: x = [   -3.0000    -4.0000]
-    ... Iteration 2: x = [    1.6266     1.5651]
-    ... Iteration 3: x = [    1.8466     1.8441]
-    ... Iteration 4: x = [    1.8552     1.8551]
-    ... Iteration 5: x = [    1.8556     1.8556]
-    ... Iteration 6: x = [    1.8556     1.8556]
-    ... Iteration 7: x = [    1.8556     1.8556]
-    ... Converged.
+        >>> x_vector = pa.solve.fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2,
+        ... verbose=True)
+        Second-Order Damped Fixed Point Iteration:
+        ... Iteration 1: x = [   -3.0000    -4.0000]
+        ... Iteration 2: x = [    1.6266     1.5651]
+        ... Iteration 3: x = [    1.8466     1.8441]
+        ... Iteration 4: x = [    1.8552     1.8551]
+        ... Iteration 5: x = [    1.8556     1.8556]
+        ... Iteration 6: x = [    1.8556     1.8556]
+        ... Iteration 7: x = [    1.8556     1.8556]
+        ... Converged.
 
-    Args:
-        func: (Scalar / List) Function that returns a better estimate of x.
-        x0: (Scalar / List) Starting value for x. Any numeric type
-            including user types may be used, provided they support
-            component-wise mathematical operations.  Individual elements
-            need not be the same type.  Internally they are converted to
-            Numpy arrays.
-        xtol: (Scalar / List) Stop when abs(x' - x) < xtol.  The type/s or
-            element/s of xtol should correspond to x.
-        h: (Float) Step size (time-like) to advance x to next estimate.  The
-            default value of 1.0 should be acceptable in most cases.  Reduce
-            if instability is suspected (e.g. 0.5, 0.25, etc).
-        maxits: (int) Iteration limit.
-        verbose:  (bool) If True, print iterations.
+    Parameters
+    ----------
+    func : Callable[scalar or list_like]
+        Function that returns a better estimate of `x`.
+    x0 : scalar or list_like
+        Starting value for `x`. Any numeric type including user types may be
+        used, provided they support component-wise mathematical operations.
+        Individual elements need not be the same type.  Internally they are
+        converted to NumPy arrays.
+    xtol : scalar or list_like
+        Stop when ``abs(x' - x) < xtol``.  The type/s or element/s of `xtol`
+        should correspond to `x`.
+    h : float
+        Step size (time-like) to advance `x` to next estimate.  The default
+        value of 1.0 should be acceptable in most cases.  Reduce if
+        instability is suspected (e.g. 0.5, 0.25, etc).
+    maxits : int
+        Iteration limit.
+    verbose : bool
+        If True, print iterations.
 
-    Returns:
-        (Scalar / List) Converged x value.
+    Returns
+    -------
+    scalar or list_like
+        Converged x value.
 
-    Raises:
-        RuntimeError if maxits is exceeded.
+    Raises
+    ------
+        RuntimeError
+            If maxits is exceeded.
     """
     x, xtol_ = np.atleast_1d(x0), np.atleast_1d(xtol)
     u = x - x  # This makes a zero array of arbitrary objects.
@@ -193,146 +221,79 @@ def fixed_point(func, x0, xtol, h: float = 1.0, maxits: int = 15,
 
     raise RuntimeError(f"Limit of {maxits} iterations exceeded.")
 
-# def old_fixed_point(func, x0, xtol, relax=1.0, relax2=1.0, maxits: int = 15,
-#                 verbose=False):
-#     """
-#     Find the fixed point of a function x = f(x) by repeatedly passing x
-#     through the function, and return when the result stabilises.  Here is an
-#     example with a scalar function:
-#
-#     >>> def f(x): return (x + 10) ** 0.25
-#     >>> x_scalar = fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
-#     Fixed Point Iteration: x0 = -3
-#     ... Iteration 1: x = [1.62657656]
-#     ... Iteration 2: x = [1.84655805]
-#     ... Iteration 3: x = [1.85523123]
-#     ... Iteration 4: x = [1.8555707]
-#     ... Iteration 5: x = [1.85558399]
-#     ... Iteration 6: x = [1.85558451]
-#     ... Converged.
-#
-#     This example uses the same function however x is now a list.  Note
-#     that this only works because internally everything is converted to NumPy
-#     arrays so that component-wise operations are valid and f() also returns an
-#     array:
-#
-#     >>> x_vector = fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2, verbose=True)
-#     Fixed Point Iteration: x0 = [-3, -4]
-#     ... Iteration 1: x = [1.62657656 1.56508458]
-#     ... Iteration 2: x = [1.84655805 1.84411162]
-#     ... Iteration 3: x = [1.85523123 1.85513544]
-#     ... Iteration 4: x = [1.8555707  1.85556696]
-#     ... Iteration 5: x = [1.85558399 1.85558384]
-#     ... Iteration 6: x = [1.85558451 1.8555845 ]
-#     ... Converged.
-#
-#     Args:
-#         func: (Scalar / List) Function that returns a better estimate of x.
-#         x0: (Scalar / List) Starting value for x. Any numeric type
-#             including user types may be used, provided they support
-#             component-wise mathematical operations.  Individual elements
-#             need not be the same type.  Internally they are converted to
-#             Numpy arrays.
-#         xtol: (Scalar / List) Stop when abs(x' - x) < xtol.  The type/s or
-#             element/s of xtol should correspond to x.
-#         relax: (Float) First order relaxation factor.  The next estimate of
-#             x' = x[n+1] is computed as follows:
-#                x[n+1] = relax * f(x[n]) + relax2 * (1 - relax) * x[n] +
-#                     (1 - relax2) * (1 - relax) * x[n-1]
-#             'relax' represents the proportion of f(x) in the next point,
-#             and if relax = 1 this is the equivalent to the direct iteration
-#             of x' = f(x). When relax < 1 (e.g. 0.5) this is an
-#             under-relaxation which can add stability.
-#         relax2: (Float) Second order relaxation factor.  This represents a
-#             sharing factor between x[n] and x[n-1] in the above equation.
-#             If relax2 = 1 then this is the equivalent of omitting x[n-1].
-#             Including a small proportion of x[n-1] e.g. relax2 = 0.75 is
-#             equivalent to adding some damping to the convergence which can
-#             stabilise some borderline problems.  It also allows 'relax' to
-#             be increased which can speed up the overall convergence.
-#         maxits: (int) Iteration limit.
-#         verbose: (bool) If True, print iterations.
-#
-#     Returns:
-#         (Scalar / List) Converged x value.
-#     """
-#     if verbose:
-#         print(f"Fixed Point Iteration: x0 = {x0}")
-#     x = np.atleast_1d(x0)
-#     its = 0
-#     while True:
-#         if its >= maxits:
-#             raise RuntimeError(f"Limit of {maxits} iterations exceeded.")
-#
-#         x_old = x
-#         fx = np.atleast_1d(func(x) if len(x) > 1 else func(x.item()))
-#         # x = (1 - relax) * x + relax * fx
-#         x = (relax * fx + relax2 * (1 - relax) * x +
-#              (1 - relax2) * (1 - relax) * x_old)
-#         its += 1
-#         if verbose:
-#             with np.printoptions(precision=5, floatmode='fixed'):
-#                 print(f"... Iteration {its}: x = {x}")
-#
-#         if np.all(abs(x - x_old) < xtol):
-#             if verbose:
-#                 print(f"... Converged.")
-#             break
-#     return x.tolist() if len(x) > 1 else x.item()
-#
 
 # ----------------------------------------------------------------------------
 
 def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25, order=2,
                jacob_diag=None, verbose=False):
-    """
-    Solve nonlinear system of equations using diagonal quasi-Newton method
-    from  Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton Method
-    For Systems Of Nonlinear Equations", Applied Mathematical and
-    Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.
+    r"""
+    Solve nonlinear system of equations using the diagonal quasi-Newton method
+    of [1]_.
 
-    Notes:
-        - This method only estimates the diagonal elements of the Jacobian.
-            As such it only needs O(N) storage and does not require any
-            matrix solution steps.
-        - EJW Addition: Optional bounds check and adaptive scaling of move
-            s.  If bounds are exceeded the move is scaled back to a factor
-            of 0.75 of the distance remaining to the boundary. In this way a
-            solution on the boundary can stil be approached via a number of
-            steps without the solver getting immediately stuck on the edge.
-        - EJW Addition: Check for extremely small moves where nu0 approx
-            equals nu1 i.e. abs(nu1 - nu0) < tiny.  We drop back to first
-            order for this step in this case.
-        - EJW Addition: Drops back to first order if ||Fx|| is escaping
-        upwards at this step with ||Fx'|| > 2*||Fx||.
-        - The universally tiny number is taken to be 1e-20 for both.
+    Notes
+    -----
+    - This method only estimates the diagonal elements of the Jacobian. As
+      such it only needs O(N) storage and does not require any matrix
+      solution steps.
+    - Additional to [1]_: Optional bounds check and adaptive scaling of move
+      :math:`s`.  If bounds are exceeded the move is scaled back to a factor
+      of 0.75 of the distance remaining to the boundary. In this way a
+      solution on the boundary can stil be approached via a number of steps
+      without the solver getting immediately stuck on the edge.  Iteration
+      stops if the multiplier becomes smaller than :math:`\epsilon = 1
+      \times 10^{-30}`.
+    - Additional to [1]_: There is a check for extremely small moves where
+      :math:`\nu_0 \approx \nu_1`, evaluating :math:`|\nu_1 - \nu_0| <
+      \epsilon`.  We drop back to first order for this step if this is the
+      case.
+    - Additional to [1]_: Drops back to first order if :math:`\|F(x)\|` is
+      escaping upwards at this step with :math:`\|F(x')\| > 2\|F(x)\|`.
 
-    Args:
-        func: Vector valued function taking list-like x and returning
-            list-like F(x).
-        x0: List-like of numeric types as starting x value.  Not suitable
-            for use with user types due to matricies and norms,
-            etc.
-        xtol: (Opt) Stop when ||x' - x|| < xtol.  Default = 1e-6.
-        ftol: (Opt) when present we require ||F(x)|| <= ftol before
-            stopping.  Default = None.
-        bounds: (Opt) A tuple of list-like objects giving low and high
-            bounds respectively i.e. ([x_low, ...], [x_high, ...]) that
-            activates bounds checking.  If specific bounds are not required
-            these can be set to +/-inf.  Default = None.
-        maxits: (Opt) Maximum number of iterations allowed.  Default = 25.
-        order: (Opt) Next x position determined via a linear (order = 1) or
-            quadratic (order = 2) estimate.  Default = 2.
-        jacob_diag:  (Opt) Initial estimate of diagonal elements of
-            Jacobian.  If None, assumes D = I.  Default = None.
-        verbose: (Opt) Print status updates during run.  Default = False.
+    Parameters
+    ----------
+    func : Callable[list_like]
+        Vector valued function taking `x` and returning `F(x)`.
+    x0 : list_like
+        Vector of numeric types as starting `x` value.  Not suitable for use
+        with user types due to matricies and norms, etc.
+    xtol : float
+        Stop when :math:`\|x' - x\| < x_{tol}`.
+    ftol : float
+        When present we also require :math:`\|F(x)\| <= f_{tol}` before
+        stopping.
+    bounds : tuple(list_like, list_like)
+        A tuple of low and high bounds respectively i.e. :math:`([x_{low},
+        ...], [x_{high}, ...])` that activates bounds checking.  If specific
+        bounds are not required these can be individually set to +/-inf.
+    maxits : int
+        Maximum number of iterations allowed.
+    order : {2, 1}
+        Next `x` position determined via a linear (``order = 1``) or quadratic
+        (``order = 2``) estimate.
+    jacob_diag : list_like
+        Initial estimate of diagonal elements of Jacobian.  If None, assumes
+        :math:`D = I`.
+    verbose : bool
+        If True, print status updates during run.
 
-    Returns:
-        x: Converged solution as list.
+    Returns
+    -------
+    list
+        Converged solution.
 
-    Raises:
-        ValueError for invalid parameters.
-        RuntimeError if maximum iterations reached before convergence.
+    Raises
+    ------
+    ValueError
+        Invalid parameters.
+    RuntimeError
+        Maximum iterations reached before convergence.
+
+    References
+    -----
+
+    .. [1] Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton Method
+       For Systems Of Nonlinear Equations", Applied Mathematical and
+       Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.
     """
 
     def verbose_print(info):

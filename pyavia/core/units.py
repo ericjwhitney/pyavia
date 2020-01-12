@@ -1,42 +1,28 @@
 """
-Practical unit conversions that don't use any underlying absolute or fixed
-values.
-
-Contains:
-    output_ucode_pwr    Convert numerical power strings to unicode.
-    UnitsError          Exception class for units-specific errors.
-    Units               Class representing constructions of base units.
-    Dim                 Class representing a dimensioned value.
-    add_base_unit       Function to add units to the library of base units.
-    add_unit            Function to add a unit to the library.
-    base_unit           Function to determine if a tuple is a base unit.
-    get_conversion      Returns the conversion factor between two units.
-    set_conversion      Sets the conversion factor between units (directional).
-    similar_to          Function givinga set of known units similar to the
-                        supplied unit.
-    total_temperature_convert  Temperature conversion function.
-    make_total_temp     Convert a temperature into its total equivalent.
+Module of practical unit conversions that don't use any underlying
+absolute or fixed basis values.  Calculation is via a weighted directed
+graph which finds the shortest route between units, minimising calculation
+error.  Unit conversions not previously known are cached for fast lookup the
+next time they are used.
 """
 
-# Last updated: 28 December 2019 by Eric J. Whitney
+# Last updated: 10 January 2020 by Eric J. Whitney
 
 from __future__ import annotations
-import warnings
+from pyavia.core.containers import WtDirgraph, MultiBiDict
+from pyavia.core.util import coax_type, force_type, kind_div
 from collections import namedtuple
-import operator
-import re
 from fractions import Fraction
 import math
+import operator
+import re
 from typing import Optional, Any, Union, Iterable, Callable
-
-from containers import WeightedDirGraph, MultiBiDict
-from util import (from_ucode_super, UCODE_SS_CHARS, to_ucode_super,
-                  coax_type, force_type, kind_div)
+import warnings
 
 __all__ = ['output_ucode_pwr', 'UnitsError', 'Units', 'Dim',
            'add_base_unit', 'add_unit', 'base_unit', 'get_conversion',
            'set_conversion', 'similar_to', 'total_temperature_convert',
-           'make_total_temp']
+           'make_total_temp', 'from_ucode_super', 'to_ucode_super']
 
 # Generate unicode chars for power values in strings.
 output_ucode_pwr = True
@@ -62,21 +48,21 @@ _CONV_PATH_LENGTH_WARNING = 4
 
 _known_units = MultiBiDict()  # All Units(), base and derived.
 _known_base_units = set()  # Single entry ^1 Units().
-_conversions = WeightedDirGraph()  # Conversions between Units().
+_conversions = WtDirgraph()  # Conversions between Units().
 _comp_conv_cache = {}  # {(Units, Units): Factor, ...}
 
 
 class UnitsError(Exception):
-    """Exception class signifying errors specifically related to units /
-    conversions / etc. Other types of error are signalled normally."""
+    """Exception class for units specific errors."""
     pass
 
 
 # Precompiled parser.
 
-_UC_SGN = UCODE_SS_CHARS[0][0:2]
-_UC_DOT = UCODE_SS_CHARS[0][2]
-_UC_DIG = UCODE_SS_CHARS[0][3:]
+_UCODE_SS_CHARS = ('⁺⁻ᐧ⁰¹²³⁴⁵⁶⁷⁸⁹', '+-.0123456789')
+_UC_SGN = _UCODE_SS_CHARS[0][0:2]
+_UC_DOT = _UCODE_SS_CHARS[0][2]
+_UC_DIG = _UCODE_SS_CHARS[0][3:]
 _uc_pwr_pattern = fr'''[{_UC_SGN}]?[{_UC_DIG}]+(?:[{_UC_DOT}][{_UC_DIG}]+)?'''
 
 _unitparse_rx = re.compile(fr'''
@@ -88,15 +74,13 @@ _unitparse_rx = re.compile(fr'''
     |(.+)                                                   # OR mismatch.
 ''', flags=re.DOTALL | re.VERBOSE)
 
-# EJW: ((?:\^[+-]?[\d]+(?:[\.][\d]+)?)|  # Removed \ from this line before .
-
 # Special case units.
 
 _OFFSET_TEMPS = {'°C', '°F'}
 
 
 # -----------------------------------------------------------------------------
-# Field names:
+# Unit field names:
 #   k:  Multiplier (always first).
 #   M:  Mass.
 #   L:  Length.
@@ -119,47 +103,59 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
                                   'A', 'Ω'],
                        defaults=[1, *(('', 0),) * 9])):
     """
-    The Units object expresses any unit (base or derived) as a tuple of an
-    overall multiplier k and its basis units.  Each basis unit is a
-    tuple of a string label and power.  Units are hashable so they can be
-    looked up for quick conversions.
+    Combination of basis units and a factor representing a specific base or
+    derived unit.  The Units object is an extended namedtuple.  Each basis
+    unit is a tuple of a string label and power.  Units are hashable so
+    they can be looked up for quick conversions.
+
+    .. note:: Direct manipulation of Units objects is not required very
+       often in practical situations.  Almost all problems are dealt with
+       entirely by Dim objects which contain a Units object.
     """
 
     # noinspection PyTypeChecker
     def __new__(cls, *args, **kwargs):
         """
-        Units objects can be created in three ways:
-            - As conventional namedtuple where the first item is the factor
-            and remaining items are each basis unit as a tuple of an
-            alpha-only label and power. Unused fields default to
-            dimensionless.  This example is equivalent to a metric tonne:
-            >>> print(Units(1000, ('kg', 1)))
-            1000*kg
+        ..
+            >>> import pyavia as pa
 
-            Alternatively the named fields can be used:
-            >>> print(Units(k=1000, M=('kg', 1)))
-            1000*kg
+        Units objects can be created in a number of ways:
 
-            No arguments or a single None results in a dimensionless unit
-            object:
-            >>> print(Units())  # k = 1, all bases are ('', 0)
-            (No Units)
-            >>> print(Units(None))  # Same as Units().
-            (No Units)
+        - As conventional namedtuple where the first item is the factor and
+          remaining items are each basis unit as a tuple of an alpha-only
+          label and power. Unused fields default to dimensionless.  This
+          example is equivalent to a metric tonne:
 
-            - As a string expression to be parsed.  This will multiply out
-            sub-units L -> R giving the resulting unit.  Whitespace is
-            ignored. Unicode characters for powers and separators can be
-            used. Note: the divide symbol is not supported due it looking
-            very similar to the 'plus' on-screen.
-            >>> print(Units('1000 × kg'))
-            1000*kg
-            >>> print(Units('N.m^-2'))
-            Pa
-            >>> print(Units('slug.ft/s²'))
-            lbf
-            >>> print(Units('kg*m*s⁻²'))
-            N
+          >>> print(pa.Units(1000, ('kg', 1)))
+          1000*kg
+
+        - Alternatively the named fields can be used:
+
+          >>> print(pa.Units(k=1000, M=('kg', 1)))
+          1000*kg
+
+        - No arguments or a single None results in a dimensionless unit object:
+
+          >>> print(pa.Units())  # k = 1, all bases are ('', 0)
+          (No Units)
+          >>> print(pa.Units(None))  # Same as Units().
+          (No Units)
+
+        - As a string expression to be parsed.  This will multiply out
+          sub-units L -> R giving the resulting unit.  Whitespace is
+          ignored. Unicode characters for powers and separators can be used.
+
+          >>> print(pa.Units('1000 × kg'))
+          1000*kg
+          >>> print(pa.Units('N.m^-2'))
+          Pa
+          >>> print(pa.Units('slug.ft/s²'))
+          lbf
+          >>> print(pa.Units('kg*m*s⁻²'))
+          N
+
+        .. note:: The divide symbol is not supported due it looking very
+           similar to the 'plus' on-screen.
         """
         if len(args) == 1 and args[0] is None:
             # Intentionally blank case: Units(None).
@@ -225,28 +221,28 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
         return res
 
     def __mul__(self, rhs):
-        """For all multiplication / division (and right side versions) Units()
-        (and the LHS if required) are promoted to Dim() which then does the
-        multiplication."""
+        """For all multiplication / division (and equivalent RHS variants)
+        Units() are promoted to Dim() (along with the LHS if required) which
+        then does the actual multiplication."""
         return Dim(1, self) * rhs
 
     def __truediv__(self, rhs):
-        """Same rules as __mul__."""
+        """Follows the same rules as __mul__."""
         return Dim(1, self) / rhs
 
     def __rmul__(self, lhs):
-        """Same rules as __mul__."""
+        """Follows the same rules as __mul__."""
         return Dim(lhs) * Dim(1, self)
 
     def __rtruediv__(self, lhs):
-        """Same rules as __mul__."""
+        """Follows the same rules as __mul__."""
         return Dim(lhs) / Dim(1, self)
 
     # Misc operators.
 
     def __str__(self):
-        """If a unique label exists return it, otherwise make a generic
-        string. """
+        """If a unique label exists return it, otherwise builds a generic
+        string."""
         try:
             labels = _known_units.inverse[self]
             if len(labels) == 1:
@@ -287,7 +283,7 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
 
     def dimless(self) -> bool:
         """Returns false if any indicies in the signature are nonzero,
-        otherwise true."""
+        otherwise returns true."""
         if any(p != 0 for _, p in self[1:]):
             return False
         else:
@@ -298,14 +294,22 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
 
 
 class Dim:
+    """
+    Combination of a Python value of any type with Units and an optional
+    label.
+    """
     def __init__(self, *args):
         """
         Constructs a dimensioned quantity, consisting of a value, units and
-        optional label.  Calling methods:
+        optional label.  It may be constructed in a number of ways:
+
         - Dim(): Assumes value = 1 and dimensionless.
-        - Dim(Units): Assumes value = 1.  Promotes Units() to Dim().
-        - Dim(value): Assumes dimensionless.  Promotes value to Dim().
-        - Dim(value, units): Normal construction.
+        - Dim(Units): Assumes value = 1, i.e. this method promotes Units()
+          to Dim().
+        - Dim(value): Assumes dimensionless, i.e. this method promotes a value
+          to Dim().
+        - Dim(value, units): Normal construction:
+
             - If units is Units() object: Directly assigned, no label given.
             - If units is string:  Parsed into Units() and used as label.
             - If units is None: Dimensionless (equivalent to Units())
@@ -336,7 +340,6 @@ class Dim:
                 self.units = Units()
             else:
                 raise TypeError(f"Units must be string, Units() or None.")
-
         else:
             raise TypeError(f"Incorrect number of arguments.")
 
@@ -350,11 +353,15 @@ class Dim:
         return ret_val
 
     def __float__(self):
-        """Note that units are removed."""
+        """Returns float(self.value).
+
+        .. note:: Units are removed and checking ability is lost."""
         return float(self.value)
 
     def __int__(self):
-        """Note that units are removed."""
+        """Returns int(self.value).
+
+        .. note:: Units are removed and checking ability is lost."""
         return int(self.value)
 
     def __neg__(self):
@@ -372,9 +379,12 @@ class Dim:
     #
 
     def __add__(self, rhs) -> Dim:
-        """If RHS is Units() or an ordinary value, it is promoted before
-        addition (allows the case of dimensionless intermediate product).
-        Addition to offset temperatures is limited to Δ values only."""
+        """If `rhs` is Units() or an ordinary value, it is promoted to Dim()
+        before addition.  This allows the case of a dimensionless intermediate
+        product.
+
+        .. note:: Addition to offset temperatures is limited to Δ values
+           only."""
         if not isinstance(rhs, Dim):
             rhs = Dim(rhs)
 
@@ -408,8 +418,10 @@ class Dim:
             return res_value
 
     def __sub__(self, rhs) -> Dim:
-        """Similar rules to __add__.  Subtraction of offset temperatures is
-        permitted and results in Δ value."""
+        """Follows the same rules as __add__.
+
+        .. note:: Subtraction of offset temperatures is permitted and
+           will result in a Δ value."""
         if not isinstance(rhs, Dim):
             rhs = Dim(rhs)
 
@@ -453,13 +465,13 @@ class Dim:
         """Multiplication of dimensioned values.  This is the central
         function used by most other operators / conversions.
 
-        If either LHS or RHS units have a k-factor, this is multiplied out
-        into the value leaving k = 1 for both LHS and RHS. If RHS is Units()
-        or an ordinary value, it is promoted before multiplication.
+        If either `self` or `rhs` units have a k-factor, this is multiplied
+        out and becomes part of `self.value` leaving `k` = 1 for both `self`
+        and `rhs`.  If `rhs` is Units() or an ordinary value, it is promoted
+        before multiplication.
 
-        If the resulting units include radians^1 or steradians^1,
-        these disappear as they are dimensionless and have served their
-        purpose.
+        If the resulting units include radians^1 or steradians^1, these
+        disappear as they are dimensionless and have served their purpose.
         """
         # Shortcut scalar multiplication. Check for dimless case.
         if not isinstance(rhs, (Dim, Units)):
@@ -512,13 +524,16 @@ class Dim:
             return res_value
 
     def __truediv__(self, rhs):
-        """Same rules as __mul__."""
+        """Follws the same rules as __mul__."""
         if not isinstance(rhs, Dim):
             rhs = Dim(rhs)
         return self * (rhs ** -1)
 
     def __pow__(self, pwr):
-        """Raise to pwr.  Units k is multiplied out into value."""
+        """Raises `self.value` to `pwr`.
+
+        .. note:: Any `k` value in self.units is multiplied out and becomes
+           part of value, leaving `k` = 1 in the result."""
 
         # Build resulting units. Most units have integer powers; try to
         # preserve int-ness.
@@ -602,11 +617,16 @@ class Dim:
     def convert(self, to_units: Union[Units, str]) -> Dim:
         """
         Generate new object converted to compatible units.
-        Args:
-            to_units: Units object or label string.
 
-        Returns:
-            Dim.
+        Parameters
+        ----------
+        to_units : Units or str
+            Target units.
+
+        Returns
+        -------
+        Dim :
+            Converted result with new units.
         """
         use_label = None
         if isinstance(to_units, str):
@@ -681,17 +701,17 @@ def _unique_unit_label(u: Units) -> str:
 
 def add_base_unit(labels: Iterable[str], base: str) -> None:
     """
-    Simplified version of add_unit(...) for base unit cases where k = 1,
-    power = 1.  Labels are taken in turn and assigned to the common base
-    dimension given. E.G. add_base_unit(['kg', 'g', 'mg'], 'M') creates mass
-    base units of kg, g, mg.
+    Simplified version of ``add_unit()`` for base unit cases where `k` = 1,
+    and power = 1 (linear).  Labels are taken in turn and assigned to the
+    common base dimension given e.g. ``add_base_unit(['kg', 'g', 'mg'], 'M')``
+    creates the mass base units of kg, g, mg.
 
-    Args:
-        labels: Iterable of strings.
-        base: String.
-
-    Returns:
-        None.
+    Parameters
+    ----------
+    labels : Iterable[str]
+        New base units to make.
+    base : str
+        Base dimension for all new units, e.g. mass `M` or length `L`.
     """
     for label in labels:
         uargs = {base: (label, 1)}
@@ -702,19 +722,23 @@ def add_unit(label: str, new_unit: Union[Units, str]) -> None:
     """
     Register a new standard Units() object with given label.
 
-    Args:
-        label: Case-sensitive string to assign as a label for the resulting
+    Parameters
+    ----------
+    label : str
+        Case-sensitive string to assign as a label for the resulting
         Units object.
-        new_unit: Units() object or string to be parsed for conversion
-        to Units().  String can include alphabetic characters, ° or Δ.
+    new_unit : Units or str
+        Units to assign, otherwise a string to be parsed for conversion
+        to Units.  String can include alphabetic characters, ° or Δ.
 
-    Returns:
-        None.
-
-    Raises:
-        ValueError for incorrect arguments.
-        TypeError for incorrect argument types.
-        UnitsError for mismatched labels.
+    Raises
+    ------
+    ValueError
+        Incorrect arguments.
+    TypeError
+        Incorrect argument types.
+    UnitsError
+        Mismatched labels.
     """
     # Check label.
     allowed_chars = {'_', '°', 'Δ'}
@@ -749,8 +773,21 @@ def add_unit(label: str, new_unit: Union[Units, str]) -> None:
 
 
 def base_unit(u_tuple):
-    """If u_tuple is a base unit, i.e. k = 1 and only one linear base unit
-    is used, the string label is returned, otherwise returns None."""
+    """
+    Check if the argument is a base unit.
+
+    Parameters
+    ----------
+    u_tuple : tuple(tuple, ...)
+        Tuple of basis units and powers, i.e. the equivalent of a Units
+        namedtuple.
+
+    Returns
+    -------
+    str or None :
+        If `u_tuple` is a base unit - i.e. `k` = 1 and only one linear base
+        unit is used - the string label is returned, otherwise returns None.
+    """
     bases_used, last_u, last_p = 0, None, 0
     for u, p in u_tuple[1:]:
         if p != 0:
@@ -764,28 +801,33 @@ def base_unit(u_tuple):
 
 def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
     """
-    Determine the conversion factor between from_unit and to_unit.  When
-    multiplying a from_label quantity this factor would result in the
-    correct to_units quantity.   A three step process is used:
+    Determine the conversion factor between `from_unit` and `to_unit`.  When
+    multiplying a `from_unit` quantity this factor would result in the
+    correct `to_units` quantity.   A three step process is used:
+
     1. If caching is active, see if this conversion has been done previously.
     2. Look for a conversion by tracing between (combining) Units()
-    conversions already known.
+       conversions already known.
     3. Compute the factor by breaking down Units() objects corresponding to
-    from_units and to_units.  Note: This step is skipped when converting
-    base units because in that case it cannot be further broken down by
-    computation (and trying to do so would result in an infinite loop).
+       from_units and to_units.  Note: This step is skipped when converting
+       base units because in that case it cannot be further broken down by
+       computation (and trying to do so would result in an infinite loop).
 
-    Note: If caching is active, this can occur at Step 2 or 3.
+    .. note:: If caching is active, this can occur at step 2 or 3.
 
-    Args:
-        from_unit: Units object or string label.
-        to_unit: Units object or string label.
+    Parameters
+    ----------
+        from_unit,to_unit : Units or str
 
-    Returns:
-        Conversion factor coaxed to int or float
+    Returns
+    -------
+    int or float
+        Conversion factor coaxed to int or float.
 
-    Raises:
-        UnitsError for inconsistent units or indicies.
+    Raises
+    ------
+    UnitsError
+        Inconsistent units or indicies.
     """
     if isinstance(from_unit, str):
         from_unit = Units(from_unit)
@@ -850,19 +892,27 @@ def set_conversion(from_label: str, to_label: str, *, fwd: Any,
     """
     Set a conversion between units in the directed graph of conversions.
 
-    Args:
-        from_label: String label for known unit.
-        to_label: String label for known unit.
-        fwd: Value of the multiplier to convert from -> to.
-        rev: (Optional) Value of reverse conversion to -> from.  If rev ==
-        None, no reverse conversion is added.  If rev == 'auto' then a
-        reverse conversion is deduced from the forward conversion as follows:
-            - If fwd == Fraction -> rev = 1/Fraction.
-            - If fwd == int > 1 -> rev = Fraction(1, fwd).
-            - All others:  -> rev = 1/fwd and coax to int if possible.
+    Parameters
+    ----------
+    from_label,to_label : str
+        Case-sensitive identifier.
+    fwd :
+        Value of the multiplier to convert from -> to.
+    rev : optional
+        Value of reverse conversion to -> from:
 
-    Raises:
-        ValueError if either unit does not exist or not a base unit.
+        - If rev == None, no reverse conversion is added.
+        - If rev == 'auto' then a reverse conversion is deduced from the
+          forward conversion as follows:
+
+            - If fwd == Fraction → rev = 1/Fraction.
+            - If fwd == int > 1 → rev = Fraction(1, fwd).
+            - All others → rev = 1/fwd and coax to int if possible.
+
+    Raises
+    ------
+    ValueError
+        if either unit does not exist or not a base unit.
     """
     from_unit = _known_units[from_label]
     to_unit = _known_units[to_label]
@@ -893,11 +943,14 @@ def similar_to(example: Union[Units, Dim, str]) -> set:
     """
     Returns a set of labels of all known units with the same dimensions as the
     example given.
-    Args:
-        example: Units or Dim object.
 
-    Returns:
-        Set of label strings.
+    Parameters
+    ----------
+        example : Units or Dim.
+
+    Returns
+    -------
+    set[str]
     """
     if isinstance(example, Dim):
         example = example.units
@@ -915,16 +968,20 @@ def similar_to(example: Union[Units, Dim, str]) -> set:
 def total_temperature_convert(x, from_u: str, to_u: str):
     """
     Conversions of total temperatures are a special case due to the offset of
-    the °C and °F base units scales.  Conversion is simplified by converting x
-    to Kelvin then converting to final units.
+    the °C and °F base units scales.  Conversion is simplified by converting
+    `x` to Kelvin then converting to final units.
 
-    Args:
-        x:  Value to be converted
-        from_u: String: °C, °F, K, °R
-        to_u: String as above.
+    Parameters
+    ----------
+    x :
+        Value to be converted.
+    from_u,to_u : str
+        String matching °C, °F, K, °R.
 
-    Returns:
-        x converted to new units.
+    Returns
+    -------
+    :
+        Converted value.
     """
     # Convert 'from' -> Kelvin.
     if from_u == '°C':
@@ -958,16 +1015,22 @@ def total_temperature_convert(x, from_u: str, to_u: str):
 def make_total_temp(x: Dim) -> Dim:
     """
     Function to convert an offset to a total temperature if required
-    (°C -> K or °F -> °R).  Raises ValueError for Δ°C or Δ°F.  If neither,
+    (°C → K or °F → °R).  Raises exception for Δ°C or Δ°F.  If neither,
     it returns the original object.
-    Args:
-        x: Dim object.
 
-    Returns:
-        Dim object converted if required.
+    Parameters
+    ----------
+    x : Dim
 
-    Raises:
-        ValueError if x = delta temperature.
+    Returns
+    -------
+    Dim :
+        Dim object converted as required.
+
+    Raises
+    ------
+    ValueError
+        If x is a delta temperature.
     """
     if x.units == Units('°C'):
         return x.convert('K')
@@ -979,7 +1042,59 @@ def make_total_temp(x: Dim) -> Dim:
         return x
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# Functions for unicode indices.
+
+def from_ucode_super(ss: str) -> str:
+    """
+    Convert any unicode numeric superscipt characters in the string to
+    normal ascii text.
+
+    Parameters
+    ----------
+    ss : str
+        String with unicode superscript characters.
+
+    Returns
+    -------
+    str :
+        Converted string.
+    """
+    result = ''
+    for c in ss:
+        idx = _UCODE_SS_CHARS[0].find(c)
+        if idx >= 0:
+            result += _UCODE_SS_CHARS[1][idx]
+        else:
+            result += c
+    return result
+
+
+def to_ucode_super(ss: str) -> str:
+    """
+    Convert numeric characters in the string to unicode superscript.
+
+    Parameters
+    ----------
+    ss : str
+        String with ascii numeric characters.
+
+    Returns
+    -------
+    str :
+        Converted string.
+    """
+    result = ''
+    for c in ss:
+        idx = _UCODE_SS_CHARS[1].find(c)
+        if idx >= 0:
+            result += _UCODE_SS_CHARS[0][idx]
+        else:
+            result += c
+    return result
+
+
+# ----------------------------------------------------------------------------
 
 #
 # Base units.
