@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 # Generate examples of Q-tables using a selected GasFlow object.
-# Written by: Eric J. Whitney  Last updated: 4 January 2020.
+# Written by: Eric J. Whitney  Last updated: 8 January 2020.
+
 from math import isclose
-from gasflow import PerfectGasFlow, GasFlowWF
-from units import Dim
+from pyavia.aero import PerfectGasFlow, GasFlowWF
+from pyavia import Dim
 
 M, M_stop, M_step = 0.00, 2.50, 0.05
 use_gas = 'real_ssl_air'
