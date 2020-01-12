@@ -4,7 +4,7 @@
 # Last updated: 30 December 2019 by Eric J. Whitney
 
 from math import cos, inf
-from solve import solve_dqnm
+from pyavia.solve import solve_dqnm
 
 
 def linear_system_example(x):
