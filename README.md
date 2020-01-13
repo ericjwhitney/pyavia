@@ -7,10 +7,9 @@ The current version is **0.0.1**.
 
 *Important points*:
 - Development is intended to be organic.
-- Modules presently included were either previously developed during my day
--to-day work as an engineer, or otherwise just out of curiosity.  If
- something seems like it might be useful to other people, I will try to
-  include it.
+- Modules presently included were either previously developed during my day-to-day 
+ work as an engineer, or otherwise just out of curiosity.  If something
+  seems like it might be useful to other people, I will try to include it.
 - I don't intend on including anything that is particularly arcane, buggy,
   hard to use or not for the public domain.
 
@@ -40,18 +39,22 @@ C:\> py -m pip install --user pyavia
 
 ## Documentation [![Documentation Status](https://readthedocs.org/projects/pyavia/badge/?version=latest)](https://pyavia.readthedocs.io/en/latest/?badge=latest)
 
-Documentation can be found <a href="https://pyavia.readthedocs.io/en/latest/">here at ReadTheDocs.</a>
-
+Documentation can be found at
+ **[ReadTheDocs](https://pyavia.readthedocs.io/en/latest/")**.
+ 
 ## Source Code 
 
-The source code is available <a href="https://github.com/ericjwhitney/pyavia">in the Github repository</a>.
+The source code is available in the
+**[Github repository](https://github.com/ericjwhitney/pyavia")**.
 
 ## License [![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
 
-PyAvia is provided free of charge for use under the conditions of the MIT License
-**[MIT license](http://opensource.org/licenses/mit-license.php)**
+PyAvia is provided free of charge for use under the conditions of the 
+**[MIT license](http://opensource.org/licenses/mit-license.php)**.
 
-See the <a href="https://github.com/ericjwhitney/pyavia/blob/master/LICENSE">LICENSE file</a> for more details.
+See the 
+**[license file](https://github.com/ericjwhitney/pyavia/blob/master/LICENSE)**
+for more details.
 
 
 **Copyright 2020 © Eric J. Whitney**
