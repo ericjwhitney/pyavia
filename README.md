@@ -24,7 +24,8 @@ happen frequently.*
 ## Installation
 
 NumPy may need to be installed prior to installing PyAvia (*because I may
- not have setuptools completely on my side*), <a href="https://docs.scipy.org/doc/numpy/user/install.html">see this link</a>.
+ not have setuptools completely on my side*), 
+ **[see this link](https://docs.scipy.org/doc/numpy/user/install.html)**.
 
 Once NumPy is installed, install PyAvia using the typical pip installation
  methods, for example:
@@ -40,7 +41,7 @@ C:\> py -m pip install --user pyavia
 ## Documentation [![Documentation Status](https://readthedocs.org/projects/pyavia/badge/?version=latest)](https://pyavia.readthedocs.io/en/latest/?badge=latest)
 
 Documentation can be found at
- **[ReadTheDocs](https://pyavia.readthedocs.io/en/latest/")**.
+ **[ReadTheDocs](https://pyavia.readthedocs.io/en/latest/)**.
  
 ## Source Code 
 
