@@ -77,7 +77,7 @@ class GasFlow(ABC):
 
     @property
     def a(self):
-        """Local speed of sound a = (γRT)**0.5."""
+        r"""Local speed of sound :math:`a = \sqrt{{\gamma}RT}`."""
         return (self.gamma * self._R * self.T) ** 0.5
 
     def new_props(self, **kwargs) -> GasFlow:

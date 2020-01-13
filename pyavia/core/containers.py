@@ -22,8 +22,9 @@ class MultiBiDict(dict):
     Implementation from this StackOverflow answer:
     https://stackoverflow.com/a/21894086.
 
-    Note
-    ----
+    Notes
+    -----
+
     - The inverse dict bidict_multi.inverse auto-updates itself when the
       normal dict bidict_multi is modified.
     - Inverse directory entries bidict_multi.inverse[value] are always lists
@@ -397,8 +398,8 @@ def flatten(seq):
     sequence container (except strings).  Taken from
     https://stackoverflow.com/a/2158532
 
-    Example
-    -------
+    Examples
+    --------
     >>> for x in flatten((2, (3, (4, 5), 6), 7)):
     ...     print(x, end='')
     234567

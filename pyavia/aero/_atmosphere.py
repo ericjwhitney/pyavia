@@ -57,40 +57,42 @@ class Atmosphere:
     ..
         >>> import pyavia as pa
 
-    Example:
-        Set default result units as US or SI.  Individual defaults can be
-        set for each unit type:
+    Examples
+    --------
 
-        >>> pa.aero.Atmosphere.set_default_style('SI')
-        >>> pa.aero.Atmosphere.unitdef_press = 'psi'
+    Set default result units as US or SI.  Individual defaults can be
+    set for each unit type:
 
-        Show some ISA SSL values:
+    >>> pa.aero.Atmosphere.set_default_style('SI')
+    >>> pa.aero.Atmosphere.unitdef_press = 'psi'
 
-        >>> atm = pa.aero.Atmosphere(H='SSL')
-        >>> print(f"P = {atm.pressure:.3f}, T = {atm.temperature:.2f}")
-        P = 14.696 psi, T = 288.15 K
+    Show some ISA SSL values:
 
-        Show density for an ISA standard altitude (note that these are
-        formally geopotential altitudes):
+    >>> atm = pa.aero.Atmosphere(H='SSL')
+    >>> print(f"P = {atm.pressure:.3f}, T = {atm.temperature:.2f}")
+    P = 14.696 psi, T = 288.15 K
 
-        >>> atm = pa.aero.Atmosphere(H=Dim(10000, 'ft'))
-        >>> print(f"ρ = {atm.ρ:.3f}")
-        ρ = 0.905 kg/m³
+    Show density for an ISA standard altitude (note that these are
+    formally geopotential altitudes):
 
-        Show the temperature ratio for a pressure altitude with a
-        temperature offset:
+    >>> atm = pa.aero.Atmosphere(H=Dim(10000, 'ft'))
+    >>> print(f"ρ = {atm.ρ:.3f}")
+    ρ = 0.905 kg/m³
 
-        >>> atm = pa.aero.Atmosphere(H_press=Dim(34000,'ft'),
-        ... T_offset=Dim(+15,'Δ°C'))
-        >>> print(f"Theta = {atm.theta:.3f}")
-        Theta = 0.818
+    Show the temperature ratio for a pressure altitude with a
+    temperature offset:
 
-        Show the density ratio for an arbitrary non-standard atmosphere
-        based on temperature / pressure:
+    >>> atm = pa.aero.Atmosphere(H_press=Dim(34000,'ft'),
+    ... T_offset=Dim(+15,'Δ°C'))
+    >>> print(f"Theta = {atm.theta:.3f}")
+    Theta = 0.818
 
-        >>> atm = pa.aero.Atmosphere(P=Dim(90, 'kPa'), T=Dim(-15, '°C'))
-        >>> print(f"σ = {atm.σ:.3f}")
-        σ = 0.991
+    Show the density ratio for an arbitrary non-standard atmosphere
+    based on temperature / pressure:
+
+    >>> atm = pa.aero.Atmosphere(P=Dim(90, 'kPa'), T=Dim(-15, '°C'))
+    >>> print(f"σ = {atm.σ:.3f}")
+    σ = 0.991
     """
 
     def __init__(self, **kwargs):
@@ -240,7 +242,7 @@ class Atmosphere:
 
     @property
     def delta(self) -> float:
-        """:math:`δ = P / P_{SSL}`."""
+        r""":math:`\delta = P / P_{SSL}`."""
         return self._P / Atmosphere(H='SSL').pressure
 
     @property
@@ -285,7 +287,9 @@ class Atmosphere:
 
     @property
     def kinematic_viscosity(self) -> Dim:
-        """Kinematic viscosity :math:`ν = μ/ρ`."""
+        r"""Kinematic viscosity :math:`\nu = \mu/\rho`.
+
+        """
         return (self.dynamic_viscosity / self.density).convert(
             Atmosphere.unitdef_kine)
 
@@ -293,7 +297,9 @@ class Atmosphere:
     def gamma(self) -> float:
         r""":math:`\gamma = c_p/c_v` ratio of specific heats.  This is
         presently set to a constant :math:`γ = 1.4` which is valid for all
-        ambient atmospheres which are relatively cold."""
+        ambient atmospheres which are relatively cold.
+
+        """
         return _GAMMA_PERF
 
     @property
@@ -317,7 +323,9 @@ class Atmosphere:
 
     @property
     def speed_of_sound(self) -> Dim:
-        r""":math:`a = \sqrt{\gamma RT}`."""
+        r""":math:`a = \sqrt{\gamma RT}`.
+
+        """
         return ((self.gamma * Atmosphere.R * self._T) ** 0.5).convert(
             Atmosphere.unitdef_spd)
 
@@ -327,7 +335,9 @@ class Atmosphere:
 
     @property
     def theta(self) -> float:
-        r""":math:`\theta = T/T_{SSL}`."""
+        r""":math:`\theta = T/T_{SSL}`.
+
+        """
         return self._T / Atmosphere(H='SSL').T
 
     # Method Aliases ---------------------------------------------------------
