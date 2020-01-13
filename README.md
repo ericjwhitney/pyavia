@@ -46,7 +46,7 @@ Documentation can be found at
 ## Source Code 
 
 The source code is available in the
-**[Github repository](https://github.com/ericjwhitney/pyavia")**.
+**[Github repository](https://github.com/ericjwhitney/pyavia)**.
 
 ## License [![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
 
