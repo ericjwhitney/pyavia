@@ -120,7 +120,7 @@ class WtDirgraph:
 
     .. note:: Where slice / square bracket syntax cannot be used, module
        function g_link(a, b) is defined as an alias of the builtin slice
-       function. This is the equivalent of a graph link.  e.g.: ``if link(a,
+       function. This is the equivalent of a graph link.  e.g.: ``if g_link(a,
        b) in wdg:``.
 
     ..
