@@ -9,3 +9,4 @@ includes things like units, containers, shorthand functions, etc.
 from pyavia.core.containers import *
 from pyavia.core.units import *
 from pyavia.core.util import *
+from pyavia.core.switch import *
