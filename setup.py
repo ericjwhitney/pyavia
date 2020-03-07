@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyavia",
-    version="0.0.1",
+    version="0.0.2",
     author="Eric J. Whitney",
     author_email="eric.j.whitney@optusnet.removethispart.com.au",
     description="Useful functions commonly used in aerospace engineering.",
