@@ -3,7 +3,7 @@
 # Small standalone program for looking up ATA codes using a Tkinter GUI.
 # Last updated: 7 Mar 2020 by Eric J. Whitney
 
-from tkinter import Tk, Label, Entry, Frame
+import tkinter as tk
 
 ATA_CODES_ = {
     '05': {'': 'TIME LIMITS / MAINTENANCE CHECKS',
@@ -49,7 +49,7 @@ ATA_CODES_ = {
            '50': 'Cooling',
            '60': 'Temperature Control',
            '70': 'Moisture/Air Contaminant Control'},
-    '22': {'': 'AUTO',
+    '22': {'': 'AUTO FLIGHT',
            '00': 'General',
            '10': 'Autopilot',
            '20': 'Speed-Attitude Correction',
@@ -418,7 +418,7 @@ for chap, block in ATA_CODES_.items():
 
 # ----------------------------------------------------------------------------
 
-class ATACodeGUI(Frame):
+class ATACodeGUI(tk.Frame):
     def __init__(self):
         super().__init__()
 
@@ -426,32 +426,35 @@ class ATACodeGUI(Frame):
         self.master.resizable(height=False, width=False)
         self.pack(fill='both', expand=True)
 
-        Label(self, text='CHAPTER').grid(row=0, column=0)
-        self.chap_entry = Entry(self, justify='center', width=4)
+        tk.Label(self, text='CHAPTER').grid(row=0, column=0)
+        self.chap_entry = tk.Entry(self, justify='center', width=4)
         self.chap_entry.grid(row=1, column=0)
-        self.chap_entry.bind('<KeyRelease>', self.keypress)
+        self.chap_entry.bind('<KeyRelease>', lambda e: self.keypress())
 
-        Label(self, text='SECTION').grid(row=0, column=1)
-        self.sec_entry = Entry(self, justify='center', width=4)
-        self.sec_entry.grid(row=1, column=1)
-        self.sec_entry.bind('<KeyRelease>', self.keypress)
+        tk.Label(self, text='-').grid(row=0, column=1)
+        tk.Label(self, text='-').grid(row=1, column=1)
 
-        Label(self, text='TITLE').grid(row=0, column=2)
-        self.title_entry = Entry(self, justify='center', width=40)
-        self.title_entry.grid(row=1, column=2)
-        self.title_entry.bind('<KeyRelease>', self.keypress)
+        tk.Label(self, text='SECTION').grid(row=0, column=2)
+        self.sec_entry = tk.Entry(self, justify='center', width=4)
+        self.sec_entry.grid(row=1, column=2)
+        self.sec_entry.bind('<KeyRelease>', lambda e: self.keypress())
 
-        Label(self, text="▼ FOUND ▼").grid(row=2, columnspan=3)
-        self.result_text = Label(self, fg='black', height=20,
-                                 width=60, anchor='n')
-        self.result_text.grid(row=3, columnspan=3)
+        tk.Label(self, text='TITLE').grid(row=0, column=3)
+        self.title_entry = tk.Entry(self, justify='center', width=40)
+        self.title_entry.grid(row=1, column=3)
+        self.title_entry.bind('<KeyRelease>', lambda e: self.keypress())
 
-        self.keypress(None)  # Trigger first result display.
+        tk.Label(self, text="▼ FOUND ▼").grid(row=2, columnspan=4)
+
+        self.result_text = tk.Text(self, height=30, width=60)
+        self.result_text.grid(row=3, columnspan=4)
+        self.result_text.config(wrap=tk.WORD, state=tk.DISABLED)
+
+        self.keypress()  # Trigger first result display.
 
     # ------------------------------------------------------------------------
 
-    # noinspection PyUnusedLocal
-    def keypress(self, e):
+    def keypress(self):
         search = (self.chap_entry.get(), self.sec_entry.get(),
                   self.title_entry.get().lower())
 
@@ -467,23 +470,31 @@ class ATACodeGUI(Frame):
                 full_matches &= matches
                 found_match = True
 
-        if not found_match:
-            self.result_text['text'] = '--- NONE ---'
-            return
+        if found_match:
 
-        full_matches = sorted(full_matches)
-        match_txt = []
-        for entry in full_matches:
-            if entry[1] == '':
-                match_txt.append(f"CHAPTER {entry[0]} - {entry[2]}")
-            else:
-                match_txt.append(f"{entry[0]}-{entry[1]} - {entry[2]}")
-        self.result_text['text'] = '\n'.join(match_txt)
+            headings = {(entry[0], '', ATA_CODES_[entry[0]][''])
+                        for entry in full_matches}  # Always incl. chap hdgs.
+            full_matches = sorted(full_matches | headings)
+            match_txt = []
+            for entry in full_matches:
+                if entry[1] == '':
+                    match_txt.append(f"\nCHAPTER {entry[0]} - {entry[2]}")
+                else:
+                    match_txt.append(f"{entry[0]}-{entry[1]} - {entry[2]}")
+            match_txt = '\n'.join(match_txt)
+        else:
+            match_txt = '--- NONE ---'
+
+        self.result_text.config(state=tk.NORMAL)
+        self.result_text.delete(1.0, tk.END)
+        self.result_text.tag_configure('tag-center', justify=tk.CENTER)
+        self.result_text.insert(tk.END, match_txt, 'tag-center')
+        self.result_text.config(state=tk.DISABLED)
 
 
 # ----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    root = Tk()
+    root = tk.Tk()
     gui = ATACodeGUI()
     root.mainloop()
