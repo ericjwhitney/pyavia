@@ -1,6 +1,6 @@
 """
-**pyavia.aero** provides functions relating to aerodynamics, thermodynamics and
-fluid dynamics in general.
+**pyavia.aero** provides functions relating to aerodynamics, thermodynamics
+and fluid dynamics in general.
 """
 
 # All sub-modules define __all__.

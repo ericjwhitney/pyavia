@@ -1,14 +1,52 @@
-"""Adds useful, less common containers not available in the standard library.
 """
-# Last updated: 10 January 2020 by Eric J. Whitney
+Adds useful, less common containers not available in the standard library.
+"""
+# Last updated: 4 February 2020 by Eric J. Whitney
 
 import collections
 from functools import reduce
 from typing import (Dict, Any, Iterable, Sequence, Callable, Hashable,
                     Optional, List)
 
-__all__ = ['MultiBiDict', 'WtDirgraph', 'g_link', 'flatten',
+__all__ = ['AttrDict', 'MultiBiDict', 'WtDirgraph', 'g_link', 'flatten',
            'flatten_list']
+
+
+# -----------------------------------------------------------------------------
+
+
+class AttrDict(dict):
+    """AttrDict is a dictionary class that also allows access using attribute
+    notation.
+
+    Examples
+    --------
+    >>> my_dict = AttrDict([('make', 'Mazda'), ('model', '3')])
+    >>> my_dict['yom'] = 2007
+    >>> print(f"My car is a {my_dict.make} {my_dict.model} made in "
+    ...       f"{my_dict.yom}.")
+    My car is a Mazda 3 made in 2007.
+    """
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __repr__(self):
+        if self.keys():
+            m = max(map(len, list(self.keys()))) + 1
+            return '\n'.join([k.rjust(m) + ': ' + repr(v)
+                              for k, v in sorted(self.items())])
+        else:
+            return self.__class__.__name__ + "()"
+
+    def __dir__(self):
+        return list(self.keys())
 
 
 # -----------------------------------------------------------------------------
