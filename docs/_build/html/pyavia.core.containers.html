@@ -77,6 +77,51 @@
 <span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.core.containers" title="Permalink to this headline">¶</a></h2>
 <p>Adds useful, less common containers not available in the standard library.</p>
 <dl class="class">
+<dt id="pyavia.core.containers.AttrDict">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">AttrDict</code><a class="headerlink" href="#pyavia.core.containers.AttrDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>AttrDict is a dictionary class that also allows access using attribute
+notation.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_dict</span> <span class="o">=</span> <span class="n">AttrDict</span><span class="p">([(</span><span class="s1">&#39;make&#39;</span><span class="p">,</span> <span class="s1">&#39;Mazda&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="s1">&#39;3&#39;</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_dict</span><span class="p">[</span><span class="s1">&#39;yom&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2007</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;My car is a </span><span class="si">{my_dict.make}</span><span class="s2"> </span><span class="si">{my_dict.model}</span><span class="s2"> made in &quot;</span>
+<span class="gp">... </span>      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{my_dict.yom}</span><span class="s2">.&quot;</span><span class="p">)</span>
+<span class="go">My car is a Mazda 3 made in 2007.</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyavia.core.containers.AttrDict.__delattr__">
+<code class="sig-name descname">__delattr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete self[key].</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.AttrDict.__dir__">
+<code class="sig-name descname">__dir__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__dir__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default dir() implementation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.AttrDict.__getattr__">
+<code class="sig-name descname">__getattr__</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.AttrDict.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyavia.core.containers.AttrDict.__setattr__">
+<code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set self[key] to value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="pyavia.core.containers.MultiBiDict">
 <em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">MultiBiDict</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -85,8 +130,7 @@
 either key or value to get the corresponding value / key.
 Implementation from this StackOverflow answer:
 <a class="reference external" href="https://stackoverflow.com/a/21894086">https://stackoverflow.com/a/21894086</a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<p class="rubric">Notes</p>
 <ul class="simple">
 <li><p>The inverse dict bidict_multi.inverse auto-updates itself when the
 normal dict bidict_multi is modified.</p></li>
@@ -94,7 +138,6 @@ normal dict bidict_multi is modified.</p></li>
 of key such that bidict_multi[key] == value.</p></li>
 <li><p>Multiple keys can have the same value.</p></li>
 </ul>
-</div>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bd</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">MultiBiDict</span><span class="p">({</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">bd</span><span class="p">)</span>
@@ -168,7 +211,7 @@ i.e. <code class="docutils literal notranslate"><span class="pre">{'b':</span> <
 <p class="admonition-title">Note</p>
 <p>Where slice / square bracket syntax cannot be used, module
 function g_link(a, b) is defined as an alias of the builtin slice
-function. This is the equivalent of a graph link.  e.g.: <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">link(a,</span>
+function. This is the equivalent of a graph link.  e.g.: <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">g_link(a,</span>
 <span class="pre">b)</span> <span class="pre">in</span> <span class="pre">wdg:</span></code>.</p>
 </div>
 <p class="rubric">Examples</p>
@@ -349,7 +392,7 @@ is given but no path is found this is also None.</p></li>
 <dd><p>Generator returning entries from a flattened representation of any
 sequence container (except strings).  Taken from
 <a class="reference external" href="https://stackoverflow.com/a/2158532">https://stackoverflow.com/a/2158532</a></p>
-<p class="rubric">Example</p>
+<p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">flatten</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="mi">6</span><span class="p">),</span> <span class="mi">7</span><span class="p">)):</span>
 <span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
 <span class="go">234567</span>

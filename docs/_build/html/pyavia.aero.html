@@ -80,8 +80,8 @@
 </div>
 <div class="section" id="module-pyavia.aero">
 <span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.aero" title="Permalink to this headline">¶</a></h2>
-<p><strong>pyavia.aero</strong> provides functions relating to aerodynamics, thermodynamics and
-fluid dynamics in general.</p>
+<p><strong>pyavia.aero</strong> provides functions relating to aerodynamics, thermodynamics
+and fluid dynamics in general.</p>
 <dl class="class">
 <dt id="pyavia.aero.Atmosphere">
 <em class="property">class </em><code class="sig-prename descclassname">pyavia.aero.</code><code class="sig-name descname">Atmosphere</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.Atmosphere" title="Permalink to this definition">¶</a></dt>
@@ -89,7 +89,7 @@ fluid dynamics in general.</p>
 <p>An Atmosphere class giving a fixed representation of atmospheric
 conditions.  Once constructed, all of the regular assosicated atmospheric
 properties are then made available through class properties.</p>
-<p class="rubric">Example</p>
+<p class="rubric">Examples</p>
 <p>Set default result units as US or SI.  Individual defaults can be
 set for each unit type:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">aero</span><span class="o">.</span><span class="n">Atmosphere</span><span class="o">.</span><span class="n">set_default_style</span><span class="p">(</span><span class="s1">&#39;SI&#39;</span><span class="p">)</span>
@@ -187,7 +187,7 @@ at that pressure altitude.</p></li>
 <dl class="method">
 <dt id="pyavia.aero.Atmosphere.delta">
 <em class="property">property </em><code class="sig-name descname">delta</code><a class="headerlink" href="#pyavia.aero.Atmosphere.delta" title="Permalink to this definition">¶</a></dt>
-<dd><p><span class="math notranslate nohighlight">\(δ = P / P_{SSL}\)</span>.</p>
+<dd><p><span class="math notranslate nohighlight">\(\delta = P / P_{SSL}\)</span>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -222,7 +222,7 @@ ambient atmospheres which are relatively cold.</p>
 <dl class="method">
 <dt id="pyavia.aero.Atmosphere.kinematic_viscosity">
 <em class="property">property </em><code class="sig-name descname">kinematic_viscosity</code><a class="headerlink" href="#pyavia.aero.Atmosphere.kinematic_viscosity" title="Permalink to this definition">¶</a></dt>
-<dd><p>Kinematic viscosity <span class="math notranslate nohighlight">\(ν = μ/ρ\)</span>.</p>
+<dd><p>Kinematic viscosity <span class="math notranslate nohighlight">\(\nu = \mu/\rho\)</span>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -310,7 +310,7 @@ ambient atmospheres which are relatively cold.</p>
 <dl class="method">
 <dt id="pyavia.aero.Atmosphere.δ">
 <em class="property">property </em><code class="sig-name descname">δ</code><a class="headerlink" href="#pyavia.aero.Atmosphere.δ" title="Permalink to this definition">¶</a></dt>
-<dd><p><span class="math notranslate nohighlight">\(δ = P / P_{SSL}\)</span>.</p>
+<dd><p><span class="math notranslate nohighlight">\(\delta = P / P_{SSL}\)</span>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -331,7 +331,7 @@ conditions at altitudes above 90 km.</p>
 <dl class="method">
 <dt id="pyavia.aero.Atmosphere.ν">
 <em class="property">property </em><code class="sig-name descname">ν</code><a class="headerlink" href="#pyavia.aero.Atmosphere.ν" title="Permalink to this definition">¶</a></dt>
-<dd><p>Kinematic viscosity <span class="math notranslate nohighlight">\(ν = μ/ρ\)</span>.</p>
+<dd><p>Kinematic viscosity <span class="math notranslate nohighlight">\(\nu = \mu/\rho\)</span>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -411,11 +411,6 @@ where R = 8.314462618 kg.m².s⁻².K⁻¹.mol⁻¹ and M is molar mass
 <dd><p>Total / stagnation temperature.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyavia.aero.GasFlow.__abstractmethods__">
-<code class="sig-name descname">__abstractmethods__</code><em class="property"> = frozenset({'M', 'P', 'P0', 'T', 'T0', 'cp', 'gamma', 'h', 's', 'special_args', 'u'})</em><a class="headerlink" href="#pyavia.aero.GasFlow.__abstractmethods__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="pyavia.aero.GasFlow.__format__">
 <code class="sig-name descname">__format__</code><span class="sig-paren">(</span><em class="sig-param">format_spec</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#pyavia.aero.GasFlow.__format__" title="Permalink to this definition">¶</a></dt>
@@ -455,7 +450,7 @@ gas.  Once constructed, the properties of the gas are fixed.</p>
 <dl class="method">
 <dt id="pyavia.aero.GasFlow.a">
 <em class="property">property </em><code class="sig-name descname">a</code><a class="headerlink" href="#pyavia.aero.GasFlow.a" title="Permalink to this definition">¶</a></dt>
-<dd><p>Local speed of sound a = (γRT)**0.5.</p>
+<dd><p>Local speed of sound <span class="math notranslate nohighlight">\(a = \sqrt{{\gamma}RT}\)</span>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -626,11 +621,6 @@ the total massflow.  E.G. If the upstream flow was pure airflow of
 <dd><p>Total / stagnation temperature.</p>
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyavia.aero.GasFlowWF.__abstractmethods__">
-<code class="sig-name descname">__abstractmethods__</code><em class="property"> = frozenset({})</em><a class="headerlink" href="#pyavia.aero.GasFlowWF.__abstractmethods__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="method">
 <dt id="pyavia.aero.GasFlowWF.__init__">
 <code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*</em>, <em class="sig-param">P: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">P0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">T0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">h0: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">s: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">M: Optional[float] = None</em>, <em class="sig-param">w: Optional[pyavia.core.units.Dim] = None</em>, <em class="sig-param">gas: str = 'air'</em>, <em class="sig-param">FAR: float = 0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.aero.GasFlowWF.__init__" title="Permalink to this definition">¶</a></dt>
@@ -797,11 +787,6 @@ using <span class="math notranslate nohighlight">\(\frac{P_0}{P} = (1 + \frac{1}
 computed using <span class="math notranslate nohighlight">\(\frac{T_0}{T} = 1 + \frac{1}{2}(γ - 1)M^2\)</span>,
 which assumes a perfect gas.</p>
 </dd></dl>
-
-<dl class="attribute">
-<dt id="pyavia.aero.PerfectGasFlow.__abstractmethods__">
-<code class="sig-name descname">__abstractmethods__</code><em class="property"> = frozenset({})</em><a class="headerlink" href="#pyavia.aero.PerfectGasFlow.__abstractmethods__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="method">
 <dt id="pyavia.aero.PerfectGasFlow.__init__">

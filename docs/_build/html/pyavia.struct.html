@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>pyavia.struct &#8212; PyAvia 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="pyavia.solve" href="pyavia.solve.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pyavia.solve.html" title="pyavia.solve"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyavia-struct">
+<span id="id1"></span><h1>pyavia.struct<a class="headerlink" href="#pyavia-struct" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.struct.hole_scf_3d" title="pyavia.struct.hole_scf_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.struct.hole_scf_3d</span></code></a></p></td>
+<td><p>Computes the three-dimensional stress concentration in countersunk and straight shank rivet holes.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-pyavia.struct">
+<span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.struct" title="Permalink to this headline">¶</a></h2>
+<p><strong>pyavia.struct</strong> provides functions relating to structures,
+fatigue and damage tolerance.</p>
+<dl class="function">
+<dt id="pyavia.struct.hole_scf_3d">
+<code class="sig-prename descclassname">pyavia.struct.</code><code class="sig-name descname">hole_scf_3d</code><span class="sig-paren">(</span><em class="sig-param">rt: float</em>, <em class="sig-param">bt: float</em>, <em class="sig-param">zt: float</em>, <em class="sig-param">rw: float</em>, <em class="sig-param">lcase: str</em><span class="sig-paren">)</span> &#x2192; float<a class="headerlink" href="#pyavia.struct.hole_scf_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the three-dimensional stress concentration in countersunk and
+straight shank rivet holes.  Original FORTRAN version developed by
+Kunigal N. Shivakumar and J. C. Newman, Jr. April 1991.  Adapted to
+Python by Eric J. Whitney, April 2020.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rt</strong> (<em>float</em>) – Hole radius to thickness ratio, <span class="math notranslate nohighlight">\(0.25 \leq r/t \leq 2.5\)</span>.</p></li>
+<li><p><strong>bt</strong> (<em>float</em>) – Straight shank length to plate thickness ratio, <span class="math notranslate nohighlight">\(0 \leq b/t
+\leq 1\)</span>.  If <code class="docutils literal notranslate"><span class="pre">bt</span> <span class="pre">==</span> <span class="pre">1</span></code> the hole is straight shank only.</p></li>
+<li><p><strong>zt</strong> (<em>float</em>) – Location where stress concentration factor is required as a ratio of
+plate thickness, <span class="math notranslate nohighlight">\(-0.5 \leq z/t \leq 0.5\)</span>.
+.. note: <cite>z</cite> is measured from the mid-plane of the plate.</p></li>
+<li><p><strong>rw</strong> (<em>float</em>) – Hole radius to plate width, <span class="math notranslate nohighlight">\(r/w &lt; 0.25\)</span>.</p></li>
+<li><p><strong>lcase</strong> (<em>str</em>) – <dl class="simple">
+<dt>Loading case from one of the following options:</dt><dd><ul>
+<li><dl class="simple">
+<dt>Straight shank:</dt><dd><ul>
+<li><p>’tension’: Remote tension.</p></li>
+<li><p>’bending’: Remote bending.</p></li>
+<li><p>’pin’: Pin (or rivet) loading.</p></li>
+<li><p>’wedge’: Wedge loading.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Countersunk hole:</dt><dd><ul>
+<li><p>’tension’: Remote tension.</p></li>
+<li><p>’bending’: Remote bending.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p><strong>scf</strong> – Three-dimensional stress concentration factor <cite>K</cite> (or SCF).
+Depending on load case:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Remote tension: <span class="math notranslate nohighlight">\(K_t=\sigma_{max}/\sigma_t\)</span> where
+<span class="math notranslate nohighlight">\(\sigma_t\)</span> is the remote applied stress.</p></li>
+<li><p>Remote bending: <span class="math notranslate nohighlight">\(K_b=\sigma_{max}/[6M/(t^2)]\)</span> where <cite>M</cite> =
+remote applied moment per unit width.</p></li>
+<li><p>Pin (or rivet) load: <span class="math notranslate nohighlight">\(K_p=\sigma_{max}/[P/(2rt)]\)</span> where
+<cite>P</cite> = pin load.</p></li>
+<li><p>Wedge load: <span class="math notranslate nohighlight">\(K_w=\sigma_{max}/[P/(2rt)]\)</span> where <cite>P</cite> = wedge
+load</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>K</cite> / SCF for simulated rivet loading is obtained by
+adding one-half of the SCF for remote tension S = p/(2wt) and
+one-half of the SCF for wedge loading (<cite>2w</cite> is total width of
+plate).</p>
+</div>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyavia.struct</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#module-pyavia.struct">Members</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pyavia.solve.html"
+                        title="previous chapter">pyavia.solve</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/pyavia.struct.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pyavia.solve.html" title="pyavia.solve"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Eric J. Whitney.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+    </div>
+  </body>
+</html>

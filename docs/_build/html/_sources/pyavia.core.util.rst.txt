@@ -24,6 +24,7 @@ Contents
     pyavia.core.util.monotonic
     pyavia.core.util.strict_decrease
     pyavia.core.util.strict_increase
+    pyavia.core.util.Switch
 
 Members
 -------

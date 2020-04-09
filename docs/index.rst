@@ -16,6 +16,7 @@ Modules
     Core utilities, units, containers. <pyavia.core>
     pyavia.aero: Aerodynamics, thermodynamics, fluid dynamics. <pyavia.aero>
     pyavia.solve: Solutions for less common problem types. <pyavia.solve>
+    pyavia.struct: Structures, fatigue and damage tolerance. <pyavia.struct>
 
 Copyright
 ---------
