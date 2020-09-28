@@ -11,17 +11,36 @@ such as:
 # Last updated: 11 January 2019 by Eric J. Whitney.
 
 import operator as op
-from math import log, exp
+from math import log, exp, pi, nan, atan
 from typing import Union, Iterable
 
-__all__ = ['kind_div', 'force_type', 'coax_type', 'all_none', 'all_not_none',
-           'any_none', 'first', 'bounded_by', 'bracket_list', 'line_pt',
-           'linear_int_ext', 'min_max', 'monotonic', 'strict_decrease',
-           'strict_increase']
+__all__ = ['kind_atan2', 'kind_div', 'force_type', 'coax_type', 'all_none',
+           'all_not_none', 'any_none', 'first', 'bounded_by', 'bracket_list',
+           'line_pt', 'linear_int_ext', 'min_max', 'monotonic',
+           'strict_decrease', 'strict_increase']
 
 
 # ----------------------------------------------------------------------------
 # Operators.
+
+def kind_atan2(y, x) -> float:
+    """Implementation of atan2 that allows any object as an argument provided
+    it supports div() and float().  Allows units-aware usage."""
+    if float(x) == 0.0:
+        if float(y) > 0.0:
+            return +0.5 * pi
+        elif float(y) < 0.0:
+            return -0.5 * pi
+        else:
+            return nan
+    else:
+        res = atan(y / x)
+        if float(x) < 0:
+            if float(y) >= 0:
+                res += pi
+            else:
+                res -= pi
+        return res
 
 
 def kind_div(x, y) -> Union[int, float]:
@@ -191,6 +210,12 @@ def first(it: Iterable, condition=lambda x: True):
     """
     return next(x for x in it if condition(x))
 
+
+def count_op(it: Iterable, oper, value):
+    """Return a count of the number of items in `it` where **oper** **value**
+    == True.  This allows user-defined objects to be included and is subtly
+    different to ``[...].count(...)`` which uses the __eq__ operator."""
+    return [oper(x, value) for x in it].count(True)
 
 # ----------------------------------------------------------------------------
 # Simple search and interpolation functions.

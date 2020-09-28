@@ -11,6 +11,7 @@ Contents
     :nosignatures:
 
     pyavia.core.containers.MultiBiDict
+    pyavia.core.containers.ValueRange
     pyavia.core.containers.g_link
     pyavia.core.containers.WtDirgraph
     pyavia.core.containers.flatten

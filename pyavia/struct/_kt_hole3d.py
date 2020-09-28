@@ -2,25 +2,30 @@
 straight-shank or countersunk holes subjected to remote tension, remote
 bending, pin loading and wedge loading.
 
-Python versionby Eric J. Whitney April 2020 based on FORTRAN code appearing in
+Python version by Eric J. Whitney April 2020 based on FORTRAN code appearing in
 Shivakumar, K. N.  and Newman, J. C., "Stress Concentrations for
 Straight-Shank and Countersunk Holes in Plates Subjected to Tension,
-Bending, and Pin Loading", NASA Technical Paper 3192, June 1992. """
+Bending, and Pin Loading", NASA Technical Paper NASA-TP-3192, June 1992."""
 
-# Last updated: 9 April 2020 by Eric J. Whitney
+# Last updated: 27 September 2020 by Eric J. Whitney
 
 import numpy as np
 
-__all__ = ['hole_scf_3d']
+__all__ = ['kt_hole3d']
 
 
-def hole_scf_3d(rt: float, bt: float, zt: float, rw: float,
-                lcase: str) -> float:
+def kt_hole3d(rt: float, bt: float, zt: float, rw: float,
+              lcase: str) -> float:
     r"""
     Computes the three-dimensional stress concentration in countersunk and
     straight shank rivet holes.  Original FORTRAN version developed by
     Kunigal N. Shivakumar and J. C. Newman, Jr. April 1991.  Adapted to
     Python by Eric J. Whitney, April 2020.
+
+    .. note:: A countersink angle of :math:`\theta_c` = 100° is assumed by the
+       code which is typical for aircraft fasteners.  However as indicated
+       in NASA-TP-3192 page 5 the method is accurate to ±3.5% for
+       :math:`\theta_c` ± 10°, i.e. :math:`\theta_c` = 90° → 120°.
 
     Parameters
     ----------
@@ -34,9 +39,10 @@ def hole_scf_3d(rt: float, bt: float, zt: float, rw: float,
         plate thickness, :math:`-0.5 \leq z/t \leq 0.5`.
         .. note: `z` is measured from the mid-plane of the plate.
     rw : float
-        Hole radius to plate width, :math:`r/w < 0.25`.
+        Hole radius to plate half-width, :math:`r/w < 0.25`.
     lcase : str
         Loading case from one of the following options:
+
             - Straight shank:
                 - 'tension': Remote tension.
                 - 'bending': Remote bending.
@@ -48,9 +54,10 @@ def hole_scf_3d(rt: float, bt: float, zt: float, rw: float,
 
     Returns
     -------
-    scf : float
-        Three-dimensional stress concentration factor `K` (or SCF).
+    kt : float
+        Three-dimensional stress concentration factor (or :math:`K_t`).
         Depending on load case:
+
             - Remote tension: :math:`K_t=\sigma_{max}/\sigma_t` where
               :math:`\sigma_t` is the remote applied stress.
             - Remote bending: :math:`K_b=\sigma_{max}/[6M/(t^2)]` where `M` =
@@ -66,31 +73,31 @@ def hole_scf_3d(rt: float, bt: float, zt: float, rw: float,
                plate).
     """
     if not (0.0 <= bt <= 1.0):
-        raise ValueError("Parameter b/t out of range.")
+        raise ValueError(f"b/t = {bt:.3f} out of range (0..1).")
     if not (0.25 <= rt <= 2.5):
-        raise ValueError("Parameter r/t out of range.")
+        raise ValueError(f"r/t = {rt:.3f} out of range (0.25..2.5).")
     if not (-0.5 <= zt <= 0.5):
-        raise ValueError("Parameters z/t out of range.")
+        raise ValueError(f"z/t = {zt:.3f} out of range (-0.5..+0.5).")
     if rw > 0.25:
-        raise ValueError("Parameter r/w out of range.")
+        raise ValueError(f"r/w = {rw:.3f} out of range (<= 0.25).")
     if lcase not in ('tension', 'bending', 'pin', 'wedge'):
-        raise ValueError("Unknown load case.")
+        raise ValueError(f"Unknown load case: {lcase}.")
 
     if bt == 1.0:
         if lcase == 'pin':
-            scf_tension = _scf_straight(rt, zt, 'tension')
-            scf_wedge = _scf_straight(rt, zt, 'wedge')
+            scf_tension = _kt_hole_straight(rt, zt, 'tension')
+            scf_wedge = _kt_hole_straight(rt, zt, 'wedge')
             return (scf_wedge + rw * scf_tension) * 0.5
         else:
-            return _scf_straight(rt, zt, lcase)
+            return _kt_hole_straight(rt, zt, lcase)
     elif bt == 0.0:
-        return _scf_csunk(rt, 0, zt, lcase)
+        return _kt_hole_csunk(rt, 0, zt, lcase)
     else:
         idx_lwr = int(bt / 0.25)
         z_lwr, z_upr = 0.25 * idx_lwr, 0.25 * (idx_lwr + 1)
         zt1, zt2 = _nzt(bt, zt, z_lwr, z_upr)
-        scf1 = _scf_csunk(rt, idx_lwr, zt1, lcase)
-        scf2 = _scf_csunk(rt, idx_lwr, zt2, lcase)
+        scf1 = _kt_hole_csunk(rt, idx_lwr, zt1, lcase)
+        scf2 = _kt_hole_csunk(rt, idx_lwr, zt2, lcase)
         return scf1 + (scf2 - scf1) / 0.25 * (bt - z_lwr)
 
 
@@ -126,7 +133,7 @@ _SS_ALPB = np.reshape([
     -1.2427, 2.7202, -1.8804, 0.3957], (4, 4), order='F')
 
 
-def _scf_straight(rt, zt, lcase):
+def _kt_hole_straight(rt, zt, lcase):
     """
     Three-dimensional stress concentration equation for straight shank rivet
     hole subjected to:
@@ -202,7 +209,7 @@ _CS_BET = np.reshape([
     0.4036, 0.1992, 0.8738, -0.3866], (3, 5, 4, 2), order='F')
 
 
-def _scf_csunk(rt, k, zt, lcase):
+def _kt_hole_csunk(rt, k, zt, lcase):
     """
     Three-dimensional stress concentration factor for countersunk rivet
     hole subjected to:

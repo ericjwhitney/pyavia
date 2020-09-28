@@ -1,19 +1,20 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pyavia.struct &#8212; PyAvia 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -31,7 +32,8 @@
         <li class="right" >
           <a href="pyavia.solve.html" title="pyavia.solve"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyavia.struct</a></li> 
       </ul>
     </div>  
 
@@ -50,23 +52,33 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.struct.hole_scf_3d" title="pyavia.struct.hole_scf_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.struct.hole_scf_3d</span></code></a></p></td>
-<td><p>Computes the three-dimensional stress concentration in countersunk and straight shank rivet holes.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.struct.mohr2d" title="pyavia.struct.mohr2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.struct.mohr2d</span></code></a></p></td>
+<td><p>Mohr’s circle transformation of stresses in any orientation to principle axes or another nominated angle.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.struct.sn_raithby" title="pyavia.struct.sn_raithby"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.struct.sn_raithby</span></code></a></p></td>
+<td><p>S-N data for complete wings and tailplanes by Raithby (RAeS), using best fit equations of Sewell and Douglas as given in Appendix I of R_air.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="module-pyavia.struct">
 <span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.struct" title="Permalink to this headline">¶</a></h2>
-<p><strong>pyavia.struct</strong> provides functions relating to structures,
+<p><strong>pyavia.struct</strong> provides functions relating to structures, stress analysis,
 fatigue and damage tolerance.</p>
-<dl class="function">
-<dt id="pyavia.struct.hole_scf_3d">
-<code class="sig-prename descclassname">pyavia.struct.</code><code class="sig-name descname">hole_scf_3d</code><span class="sig-paren">(</span><em class="sig-param">rt: float</em>, <em class="sig-param">bt: float</em>, <em class="sig-param">zt: float</em>, <em class="sig-param">rw: float</em>, <em class="sig-param">lcase: str</em><span class="sig-paren">)</span> &#x2192; float<a class="headerlink" href="#pyavia.struct.hole_scf_3d" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt id="pyavia.struct.kt_hole3d">
+<code class="sig-prename descclassname">pyavia.struct.</code><code class="sig-name descname">kt_hole3d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rt</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">bt</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">zt</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">rw</span><span class="p">:</span> <span class="n">float</span></em>, <em class="sig-param"><span class="n">lcase</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; float<a class="headerlink" href="#pyavia.struct.kt_hole3d" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the three-dimensional stress concentration in countersunk and
 straight shank rivet holes.  Original FORTRAN version developed by
 Kunigal N. Shivakumar and J. C. Newman, Jr. April 1991.  Adapted to
 Python by Eric J. Whitney, April 2020.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A countersink angle of <span class="math notranslate nohighlight">\(\theta_c\)</span> = 100° is assumed by the
+code which is typical for aircraft fasteners.  However as indicated
+in NASA-TP-3192 page 5 the method is accurate to ±3.5% for
+<span class="math notranslate nohighlight">\(\theta_c\)</span> ± 10°, i.e. <span class="math notranslate nohighlight">\(\theta_c\)</span> = 90° → 120°.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -76,9 +88,10 @@ Python by Eric J. Whitney, April 2020.</p>
 <li><p><strong>zt</strong> (<em>float</em>) – Location where stress concentration factor is required as a ratio of
 plate thickness, <span class="math notranslate nohighlight">\(-0.5 \leq z/t \leq 0.5\)</span>.
 .. note: <cite>z</cite> is measured from the mid-plane of the plate.</p></li>
-<li><p><strong>rw</strong> (<em>float</em>) – Hole radius to plate width, <span class="math notranslate nohighlight">\(r/w &lt; 0.25\)</span>.</p></li>
-<li><p><strong>lcase</strong> (<em>str</em>) – <dl class="simple">
-<dt>Loading case from one of the following options:</dt><dd><ul>
+<li><p><strong>rw</strong> (<em>float</em>) – Hole radius to plate half-width, <span class="math notranslate nohighlight">\(r/w &lt; 0.25\)</span>.</p></li>
+<li><p><strong>lcase</strong> (<em>str</em>) – <p>Loading case from one of the following options:</p>
+<blockquote>
+<div><ul>
 <li><dl class="simple">
 <dt>Straight shank:</dt><dd><ul>
 <li><p>’tension’: Remote tension.</p></li>
@@ -98,13 +111,12 @@ plate thickness, <span class="math notranslate nohighlight">\(-0.5 \leq z/t \leq
 </dl>
 </li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 </p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p><strong>scf</strong> – Three-dimensional stress concentration factor <cite>K</cite> (or SCF).
+<dd class="field-even"><p><p><strong>kt</strong> – Three-dimensional stress concentration factor (or <span class="math notranslate nohighlight">\(K_t\)</span>).
 Depending on load case:</p>
 <blockquote>
 <div><ul class="simple">
@@ -133,10 +145,78 @@ plate).</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt id="pyavia.struct.mohr2d">
+<code class="sig-prename descclassname">pyavia.struct.</code><code class="sig-name descname">mohr2d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s_xx</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">s_yy</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">t_xy</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">rot_ang</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.struct.mohr2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mohr’s circle transformation of stresses in any orientation to
+principle axes or another nominated angle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>s_xx</strong> (<em>scalar</em>) – Stress along local x-x axis.</p></li>
+<li><p><strong>s_yy</strong> (<em>scalar</em>) – Stress along local y-y axis.</p></li>
+<li><p><strong>t_xy</strong> (<em>scalar</em>) – Shear stress in local x-y directions.</p></li>
+<li><p><strong>rot_ang</strong> (<em>None</em><em> or </em><em>float</em>) – <p>Rotation angle (<strong>radians</strong> if no units given, default = None):</p>
+<ul>
+<li><p>If None, returns stresses transformed to principle axes,
+i.e. <span class="math notranslate nohighlight">\(\sigma_{11}\)</span>, <span class="math notranslate nohighlight">\(\sigma_{22}\)</span> and always
+<span class="math notranslate nohighlight">\(\tau_{12} = 0\)</span>.</p></li>
+<li><p>If supplied returns stresses transformed by the specified rotation
+(i.e. axis x-x → x’-x’).</p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>s_xx’, s_yy’, t_xy’, rot_ang</strong> – Transformed stresses and rotation angle (computed for principle axes if
+rot_ang was None).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>scalar, float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyavia.struct.sn_raithby">
+<code class="sig-prename descclassname">pyavia.struct.</code><code class="sig-name descname">sn_raithby</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s_range</span><span class="p">:</span> <span class="n"><a class="reference internal" href="pyavia.core.containers.html#pyavia.core.containers.ValueRange" title="pyavia.core.containers.ValueRange">pyavia.core.containers.ValueRange</a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.struct.sn_raithby" title="Permalink to this definition">¶</a></dt>
+<dd><p>S-N data for complete wings and tailplanes by Raithby (RAeS), using
+best fit equations of Sewell and Douglas as given in Appendix I of
+R_air. Hangartner, ‘Correlation of Fatigue Data for Aluminium Aircraft Wing
+and Tail Structures’, National Research Council Canada, Ottawa,
+Aeronautical Report LR-582, Dec. 1974.  These are straight lines on a
+log-log plot.</p>
+<p>..Note:: The equation in Hangartner Appendix I has a typo, the <strong>B</strong> term
+should be subtracted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>s_range</strong> (<a class="reference internal" href="pyavia.core.containers.html#pyavia.core.containers.ValueRange" title="pyavia.core.containers.ValueRange"><em>ValueRange</em></a><em>[</em><em>scalar</em><em> or </em><a class="reference internal" href="pyavia.core.units.html#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a><em>]</em>) – <p>Stress range to use, valid when <span class="math notranslate nohighlight">\(\sigma_{mean} \leq 30 ksi\)</span>.
+If no units are supplied, stresses are assumed to be ksi.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To handle cases where <span class="math notranslate nohighlight">\(\sigma_{mean} &lt; 0\)</span> a
+conservative simplification is made by setting
+<span class="math notranslate nohighlight">\(\sigma_{mean} = 0\)</span>.</p>
+</div>
+</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>n</strong> – Calculated life (number of cycles).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <span class="math notranslate nohighlight">\(\sigma_{mean} &gt; 30 ksi\)</span>.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -170,7 +250,7 @@ plate).</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -187,12 +267,13 @@ plate).</p>
         <li class="right" >
           <a href="pyavia.solve.html" title="pyavia.solve"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyavia.struct</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Eric J. Whitney.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>

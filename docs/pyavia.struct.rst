@@ -10,7 +10,8 @@ Contents
 .. autosummary::
     :nosignatures:
 
-    pyavia.struct.hole_scf_3d
+    pyavia.struct.mohr2d
+    pyavia.struct.sn_raithby
 
 Members
 -------

@@ -1,19 +1,20 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Containers &#8212; PyAvia 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +37,8 @@
           <a href="pyavia.core.html" title="Core Modules"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Containers</a></li> 
       </ul>
     </div>  
 
@@ -58,16 +60,19 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.MultiBiDict" title="pyavia.core.containers.MultiBiDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.MultiBiDict</span></code></a></p></td>
 <td><p>Bi-directional dict class.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.g_link" title="pyavia.core.containers.g_link"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.g_link</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.ValueRange" title="pyavia.core.containers.ValueRange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.ValueRange</span></code></a></p></td>
+<td><p>Represents any range of scalar values (units agnostic).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.g_link" title="pyavia.core.containers.g_link"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.g_link</span></code></a></p></td>
 <td><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">builtins.slice</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.WtDirgraph" title="pyavia.core.containers.WtDirgraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.WtDirgraph</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.WtDirgraph" title="pyavia.core.containers.WtDirgraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.WtDirgraph</span></code></a></p></td>
 <td><p>A weighted directed graph where a value / weight can be assigned to any link / edge between any two hashable nodes / keys.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten" title="pyavia.core.containers.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten" title="pyavia.core.containers.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten</span></code></a></p></td>
 <td><p>Generator returning entries from a flattened representation of any sequence container (except strings).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten_list" title="pyavia.core.containers.flatten_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten_list</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten_list" title="pyavia.core.containers.flatten_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten_list</span></code></a></p></td>
 <td><p>Generator similar to <code class="docutils literal notranslate"><span class="pre">flatten</span></code>, however only flattens lists until a non-list element is found.</p></td>
 </tr>
 </tbody>
@@ -76,7 +81,7 @@
 <div class="section" id="module-pyavia.core.containers">
 <span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.core.containers" title="Permalink to this headline">¶</a></h2>
 <p>Adds useful, less common containers not available in the standard library.</p>
-<dl class="class">
+<dl class="py class">
 <dt id="pyavia.core.containers.AttrDict">
 <em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">AttrDict</code><a class="headerlink" href="#pyavia.core.containers.AttrDict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -85,45 +90,45 @@ notation.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">my_dict</span> <span class="o">=</span> <span class="n">AttrDict</span><span class="p">([(</span><span class="s1">&#39;make&#39;</span><span class="p">,</span> <span class="s1">&#39;Mazda&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="s1">&#39;3&#39;</span><span class="p">)])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">my_dict</span><span class="p">[</span><span class="s1">&#39;yom&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2007</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;My car is a </span><span class="si">{my_dict.make}</span><span class="s2"> </span><span class="si">{my_dict.model}</span><span class="s2"> made in &quot;</span>
-<span class="gp">... </span>      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{my_dict.yom}</span><span class="s2">.&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;My car is a </span><span class="si">{</span><span class="n">my_dict</span><span class="o">.</span><span class="n">make</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">my_dict</span><span class="o">.</span><span class="n">model</span><span class="si">}</span><span class="s2"> made in &quot;</span>
+<span class="gp">... </span>      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">my_dict</span><span class="o">.</span><span class="n">yom</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 <span class="go">My car is a Mazda 3 made in 2007.</span>
 </pre></div>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.AttrDict.__delattr__">
-<code class="sig-name descname">__delattr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__delattr__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__delattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="o">/</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__delattr__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete self[key].</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.AttrDict.__dir__">
 <code class="sig-name descname">__dir__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__dir__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Default dir() implementation.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.AttrDict.__getattr__">
-<code class="sig-name descname">__getattr__</code><span class="sig-paren">(</span><em class="sig-param">name</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__getattr__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__getattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__getattr__" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.AttrDict.__repr__">
 <code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__repr__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return repr(self).</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.AttrDict.__setattr__">
-<code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__setattr__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em>, <em class="sig-param"><span class="o">/</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__setattr__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set self[key] to value.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
 <dt id="pyavia.core.containers.MultiBiDict">
-<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">MultiBiDict</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">MultiBiDict</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
 <p>Bi-directional dict class.</p>
 <p>A forward and inverse dictionary are synchronised to allow searching by
@@ -166,34 +171,81 @@ of key such that bidict_multi[key] == value.</p></li>
 <span class="go">{2: [], 3: [&#39;b&#39;]}</span>
 </pre></div>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.MultiBiDict.__delitem__">
-<code class="sig-name descname">__delitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__delitem__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__delitem__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__delitem__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete self[key].</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.MultiBiDict.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>args</strong><strong>,</strong><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Initialise the forward dict as dict(<cite>*args</cite>, <cite>**kwargs</cite>) if
-supplied.  The inverse dict is then constructed.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<em>dict</em><em>, </em><em>optional</em>) – Initialise the forward dict as dict(<cite>*args</cite>, <cite>**kwargs</cite>) if
+supplied.  The inverse dict is then constructed.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Initialise the forward dict as dict(<cite>*args</cite>, <cite>**kwargs</cite>) if
+supplied.  The inverse dict is then constructed.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.MultiBiDict.__setitem__">
-<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param">key</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__setitem__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.MultiBiDict.__setitem__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set self[key] to value.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
+<dl class="py class">
+<dt id="pyavia.core.containers.ValueRange">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">ValueRange</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">x_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_mean</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_ampl</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.ValueRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents any range of scalar values (units agnostic).</p>
+<dl class="py method">
+<dt id="pyavia.core.containers.ValueRange.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">x_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_mean</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_ampl</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.ValueRange.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Establish a range using any valid combination of two of the input
+arguments from <cite>x_min</cite>, <cite>x_max</cite>, <cite>x_mean</cite>, <cite>x_ampl</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If minimum and maximum are reversed (or amplitude is
+negative) these will be automatically switched which may
+produce unexpected results.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_min</strong> (<em>scalar</em>) – Range minimum.</p></li>
+<li><p><strong>x_max</strong> (<em>scalar</em>) – Range maximum.</p></li>
+<li><p><strong>x_mean</strong> (<em>scalar</em>) – Range mean.</p></li>
+<li><p><strong>x_ampl</strong> (<em>scalar</em>) – Range amplitude of variation (i.e. +/- value to superimpose on
+mean).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.containers.ValueRange.ampl">
+<em class="property">property </em><code class="sig-name descname">ampl</code><a class="headerlink" href="#pyavia.core.containers.ValueRange.ampl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computed amplitude.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.containers.ValueRange.mean">
+<em class="property">property </em><code class="sig-name descname">mean</code><a class="headerlink" href="#pyavia.core.containers.ValueRange.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computed mean value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt id="pyavia.core.containers.WtDirgraph">
-<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">WtDirgraph</code><span class="sig-paren">(</span><em class="sig-param">links: Dict[Hashable</em>, <em class="sig-param">Dict[Hashable</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">WtDirgraph</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">links</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>Hashable<span class="p">, </span>Dict<span class="p">[</span>Hashable<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A weighted directed graph where a value / weight can be assigned to any
 link / edge between any two hashable nodes / keys.
@@ -236,9 +288,9 @@ function. This is the equivalent of a graph link.  e.g.: <code class="docutils l
 <span class="go">WtDirgraph({&#39;b&#39;: {&#39;c&#39;: &#39;it&#39;}, 3.14159: {}, &#39;c&#39;: {&#39;d&#39;: &#39;is.&#39;}, &#39;d&#39;: {}})</span>
 </pre></div>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.__contains__">
-<code class="sig-name descname">__contains__</code><span class="sig-paren">(</span><em class="sig-param">arg</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__contains__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__contains__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arg</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__contains__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if a link value x → y exists (slice arg), or True if
 key exists (single arg).  Because standalone slice notation is  not
 available on the LHS, use the following syntax:
@@ -260,9 +312,9 @@ available on the LHS, use the following syntax:
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.__delitem__">
-<code class="sig-name descname">__delitem__</code><span class="sig-paren">(</span><em class="sig-param">arg</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__delitem__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__delitem__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arg</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__delitem__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete link value for x → y (slice arg) or delete key <cite>x</cite> and all
 associated links (single arg).</p>
 <dl class="field-list simple">
@@ -275,9 +327,9 @@ associated links (single arg).</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.__getitem__">
-<code class="sig-name descname">__getitem__</code><span class="sig-paren">(</span><em class="sig-param">arg: slice</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__getitem__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__getitem__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arg</span><span class="p">:</span> <span class="n">slice</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__getitem__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get link value for x → y.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -292,9 +344,9 @@ associated links (single arg).</p>
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">links: Dict[Hashable</em>, <em class="sig-param">Dict[Hashable</em>, <em class="sig-param">Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">links</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>Hashable<span class="p">, </span>Dict<span class="p">[</span>Hashable<span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct a weighted directional graph.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -318,15 +370,15 @@ c -→ a  link value = 4
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.__repr__">
 <code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__repr__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return repr(self).</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.__setitem__">
-<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param">arg: slice</em>, <em class="sig-param">value</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__setitem__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__setitem__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arg</span><span class="p">:</span> <span class="n">slice</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.__setitem__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set / overwrite link value for x → y.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -341,9 +393,9 @@ c -→ a  link value = 4
 </dl>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.containers.WtDirgraph.trace">
-<code class="sig-name descname">trace</code><span class="sig-paren">(</span><em class="sig-param">x: Hashable, y: Hashable, op: Optional[Callable[[Any, Any], Any]] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.trace" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">y</span><span class="p">:</span> <span class="n">Hashable</span></em>, <em class="sig-param"><span class="n">op</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>Any<span class="p">, </span>Any<span class="p">]</span><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.WtDirgraph.trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Trace shortest path between two existing keys x and y using a
 breath-first search (refer
 <a class="reference external" href="https://en.wikipedia.org/wiki/Breadth-first_search">https://en.wikipedia.org/wiki/Breadth-first_search</a> and
@@ -355,7 +407,8 @@ op(xy_val, yz_val) if we have x →[xy_val]→ y and y →[yz_val]→ z.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong><strong>,</strong><strong>y</strong> (<em>Hashable</em>) – Starting and ending node / vertex / key.</p></li>
+<li><p><strong>x</strong> (<em>Hashable</em>) – Starting and ending node / vertex / key.</p></li>
+<li><p><strong>y</strong> (<em>Hashable</em>) – Starting and ending node / vertex / key.</p></li>
 <li><p><strong>op</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>Any</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Operator that produces a combined value valid for any two link /
 edge values, i.e. <code class="docutils literal notranslate"><span class="pre">result</span> <span class="pre">=</span> <span class="pre">op(val1,</span> <span class="pre">val2)</span></code>.</p></li>
 </ul>
@@ -380,15 +433,9 @@ is given but no path is found this is also None.</p></li>
 
 </dd></dl>
 
-<dl class="attribute">
-<dt id="pyavia.core.containers.g_link">
-<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">g_link</code><a class="headerlink" href="#pyavia.core.containers.g_link" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">builtins.slice</span></code></p>
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.containers.flatten">
-<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">flatten</code><span class="sig-paren">(</span><em class="sig-param">seq</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.flatten" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">flatten</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seq</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.flatten" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generator returning entries from a flattened representation of any
 sequence container (except strings).  Taken from
 <a class="reference external" href="https://stackoverflow.com/a/2158532">https://stackoverflow.com/a/2158532</a></p>
@@ -408,9 +455,9 @@ sequence container (except strings).  Taken from
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.containers.flatten_list">
-<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">flatten_list</code><span class="sig-paren">(</span><em class="sig-param">li</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.flatten_list" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">flatten_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.flatten_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generator similar to <code class="docutils literal notranslate"><span class="pre">flatten</span></code>, however only flattens lists until a
 non-list element is found.  Note that non-lsits may contain sub-lists
 and these are not flattened.</p>
@@ -424,10 +471,17 @@ and these are not flattened.</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt id="pyavia.core.containers.g_link">
+<code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">g_link</code><a class="headerlink" href="#pyavia.core.containers.g_link" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">builtins.slice</span></code></p>
+</dd></dl>
+
 </div>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -464,7 +518,7 @@ and these are not flattened.</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -485,12 +539,13 @@ and these are not flattened.</p>
           <a href="pyavia.core.html" title="Core Modules"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Containers</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Eric J. Whitney.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>

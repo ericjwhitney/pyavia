@@ -5,14 +5,16 @@ Adds useful, less common containers not available in the standard library.
 
 import collections
 from functools import reduce
+from operator import is_
 from typing import (Dict, Any, Iterable, Sequence, Callable, Hashable,
                     Optional, List)
 
-__all__ = ['AttrDict', 'MultiBiDict', 'WtDirgraph', 'g_link', 'flatten',
-           'flatten_list']
+__all__ = ['AttrDict', 'MultiBiDict', 'ValueRange', 'WtDirgraph', 'g_link',
+           'flatten', 'flatten_list']
 
 
 # -----------------------------------------------------------------------------
+from pyavia.core.util import count_op
 
 
 class AttrDict(dict):
@@ -126,6 +128,58 @@ class MultiBiDict(dict):
         if self_key in self.inverse and not self.inverse[self_key]:
             del self.inverse[self_key]
         super(MultiBiDict, self).__delitem__(key)
+
+
+# -----------------------------------------------------------------------------
+
+
+class ValueRange:
+    """Represents any range of scalar values (units agnostic)."""
+
+    def __init__(self, *, x_min=None, x_max=None, x_mean=None, x_ampl=None):
+        """Establish a range using any valid combination of two of the input
+        arguments from `x_min`, `x_max`, `x_mean`, `x_ampl`.
+
+        .. Note:: If minimum and maximum are reversed (or amplitude is
+           negative) these will be automatically switched which may
+           produce unexpected results.
+
+        Parameters
+        ----------
+        x_min : scalar
+            Range minimum.
+        x_max : scalar
+            Range maximum.
+        x_mean : scalar
+            Range mean.
+        x_ampl : scalar
+            Range amplitude of variation (i.e. +/- value to superimpose on
+            mean).
+
+        """
+        if count_op([x_min, x_max, x_mean, x_ampl], is_, None) != 2:
+            raise ValueError('Exactly two arguments required.')
+        if x_min is None:
+            if x_mean is not None:
+                x_min = x_mean - x_ampl
+            else:
+                x_min = x_max - 2 * x_ampl
+        if x_max is None:
+            if x_mean is not None:
+                x_max = x_mean + x_ampl
+            else:
+                x_max = x_min + 2 * x_ampl
+        self.min, self.max = min([x_min, x_max]), max([x_min, x_max])
+
+    @property
+    def mean(self):
+        """Computed mean value."""
+        return 0.5 * (self.max + self.min)
+
+    @property
+    def ampl(self):
+        """Computed amplitude."""
+        return 0.5 * (self.max - self.min)
 
 
 # -----------------------------------------------------------------------------

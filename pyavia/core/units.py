@@ -6,7 +6,7 @@ error.  Unit conversions not previously known are cached for fast lookup the
 next time they are used.
 """
 
-# Last updated: 10 January 2020 by Eric J. Whitney
+# Last updated: 27 September 2020 by Eric J. Whitney
 
 from __future__ import annotations
 from pyavia.core.containers import WtDirgraph, MultiBiDict
@@ -21,8 +21,9 @@ import warnings
 
 __all__ = ['output_ucode_pwr', 'UnitsError', 'Units', 'Dim',
            'add_base_unit', 'add_unit', 'base_unit', 'get_conversion',
-           'set_conversion', 'similar_to', 'total_temperature_convert',
-           'make_total_temp', 'from_ucode_super', 'to_ucode_super']
+           'assign_units', 'set_conversion', 'similar_to',
+           'total_temperature_convert', 'make_total_temp',
+           'from_ucode_super', 'to_ucode_super']
 
 # Generate unicode chars for power values in strings.
 output_ucode_pwr = True
@@ -320,7 +321,6 @@ class Dim:
             self.value, self.units = 1, Units()
 
         elif len(args) == 1:
-
             if isinstance(args[0], Units):
                 self.value, self.units = 1, args[0]
             else:
@@ -625,7 +625,7 @@ class Dim:
 
         Returns
         -------
-        Dim :
+        result : Dim
             Converted result with new units.
         """
         use_label = None
@@ -885,6 +885,35 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
     if cache_computed_convs:
         _comp_conv_cache[from_unit, to_unit] = factor
     return factor
+
+
+# TODO add make_consistent which takes an arbitrary number of units and
+#  converts them all to be on the same base units.
+
+def assign_units(x, to_units: Union[Units, str]) -> Dim:
+    """
+    Assign units to value `x` returning a `Dim` object:
+    - If `x` is already of type `Dim`, converted to the units requested.  If
+      units are not compatible x.convert() will raise an exception.
+    - If `x` has no units, converts to a `Dim` object with the given units
+      (assumes `x` represents a scalar).
+
+    Parameters
+    ----------
+    x : Any or Dim
+        Value to assign units.
+    to_units : Units or str
+        Target units.
+
+    Returns
+    -------
+    result : Dim
+        Converted result with new units.
+    """
+    if isinstance(x, Dim):
+        return x.convert(to_units)
+    else:
+        return Dim(x, to_units)
 
 
 def set_conversion(from_label: str, to_label: str, *, fwd: Any,

@@ -1,19 +1,20 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>pyavia.solve &#8212; PyAvia 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -35,7 +36,8 @@
         <li class="right" >
           <a href="pyavia.aero.html" title="pyavia.aero"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyavia.solve</a></li> 
       </ul>
     </div>  
 
@@ -49,9 +51,9 @@
 <span class="target" id="module-pyavia.solve"></span><p><strong>pyavia.solve</strong> provides functions for finding solutions to various types of
 equations. These are included when not covered by NumPy or different variant
 is required.</p>
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.solve.bisect_root">
-<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">bisect_root</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">x_a</em>, <em class="sig-param">x_b</em>, <em class="sig-param">maxits: int = 50</em>, <em class="sig-param">ftol=1e-06</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.bisect_root" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">bisect_root</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">x_a</span></em>, <em class="sig-param"><span class="n">x_b</span></em>, <em class="sig-param"><span class="n">maxits</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">50</span></em>, <em class="sig-param"><span class="n">ftol</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.bisect_root" title="Permalink to this definition">¶</a></dt>
 <dd><p>Approximate solution of <span class="math notranslate nohighlight">\(f(x) = 0\)</span> on interval <span class="math notranslate nohighlight">\(x \in [x_a,
 x_b]\)</span> by the bisection method. For bisection to work <span class="math notranslate nohighlight">\(f(x)\)</span> must
 change sign across the interval, i.e. <code class="docutils literal notranslate"><span class="pre">func(x_a)</span></code> and <code class="docutils literal notranslate"><span class="pre">func(x_b)</span></code> must
@@ -69,7 +71,8 @@ return values of opposite sign.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>func</strong> (<em>Callable</em><em>[</em><em>scalar</em><em>]</em>) – Function which we are searching for root.</p></li>
-<li><p><strong>x_a</strong><strong>,</strong><strong>x_b</strong> (<em>scalar</em>) – Each end of the search interval, in any order.</p></li>
+<li><p><strong>x_a</strong> (<em>scalar</em>) – Each end of the search interval, in any order.</p></li>
+<li><p><strong>x_b</strong> (<em>scalar</em>) – Each end of the search interval, in any order.</p></li>
 <li><p><strong>maxits</strong> (<em>int</em>) – Maximum number of iterations.</p></li>
 <li><p><strong>ftol</strong> (<em>scalar</em>) – End search when <span class="math notranslate nohighlight">\(|f(x)| &lt; f_{tol}\)</span>.</p></li>
 <li><p><strong>verbose</strong> (<em>bool</em>) – If True, print progress statements.</p></li>
@@ -87,9 +90,9 @@ return values of opposite sign.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.solve.fixed_point">
-<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">fixed_point</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">x0</em>, <em class="sig-param">xtol</em>, <em class="sig-param">h: float = 1.0</em>, <em class="sig-param">maxits: int = 15</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.fixed_point" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">fixed_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">xtol</span></em>, <em class="sig-param"><span class="n">h</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">maxits</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">15</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.fixed_point" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the fixed point of a function <span class="math notranslate nohighlight">\(x = f(x)\)</span> by iterating a
 damped second-order ODE.  The ODE is solved as two equations using the
 forward Euler method:</p>
@@ -177,9 +180,9 @@ instability is suspected (e.g. 0.5, 0.25, etc).</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.solve.solve_dqnm">
-<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">solve_dqnm</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">x0</em>, <em class="sig-param">xtol=1e-06</em>, <em class="sig-param">ftol=None</em>, <em class="sig-param">bounds=None</em>, <em class="sig-param">maxits=25</em>, <em class="sig-param">order=2</em>, <em class="sig-param">jacob_diag=None</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.solve_dqnm" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">solve_dqnm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">xtol</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="n">ftol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bounds</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">maxits</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">jacob_diag</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.solve_dqnm" title="Permalink to this definition">¶</a></dt>
 <dd><p>Solve nonlinear system of equations using the diagonal quasi-Newton method
 of <a class="footnote-reference brackets" href="#id6" id="id2">1</a>.</p>
 <p class="rubric">Notes</p>
@@ -247,6 +250,7 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -274,7 +278,7 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -294,12 +298,13 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
         <li class="right" >
           <a href="pyavia.aero.html" title="pyavia.aero"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">pyavia.solve</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Eric J. Whitney.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>

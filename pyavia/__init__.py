@@ -30,6 +30,8 @@ Coming Soon
 - Modular jet engine performance model.
 """
 
+__version__ = '0.0.2'
+
 # Import core functions into pyavia.* namespace.  Note that all sub-packages
 # define __all__.
 from pyavia.core import *

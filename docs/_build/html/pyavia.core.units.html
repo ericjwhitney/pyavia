@@ -1,19 +1,20 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Units &#8212; PyAvia 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +37,8 @@
           <a href="pyavia.core.containers.html" title="Containers"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Units</a></li> 
       </ul>
     </div>  
 
@@ -104,16 +106,224 @@ absolute or fixed basis values.  Calculation is via a weighted directed
 graph which finds the shortest route between units, minimising calculation
 error.  Unit conversions not previously known are cached for fast lookup the
 next time they are used.</p>
-<dl class="exception">
-<dt id="pyavia.core.units.UnitsError">
-<em class="property">exception </em><code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">UnitsError</code><a class="headerlink" href="#pyavia.core.units.UnitsError" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
-<p>Exception class for units specific errors.</p>
+<dl class="py class">
+<dt id="pyavia.core.units.Dim">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">Dim</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Combination of a Python value of any type with Units and an optional
+label.</p>
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__abs__">
+<code class="sig-name descname">__abs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__abs__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__add__">
+<code class="sig-name descname">__add__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a><a class="headerlink" href="#pyavia.core.units.Dim.__add__" title="Permalink to this definition">¶</a></dt>
+<dd><p>If <cite>rhs</cite> is Units() or an ordinary value, it is promoted to Dim()
+before addition.  This allows the case of a dimensionless intermediate
+product.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Addition to offset temperatures is limited to Δ values
+only.</p>
+</div>
 </dd></dl>
 
-<dl class="class">
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__eq__">
+<code class="sig-name descname">__eq__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self==value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__float__">
+<code class="sig-name descname">__float__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__float__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns float(self.value).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Units are removed and checking ability is lost.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__format__">
+<code class="sig-name descname">__format__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">format_spec</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__format__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default object formatter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__ge__">
+<code class="sig-name descname">__ge__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__ge__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self&gt;=value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__gt__">
+<code class="sig-name descname">__gt__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self&gt;value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a dimensioned quantity, consisting of a value, units and
+optional label.  It may be constructed in a number of ways:</p>
+<ul>
+<li><p>Dim(): Assumes value = 1 and dimensionless.</p></li>
+<li><p>Dim(Units): Assumes value = 1, i.e. this method promotes Units()
+to Dim().</p></li>
+<li><p>Dim(value): Assumes dimensionless, i.e. this method promotes a value
+to Dim().</p></li>
+<li><p>Dim(value, units): Normal construction:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If units is Units() object: Directly assigned, no label given.</p></li>
+<li><p>If units is string:  Parsed into Units() and used as label.</p></li>
+<li><p>If units is None: Dimensionless (equivalent to Units())</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__int__">
+<code class="sig-name descname">__int__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__int__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns int(self.value).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Units are removed and checking ability is lost.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__le__">
+<code class="sig-name descname">__le__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__le__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self&lt;=value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__lt__">
+<code class="sig-name descname">__lt__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self&lt;value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__mul__">
+<code class="sig-name descname">__mul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__mul__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multiplication of dimensioned values.  This is the central
+function used by most other operators / conversions.</p>
+<p>If either <cite>self</cite> or <cite>rhs</cite> units have a k-factor, this is multiplied
+out and becomes part of <cite>self.value</cite> leaving <cite>k</cite> = 1 for both <cite>self</cite>
+and <cite>rhs</cite>.  If <cite>rhs</cite> is Units() or an ordinary value, it is promoted
+before multiplication.</p>
+<p>If the resulting units include radians^1 or steradians^1, these
+disappear as they are dimensionless and have served their purpose.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__ne__">
+<code class="sig-name descname">__ne__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__ne__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self!=value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__neg__">
+<code class="sig-name descname">__neg__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__neg__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__pow__">
+<code class="sig-name descname">__pow__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pwr</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__pow__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises <cite>self.value</cite> to <cite>pwr</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Any <cite>k</cite> value in self.units is multiplied out and becomes
+part of value, leaving <cite>k</cite> = 1 in the result.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__radd__">
+<code class="sig-name descname">__radd__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__radd__" title="Permalink to this definition">¶</a></dt>
+<dd><p>LHS is promoted to Dim().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__rmul__">
+<code class="sig-name descname">__rmul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__rmul__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Commutaive with __mul__.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__round__">
+<code class="sig-name descname">__round__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__round__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__rsub__">
+<code class="sig-name descname">__rsub__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__rsub__" title="Permalink to this definition">¶</a></dt>
+<dd><p>LHS is promoted to Dim().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__rtruediv__">
+<code class="sig-name descname">__rtruediv__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__rtruediv__" title="Permalink to this definition">¶</a></dt>
+<dd><p>LHS is promoted to Dim().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__str__">
+<code class="sig-name descname">__str__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return str(self).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__sub__">
+<code class="sig-name descname">__sub__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a><a class="headerlink" href="#pyavia.core.units.Dim.__sub__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Follows the same rules as __add__.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Subtraction of offset temperatures is permitted and
+will result in a Δ value.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.__truediv__">
+<code class="sig-name descname">__truediv__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__truediv__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Follws the same rules as __mul__.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.units.Dim.convert">
+<code class="sig-name descname">convert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">to_units</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units">pyavia.core.units.Units</a><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a><a class="headerlink" href="#pyavia.core.units.Dim.convert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate new object converted to compatible units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>to_units</strong> (<a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units"><em>Units</em></a><em> or </em><em>str</em>) – Target units.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>result</strong> – Converted result with new units.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">Dim</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt id="pyavia.core.units.Units">
-<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">Units</code><a class="headerlink" href="#pyavia.core.units.Units" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">Units</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyavia.core.units._Units</span></code></p>
 <p>Combination of basis units and a factor representing a specific base or
 derived unit.  The Units object is an extended namedtuple.  Each basis
@@ -125,17 +335,17 @@ they can be looked up for quick conversions.</p>
 often in practical situations.  Almost all problems are dealt with
 entirely by Dim objects which contain a Units object.</p>
 </div>
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__mul__">
-<code class="sig-name descname">__mul__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__mul__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__mul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__mul__" title="Permalink to this definition">¶</a></dt>
 <dd><p>For all multiplication / division (and equivalent RHS variants)
 Units() are promoted to Dim() (along with the LHS if required) which
 then does the actual multiplication.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__new__">
-<em class="property">static </em><code class="sig-name descname">__new__</code><span class="sig-paren">(</span><em class="sig-param">cls</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__new__" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="sig-name descname">__new__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__new__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Units objects can be created in a number of ways:</p>
 <ul>
 <li><p>As conventional namedtuple where the first item is the factor and
@@ -183,38 +393,38 @@ similar to the ‘plus’ on-screen.</p>
 </div>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__repr__">
 <code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__repr__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a nicely formatted representation string</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__rmul__">
-<code class="sig-name descname">__rmul__</code><span class="sig-paren">(</span><em class="sig-param">lhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__rmul__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__rmul__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__rmul__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Follows the same rules as __mul__.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__rtruediv__">
-<code class="sig-name descname">__rtruediv__</code><span class="sig-paren">(</span><em class="sig-param">lhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__rtruediv__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__rtruediv__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">lhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__rtruediv__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Follows the same rules as __mul__.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__str__">
 <code class="sig-name descname">__str__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__str__" title="Permalink to this definition">¶</a></dt>
 <dd><p>If a unique label exists return it, otherwise builds a generic
 string.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.__truediv__">
-<code class="sig-name descname">__truediv__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__truediv__" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">__truediv__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Units.__truediv__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Follows the same rules as __mul__.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="py method">
 <dt id="pyavia.core.units.Units.dimless">
 <code class="sig-name descname">dimless</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; bool<a class="headerlink" href="#pyavia.core.units.Units.dimless" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns false if any indicies in the signature are nonzero,
@@ -223,224 +433,16 @@ otherwise returns true.</p>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="pyavia.core.units.Dim">
-<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">Dim</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Combination of a Python value of any type with Units and an optional
-label.</p>
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__abs__">
-<code class="sig-name descname">__abs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__abs__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__add__">
-<code class="sig-name descname">__add__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span> &#x2192; pyavia.core.units.Dim<a class="headerlink" href="#pyavia.core.units.Dim.__add__" title="Permalink to this definition">¶</a></dt>
-<dd><p>If <cite>rhs</cite> is Units() or an ordinary value, it is promoted to Dim()
-before addition.  This allows the case of a dimensionless intermediate
-product.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Addition to offset temperatures is limited to Δ values
-only.</p>
-</div>
+<dl class="py exception">
+<dt id="pyavia.core.units.UnitsError">
+<em class="property">exception </em><code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">UnitsError</code><a class="headerlink" href="#pyavia.core.units.UnitsError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Exception class for units specific errors.</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__eq__">
-<code class="sig-name descname">__eq__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__eq__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return self==value.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__float__">
-<code class="sig-name descname">__float__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__float__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns float(self.value).</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Units are removed and checking ability is lost.</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__format__">
-<code class="sig-name descname">__format__</code><span class="sig-paren">(</span><em class="sig-param">format_spec: str</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__format__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Default object formatter.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__ge__">
-<code class="sig-name descname">__ge__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__ge__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return self&gt;=value.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__gt__">
-<code class="sig-name descname">__gt__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__gt__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return self&gt;value.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructs a dimensioned quantity, consisting of a value, units and
-optional label.  It may be constructed in a number of ways:</p>
-<ul>
-<li><p>Dim(): Assumes value = 1 and dimensionless.</p></li>
-<li><p>Dim(Units): Assumes value = 1, i.e. this method promotes Units()
-to Dim().</p></li>
-<li><p>Dim(value): Assumes dimensionless, i.e. this method promotes a value
-to Dim().</p></li>
-<li><p>Dim(value, units): Normal construction:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>If units is Units() object: Directly assigned, no label given.</p></li>
-<li><p>If units is string:  Parsed into Units() and used as label.</p></li>
-<li><p>If units is None: Dimensionless (equivalent to Units())</p></li>
-</ul>
-</div></blockquote>
-</li>
-</ul>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__int__">
-<code class="sig-name descname">__int__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__int__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns int(self.value).</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Units are removed and checking ability is lost.</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__le__">
-<code class="sig-name descname">__le__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__le__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return self&lt;=value.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__lt__">
-<code class="sig-name descname">__lt__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__lt__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return self&lt;value.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__mul__">
-<code class="sig-name descname">__mul__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__mul__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Multiplication of dimensioned values.  This is the central
-function used by most other operators / conversions.</p>
-<p>If either <cite>self</cite> or <cite>rhs</cite> units have a k-factor, this is multiplied
-out and becomes part of <cite>self.value</cite> leaving <cite>k</cite> = 1 for both <cite>self</cite>
-and <cite>rhs</cite>.  If <cite>rhs</cite> is Units() or an ordinary value, it is promoted
-before multiplication.</p>
-<p>If the resulting units include radians^1 or steradians^1, these
-disappear as they are dimensionless and have served their purpose.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__ne__">
-<code class="sig-name descname">__ne__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__ne__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return self!=value.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__neg__">
-<code class="sig-name descname">__neg__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__neg__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__pow__">
-<code class="sig-name descname">__pow__</code><span class="sig-paren">(</span><em class="sig-param">pwr</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__pow__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Raises <cite>self.value</cite> to <cite>pwr</cite>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Any <cite>k</cite> value in self.units is multiplied out and becomes
-part of value, leaving <cite>k</cite> = 1 in the result.</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__radd__">
-<code class="sig-name descname">__radd__</code><span class="sig-paren">(</span><em class="sig-param">lhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__radd__" title="Permalink to this definition">¶</a></dt>
-<dd><p>LHS is promoted to Dim().</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__repr__">
-<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__repr__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return repr(self).</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__rmul__">
-<code class="sig-name descname">__rmul__</code><span class="sig-paren">(</span><em class="sig-param">lhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__rmul__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Commutaive with __mul__.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__round__">
-<code class="sig-name descname">__round__</code><span class="sig-paren">(</span><em class="sig-param">n=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__round__" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__rsub__">
-<code class="sig-name descname">__rsub__</code><span class="sig-paren">(</span><em class="sig-param">lhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__rsub__" title="Permalink to this definition">¶</a></dt>
-<dd><p>LHS is promoted to Dim().</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__rtruediv__">
-<code class="sig-name descname">__rtruediv__</code><span class="sig-paren">(</span><em class="sig-param">lhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__rtruediv__" title="Permalink to this definition">¶</a></dt>
-<dd><p>LHS is promoted to Dim().</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__str__">
-<code class="sig-name descname">__str__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__str__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return str(self).</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__sub__">
-<code class="sig-name descname">__sub__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span> &#x2192; pyavia.core.units.Dim<a class="headerlink" href="#pyavia.core.units.Dim.__sub__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Follows the same rules as __add__.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Subtraction of offset temperatures is permitted and
-will result in a Δ value.</p>
-</div>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.__truediv__">
-<code class="sig-name descname">__truediv__</code><span class="sig-paren">(</span><em class="sig-param">rhs</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.Dim.__truediv__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Follws the same rules as __mul__.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyavia.core.units.Dim.convert">
-<code class="sig-name descname">convert</code><span class="sig-paren">(</span><em class="sig-param">to_units: Union[pyavia.core.units.Units, str]</em><span class="sig-paren">)</span> &#x2192; pyavia.core.units.Dim<a class="headerlink" href="#pyavia.core.units.Dim.convert" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate new object converted to compatible units.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>to_units</strong> (<a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units"><em>Units</em></a><em> or </em><em>str</em>) – Target units.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Converted result with new units.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">Dim</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.units.add_base_unit">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">add_base_unit</code><span class="sig-paren">(</span><em class="sig-param">labels: Iterable[str], base: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#pyavia.core.units.add_base_unit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">add_base_unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">labels</span><span class="p">:</span> <span class="n">Iterable<span class="p">[</span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">base</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#pyavia.core.units.add_base_unit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simplified version of <code class="docutils literal notranslate"><span class="pre">add_unit()</span></code> for base unit cases where <cite>k</cite> = 1,
 and power = 1 (linear).  Labels are taken in turn and assigned to the
 common base dimension given e.g. <code class="docutils literal notranslate"><span class="pre">add_base_unit(['kg',</span> <span class="pre">'g',</span> <span class="pre">'mg'],</span> <span class="pre">'M')</span></code>
@@ -455,9 +457,9 @@ creates the mass base units of kg, g, mg.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.units.add_unit">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">add_unit</code><span class="sig-paren">(</span><em class="sig-param">label: str, new_unit: Union[pyavia.core.units.Units, str]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#pyavia.core.units.add_unit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">add_unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">label</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">new_unit</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units">pyavia.core.units.Units</a><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#pyavia.core.units.add_unit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a new standard Units() object with given label.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -478,9 +480,37 @@ to Units.  String can include alphabetic characters, ° or Δ.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
+<dt id="pyavia.core.units.assign_units">
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">assign_units</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">to_units</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units">pyavia.core.units.Units</a><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a><a class="headerlink" href="#pyavia.core.units.assign_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign units to value <cite>x</cite> returning a <cite>Dim</cite> object:
+- If <cite>x</cite> is already of type <cite>Dim</cite>, converted to the units requested.  If</p>
+<blockquote>
+<div><p>units are not compatible x.convert() will raise an exception.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>If <cite>x</cite> has no units, converts to a <cite>Dim</cite> object with the given units
+(assumes <cite>x</cite> represents a scalar).</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Any</em><em> or </em><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a>) – Value to assign units.</p></li>
+<li><p><strong>to_units</strong> (<a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units"><em>Units</em></a><em> or </em><em>str</em>) – Target units.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>result</strong> – Converted result with new units.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">Dim</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="pyavia.core.units.base_unit">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">base_unit</code><span class="sig-paren">(</span><em class="sig-param">u_tuple</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.base_unit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">base_unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">u_tuple</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.base_unit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if the argument is a base unit.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -497,9 +527,27 @@ unit is used - the string label is returned, otherwise returns None.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
+<dt id="pyavia.core.units.from_ucode_super">
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">from_ucode_super</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ss</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#pyavia.core.units.from_ucode_super" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert any unicode numeric superscipt characters in the string to
+normal ascii text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ss</strong> (<em>str</em>) – String with unicode superscript characters.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Converted string.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="pyavia.core.units.get_conversion">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">get_conversion</code><span class="sig-paren">(</span><em class="sig-param">from_unit: [Units, str], to_unit: [Units, str]</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.get_conversion" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">get_conversion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">from_unit</span><span class="p">:</span> <span class="n"><span class="p">[</span><a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units">Units</a><span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">to_unit</span><span class="p">:</span> <span class="n"><span class="p">[</span><a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units">Units</a><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.get_conversion" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine the conversion factor between <cite>from_unit</cite> and <cite>to_unit</cite>.  When
 multiplying a <cite>from_unit</cite> quantity this factor would result in the
 correct <cite>to_units</cite> quantity.   A three step process is used:</p>
@@ -518,7 +566,10 @@ computation (and trying to do so would result in an infinite loop).</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>from_unit</strong><strong>,</strong><strong>to_unit</strong> (<a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units"><em>Units</em></a><em> or </em><em>str</em>) – </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>from_unit</strong> (<a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units"><em>Units</em></a><em> or </em><em>str</em>) – </p></li>
+<li><p><strong>to_unit</strong> (<a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units"><em>Units</em></a><em> or </em><em>str</em>) – </p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Conversion factor coaxed to int or float.</p>
@@ -532,14 +583,37 @@ computation (and trying to do so would result in an infinite loop).</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
+<dt id="pyavia.core.units.make_total_temp">
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">make_total_temp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a><a class="headerlink" href="#pyavia.core.units.make_total_temp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to convert an offset to a total temperature if required
+(°C → K or °F → °R).  Raises exception for Δ°C or Δ°F.  If neither,
+it returns the original object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Dim object converted as required.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">Dim</a></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If x is a delta temperature.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="pyavia.core.units.set_conversion">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">set_conversion</code><span class="sig-paren">(</span><em class="sig-param">from_label: str</em>, <em class="sig-param">to_label: str</em>, <em class="sig-param">*</em>, <em class="sig-param">fwd: Any</em>, <em class="sig-param">rev: Optional[Any] = 'auto'</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#pyavia.core.units.set_conversion" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">set_conversion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">from_label</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">to_label</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">fwd</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">rev</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'auto'</span></em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#pyavia.core.units.set_conversion" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set a conversion between units in the directed graph of conversions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>from_label</strong><strong>,</strong><strong>to_label</strong> (<em>str</em>) – Case-sensitive identifier.</p></li>
+<li><p><strong>from_label</strong> (<em>str</em>) – Case-sensitive identifier.</p></li>
+<li><p><strong>to_label</strong> (<em>str</em>) – Case-sensitive identifier.</p></li>
 <li><p><strong>fwd</strong> – Value of the multiplier to convert from -&gt; to.</p></li>
 <li><p><strong>rev</strong> (<em>optional</em>) – <p>Value of reverse conversion to -&gt; from:</p>
 <ul>
@@ -564,9 +638,9 @@ forward conversion as follows:</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.units.similar_to">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">similar_to</code><span class="sig-paren">(</span><em class="sig-param">example: Union[pyavia.core.units.Units, pyavia.core.units.Dim, str]</em><span class="sig-paren">)</span> &#x2192; set<a class="headerlink" href="#pyavia.core.units.similar_to" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">similar_to</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">example</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="#pyavia.core.units.Units" title="pyavia.core.units.Units">pyavia.core.units.Units</a><span class="p">, </span><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">pyavia.core.units.Dim</a><span class="p">, </span>str<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; set<a class="headerlink" href="#pyavia.core.units.similar_to" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a set of labels of all known units with the same dimensions as the
 example given.</p>
 <dl class="field-list simple">
@@ -582,68 +656,9 @@ example given.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="pyavia.core.units.total_temperature_convert">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">total_temperature_convert</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">from_u: str</em>, <em class="sig-param">to_u: str</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.total_temperature_convert" title="Permalink to this definition">¶</a></dt>
-<dd><p>Conversions of total temperatures are a special case due to the offset of
-the °C and °F base units scales.  Conversion is simplified by converting
-<cite>x</cite> to Kelvin then converting to final units.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – Value to be converted.</p></li>
-<li><p><strong>from_u</strong><strong>,</strong><strong>to_u</strong> (<em>str</em>) – String matching °C, °F, K, °R.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Converted value.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="pyavia.core.units.make_total_temp">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">make_total_temp</code><span class="sig-paren">(</span><em class="sig-param">x: pyavia.core.units.Dim</em><span class="sig-paren">)</span> &#x2192; pyavia.core.units.Dim<a class="headerlink" href="#pyavia.core.units.make_total_temp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to convert an offset to a total temperature if required
-(°C → K or °F → °R).  Raises exception for Δ°C or Δ°F.  If neither,
-it returns the original object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>x</strong> (<a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim"><em>Dim</em></a>) – </p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Dim object converted as required.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#pyavia.core.units.Dim" title="pyavia.core.units.Dim">Dim</a></p>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If x is a delta temperature.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
-<dt id="pyavia.core.units.from_ucode_super">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">from_ucode_super</code><span class="sig-paren">(</span><em class="sig-param">ss: str</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#pyavia.core.units.from_ucode_super" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert any unicode numeric superscipt characters in the string to
-normal ascii text.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>ss</strong> (<em>str</em>) – String with unicode superscript characters.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Converted string.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.units.to_ucode_super">
-<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">to_ucode_super</code><span class="sig-paren">(</span><em class="sig-param">ss: str</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#pyavia.core.units.to_ucode_super" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">to_ucode_super</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ss</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#pyavia.core.units.to_ucode_super" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert numeric characters in the string to unicode superscript.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -658,10 +673,31 @@ normal ascii text.</p>
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt id="pyavia.core.units.total_temperature_convert">
+<code class="sig-prename descclassname">pyavia.core.units.</code><code class="sig-name descname">total_temperature_convert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">from_u</span><span class="p">:</span> <span class="n">str</span></em>, <em class="sig-param"><span class="n">to_u</span><span class="p">:</span> <span class="n">str</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.units.total_temperature_convert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conversions of total temperatures are a special case due to the offset of
+the °C and °F base units scales.  Conversion is simplified by converting
+<cite>x</cite> to Kelvin then converting to final units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Value to be converted.</p></li>
+<li><p><strong>from_u</strong> (<em>str</em>) – String matching °C, °F, K, °R.</p></li>
+<li><p><strong>to_u</strong> (<em>str</em>) – String matching °C, °F, K, °R.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Converted value.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -698,7 +734,7 @@ normal ascii text.</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -719,12 +755,13 @@ normal ascii text.</p>
           <a href="pyavia.core.containers.html" title="Containers"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Units</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Eric J. Whitney.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>

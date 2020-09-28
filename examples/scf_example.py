@@ -9,7 +9,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyavia.struct import hole_scf_3d
+from pyavia.struct import kt_hole3d
 
 # ----------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ scf_ss = np.zeros((len(rt), len(zt)))
 labels = []
 for i, rt_i in enumerate(rt):
     for j, zt_j in enumerate(zt):
-        scf_ss[i, j] = hole_scf_3d(rt_i, bt, zt_j, rw, 'tension')
+        scf_ss[i, j] = kt_hole3d(rt_i, bt, zt_j, rw, 'tension')
     labels.append(f"$r/t = {rt_i:.2f}$")
 
 plt.figure(1)  # NASA-TP-3192 Figure 4.
@@ -42,8 +42,8 @@ scf_cs_b = np.zeros((len(bt), len(zt)))
 labels = []
 for i, bt_i in enumerate(bt):
     for j, zt_j in enumerate(zt):
-        scf_cs_t[i, j] = hole_scf_3d(rt, bt_i, zt_j, rw, 'tension')
-        scf_cs_b[i, j] = hole_scf_3d(rt, bt_i, zt_j, rw, 'bending')
+        scf_cs_t[i, j] = kt_hole3d(rt, bt_i, zt_j, rw, 'tension')
+        scf_cs_b[i, j] = kt_hole3d(rt, bt_i, zt_j, rw, 'bending')
     labels.append(f"$b/t = {bt_i:.2f}$")
 
 plt.figure(2)  # NASA-TP-3192 Figure 7(a).

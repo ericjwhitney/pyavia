@@ -1,19 +1,20 @@
 
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Utilities &#8212; PyAvia 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +37,8 @@
           <a href="pyavia.core.units.html" title="Units"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" accesskey="U">Core Modules</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Utilities</a></li> 
       </ul>
     </div>  
 
@@ -97,9 +99,6 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.util.strict_increase" title="pyavia.core.util.strict_increase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.util.strict_increase</span></code></a></p></td>
 <td><p>Shorthand for <code class="docutils literal notranslate"><span class="pre">monotonic(iterable,</span> <span class="pre">+1,</span> <span class="pre">strict=True,</span> <span class="pre">key=key)</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.util.Switch</span></code></p></td>
-<td><p></p></td>
-</tr>
 </tbody>
 </table>
 </div>
@@ -113,48 +112,65 @@ such as:</p>
 <li><p>Functions for searching, interpolating and extrapolating sequences (e.g.
 bracket_list, linear_int_ext, monotonic).</p></li>
 </ul>
-<dl class="function">
-<dt id="pyavia.core.util.kind_div">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">kind_div</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">y</em><span class="sig-paren">)</span> &#x2192; Union[int, float]<a class="headerlink" href="#pyavia.core.util.kind_div" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tries integer division of x/y before resorting to float.  If integer
-division gives no remainder, returns this result otherwise it returns the
-float result. From <a class="reference external" href="https://stackoverflow.com/a/36637240">https://stackoverflow.com/a/36637240</a>.</p>
+<dl class="py function">
+<dt id="pyavia.core.util.all_none">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">all_none</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.all_none" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shorthand function for <code class="docutils literal notranslate"><span class="pre">all(x</span> <span class="pre">is</span> <span class="pre">None</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">args)</span></code>.  Returns
+True if all <cite>*args</cite> are None, otherwise False.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="pyavia.core.util.force_type">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">force_type</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">*types</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.force_type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Try converting <cite>x</cite> into a series of types, with no check on the
-conversion validity.</p>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">force_type</span><span class="p">(</span><span class="mf">3.5</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
-<span class="gp">... </span><span class="c1"># Results in an int, because int(x) accepts float and truncates.</span>
-<span class="go">3</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">force_type</span><span class="p">(</span><span class="s2">&quot;3.5+4j&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
-<span class="go">(3.5+4j)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">force_type</span><span class="p">(</span><span class="mf">3.5</span><span class="o">+</span><span class="mi">4</span><span class="n">j</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-<span class="go">&#39;(3.5+4j)&#39;</span>
-</pre></div>
+<dl class="py function">
+<dt id="pyavia.core.util.all_not_none">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">all_not_none</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.all_not_none" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shorthand function for <code class="docutils literal notranslate"><span class="pre">all(x</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">None</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">args)</span></code>.  Returns
+True if all <cite>*args</cite> are not None, otherwise False.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyavia.core.util.any_none">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">any_none</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.any_none" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shorthand function for <code class="docutils literal notranslate"><span class="pre">any(x</span> <span class="pre">is</span> <span class="pre">None</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">args)</span></code>.  Returns
+True if any of <cite>*args</cite> are None, otherwise False.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyavia.core.util.bounded_by">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">bounded_by</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.bounded_by" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if <cite>x</cite> is bounded by the given iterable.
+I.E. <code class="docutils literal notranslate"><span class="pre">min(iterable)</span> <span class="pre">&lt;=</span> <span class="pre">x</span> <span class="pre">&lt;=</span> <span class="pre">max(iterable)</span></code>.  If <cite>key</cite> function is
+provided this is applied to <cite>x</cite> and the iterable values before comparison.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyavia.core.util.bracket_list">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">bracket_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">li</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.bracket_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns left and right indicies (<cite>l_idx</cite>, <cite>r_idx</cite>) of a sorted list that
+bracket <cite>x</cite>.
+I.E. where <cite>li`[`l_idx</cite>] &lt;= <cite>x</cite> &lt;= <cite>li`[`r_idx</cite>].</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is not the same as the usual one-sided methods which ensure
+strict inequality on one side (e.g. low &lt;= x &lt; high).  This means
+that for boundary values two brackets may satisfy the condition.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>x</strong> – Argument to be converted.</p></li>
-<li><p><strong>types</strong> (<em>list_like</em>) – Target types to use when trying conversion.</p></li>
+<li><p><strong>li</strong> – Sorted list / tuple.  Sorting can be in either direction.</p></li>
+<li><p><strong>x</strong> – Value to bracket.</p></li>
+<li><p><strong>key</strong> – Comparison function if supplied.  Default = None.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><cite>x</cite> converted to the first successful type, if possible.</p>
-</dd>
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>ValueError</strong> – If no conversion was possible.</p>
+<dd class="field-even"><p>(l_idx, r_idx).  Note that r_idx = l_idx + 1 on return.   For x
+equal to a middle list value, the left side bracket is returned.</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.coax_type">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">coax_type</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">*types</em>, <em class="sig-param">default=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.coax_type" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">coax_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">types</span></em>, <em class="sig-param"><span class="n">default</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.coax_type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Try converting <cite>x</cite> into a series of types, returning first result where
 next_type(<cite>x</cite>) == x.</p>
 <p class="rubric">Examples</p>
@@ -188,28 +204,7 @@ next_type(<cite>x</cite>) == x.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="pyavia.core.util.all_none">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">all_none</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.all_none" title="Permalink to this definition">¶</a></dt>
-<dd><p>Shorthand function for <code class="docutils literal notranslate"><span class="pre">all(x</span> <span class="pre">is</span> <span class="pre">None</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">args)</span></code>.  Returns
-True if all <cite>*args</cite> are None, otherwise False.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="pyavia.core.util.all_not_none">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">all_not_none</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.all_not_none" title="Permalink to this definition">¶</a></dt>
-<dd><p>Shorthand function for <code class="docutils literal notranslate"><span class="pre">all(x</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">None</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">args)</span></code>.  Returns
-True if all <cite>*args</cite> are not None, otherwise False.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="pyavia.core.util.any_none">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">any_none</code><span class="sig-paren">(</span><em class="sig-param">*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.any_none" title="Permalink to this definition">¶</a></dt>
-<dd><p>Shorthand function for <code class="docutils literal notranslate"><span class="pre">any(x</span> <span class="pre">is</span> <span class="pre">None</span> <span class="pre">for</span> <span class="pre">x</span> <span class="pre">in</span> <span class="pre">args)</span></code>.  Returns
-True if any of <cite>*args</cite> are None, otherwise False.</p>
-</dd></dl>
-
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.first">
 <code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">first</code><span class="sig-paren">(</span><em class="sig-param">it: Iterable</em>, <em class="sig-param">condition=&lt;function &lt;lambda&gt;&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.first" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function returning the first item in the iterable that satisfies the
@@ -242,44 +237,55 @@ condition is not given, the first item is returned.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="pyavia.core.util.bounded_by">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">bounded_by</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">iterable</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.bounded_by" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns True if <cite>x</cite> is bounded by the given iterable.
-I.E. <code class="docutils literal notranslate"><span class="pre">min(iterable)</span> <span class="pre">&lt;=</span> <span class="pre">x</span> <span class="pre">&lt;=</span> <span class="pre">max(iterable)</span></code>.  If <cite>key</cite> function is
-provided this is applied to <cite>x</cite> and the iterable values before comparison.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="pyavia.core.util.bracket_list">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">bracket_list</code><span class="sig-paren">(</span><em class="sig-param">li</em>, <em class="sig-param">x</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.bracket_list" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns left and right indicies (<cite>l_idx</cite>, <cite>r_idx</cite>) of a sorted list that
-bracket <cite>x</cite>.
-I.E. where <cite>li`[`l_idx</cite>] &lt;= <cite>x</cite> &lt;= <cite>li`[`r_idx</cite>].</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is not the same as the usual one-sided methods which ensure
-strict inequality on one side (e.g. low &lt;= x &lt; high).  This means
-that for boundary values two brackets may satisfy the condition.</p>
+<dl class="py function">
+<dt id="pyavia.core.util.force_type">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">force_type</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">types</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.force_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Try converting <cite>x</cite> into a series of types, with no check on the
+conversion validity.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">force_type</span><span class="p">(</span><span class="mf">3.5</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+<span class="gp">... </span><span class="c1"># Results in an int, because int(x) accepts float and truncates.</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">force_type</span><span class="p">(</span><span class="s2">&quot;3.5+4j&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">complex</span><span class="p">)</span>
+<span class="go">(3.5+4j)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">force_type</span><span class="p">(</span><span class="mf">3.5</span><span class="o">+</span><span class="mi">4</span><span class="n">j</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+<span class="go">&#39;(3.5+4j)&#39;</span>
+</pre></div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>li</strong> – Sorted list / tuple.  Sorting can be in either direction.</p></li>
-<li><p><strong>x</strong> – Value to bracket.</p></li>
-<li><p><strong>key</strong> – Comparison function if supplied.  Default = None.</p></li>
+<li><p><strong>x</strong> – Argument to be converted.</p></li>
+<li><p><strong>types</strong> (<em>list_like</em>) – Target types to use when trying conversion.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(l_idx, r_idx).  Note that r_idx = l_idx + 1 on return.   For x
-equal to a middle list value, the left side bracket is returned.</p>
+<dd class="field-even"><p><cite>x</cite> converted to the first successful type, if possible.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If no conversion was possible.</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
+<dt id="pyavia.core.util.kind_atan2">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">kind_atan2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span> &#x2192; float<a class="headerlink" href="#pyavia.core.util.kind_atan2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implementation of atan2 that allows any object as an argument provided
+it supports div() and float().  Allows units-aware usage.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyavia.core.util.kind_div">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">kind_div</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>int<span class="p">, </span>float<span class="p">]</span><a class="headerlink" href="#pyavia.core.util.kind_div" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tries integer division of x/y before resorting to float.  If integer
+division gives no remainder, returns this result otherwise it returns the
+float result. From <a class="reference external" href="https://stackoverflow.com/a/36637240">https://stackoverflow.com/a/36637240</a>.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="pyavia.core.util.line_pt">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">line_pt</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">p</em>, <em class="sig-param">scale=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.line_pt" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">line_pt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">p</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.line_pt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the coordinates of a point <cite>p</cite> anywhere along the line <cite>a</cite> → <cite>b</cite>
 where at least one component of <cite>p</cite> is supplied (remaining can be None).
 Each axis may be optionally scaled.  There is no limitation that <cite>p</cite> is
@@ -288,7 +294,8 @@ extrapolation as required.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>b</strong> (<em>a</em><em>,</em>) – Two distinct points on a line i.e. <span class="math notranslate nohighlight">\([x_1, ..., x_n]\)</span></p></li>
+<li><p><strong>a</strong> (<em>list_like</em>) – Two distinct points on a line i.e. <span class="math notranslate nohighlight">\([x_1, ..., x_n]\)</span></p></li>
+<li><p><strong>b</strong> (<em>list_like</em>) – Two distinct points on a line i.e. <span class="math notranslate nohighlight">\([x_1, ..., x_n]\)</span></p></li>
 <li><p><strong>p</strong> (<em>list_like</em>) – Required point on the line with at least a single known component,
 i.e. <span class="math notranslate nohighlight">\((..., None, p_i, None, ...)\)</span>.  If more than one value is
 supplied, the first is used.</p></li>
@@ -319,9 +326,9 @@ from above.</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.linear_int_ext">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">linear_int_ext</code><span class="sig-paren">(</span><em class="sig-param">data_pts</em>, <em class="sig-param">p</em>, <em class="sig-param">scale=None</em>, <em class="sig-param">allow_extrap=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.linear_int_ext" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">linear_int_ext</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_pts</span></em>, <em class="sig-param"><span class="n">p</span></em>, <em class="sig-param"><span class="n">scale</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">allow_extrap</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.linear_int_ext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Interpolate data points to find remaining unknown values absent from
 <cite>p</cite> with optionally scaled axes. If <cite>p</cite> is not in the range and
 <cite>allow_extra</cite> == True, a linear extrapolation is done using the two data
@@ -348,16 +355,16 @@ permitted. Default = False.</p></li>
 </dl>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.min_max">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">min_max</code><span class="sig-paren">(</span><em class="sig-param">iterable</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.min_max" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">min_max</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.min_max" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns (min, max) of elements in <cite>iterable</cite>.  Comparison provided
 using <cite>key</cite> if supplied.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.monotonic">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">monotonic</code><span class="sig-paren">(</span><em class="sig-param">iterable</em>, <em class="sig-param">dirn</em>, <em class="sig-param">strict=True</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.monotonic" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">monotonic</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">dirn</span></em>, <em class="sig-param"><span class="n">strict</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.monotonic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if elements of <cite>iterable</cite> are monotonic otherwise false.
 For <cite>dirn</cite> &gt;= 0 the sequence is strictly increasing i.e.
 <span class="math notranslate nohighlight">\(x_{i+1} &gt; x_i\)</span>, otherwise it is strictly decreasing i.e.
@@ -365,17 +372,17 @@ For <cite>dirn</cite> &gt;= 0 the sequence is strictly increasing i.e.
 (i.e. &gt;=, &lt;= instead of &gt;, &lt;). Comparison provided using <cite>key</cite> if supplied.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.strict_decrease">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">strict_decrease</code><span class="sig-paren">(</span><em class="sig-param">iterable</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.strict_decrease" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">strict_decrease</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.strict_decrease" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shorthand for <code class="docutils literal notranslate"><span class="pre">monotonic(iterable,</span> <span class="pre">-1,</span> <span class="pre">strict=True,</span> <span class="pre">key=key)</span></code>.
 Returns True <em>i.f.f.</em> all <span class="math notranslate nohighlight">\(x_{i+1} &lt; x_i\)</span>.  Comparison provided
 using <cite>key</cite> if supplied.</p>
 </dd></dl>
 
-<dl class="function">
+<dl class="py function">
 <dt id="pyavia.core.util.strict_increase">
-<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">strict_increase</code><span class="sig-paren">(</span><em class="sig-param">iterable</em>, <em class="sig-param">key=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.strict_increase" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">strict_increase</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iterable</span></em>, <em class="sig-param"><span class="n">key</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.strict_increase" title="Permalink to this definition">¶</a></dt>
 <dd><p>Shorthand for <code class="docutils literal notranslate"><span class="pre">monotonic(iterable,</span> <span class="pre">+1,</span> <span class="pre">strict=True,</span> <span class="pre">key=key)</span></code>.
 Returns True <em>i.f.f.</em> all <span class="math notranslate nohighlight">\(x_{i+1} &gt; x_i\)</span>.  Comparison provided
 using <cite>key</cite> if supplied.</p>
@@ -385,6 +392,7 @@ using <cite>key</cite> if supplied.</p>
 </div>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -421,7 +429,7 @@ using <cite>key</cite> if supplied.</p>
     </form>
     </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -442,12 +450,13 @@ using <cite>key</cite> if supplied.</p>
           <a href="pyavia.core.units.html" title="Units"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li> 
+          <li class="nav-item nav-item-1"><a href="pyavia.core.html" >Core Modules</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Utilities</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2020, Eric J. Whitney.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>
