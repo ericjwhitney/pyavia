@@ -8,15 +8,15 @@ such as:
   bracket_list, linear_int_ext, monotonic).
 """
 
-# Last updated: 11 January 2019 by Eric J. Whitney.
+# Last updated: 28 September 2020 by Eric J. Whitney.
 
 import operator as op
 from math import log, exp, pi, nan, atan
 from typing import Union, Iterable
 
 __all__ = ['kind_atan2', 'kind_div', 'force_type', 'coax_type', 'all_none',
-           'all_not_none', 'any_none', 'first', 'bounded_by', 'bracket_list',
-           'line_pt', 'linear_int_ext', 'min_max', 'monotonic',
+           'all_not_none', 'any_none', 'first', 'count_op', 'bounded_by',
+           'bracket_list', 'line_pt', 'linear_int_ext', 'min_max', 'monotonic',
            'strict_decrease', 'strict_increase']
 
 
@@ -216,6 +216,7 @@ def count_op(it: Iterable, oper, value):
     == True.  This allows user-defined objects to be included and is subtly
     different to ``[...].count(...)`` which uses the __eq__ operator."""
     return [oper(x, value) for x in it].count(True)
+
 
 # ----------------------------------------------------------------------------
 # Simple search and interpolation functions.

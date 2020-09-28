@@ -5,12 +5,11 @@ Fundamental functions for working with material / structural stresses.
 __all__ = ['mohr2d']
 
 from typing import Any
-
 import numpy as np
+from pyavia import Dim, kind_atan2
 
 
 # -----------------------------------------------------------------------------
-from pyavia import Dim, kind_atan2
 
 
 def mohr2d(s_xx: Any, s_yy: Any, t_xy: Any, rot_ang: Any = None):
