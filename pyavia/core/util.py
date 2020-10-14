@@ -25,7 +25,7 @@ __all__ = ['kind_atan2', 'kind_div', 'force_type', 'coax_type', 'all_none',
 
 def kind_atan2(y, x) -> float:
     """Implementation of atan2 that allows any object as an argument provided
-    it supports div() and float().  Allows units-aware usage."""
+    it supports __div__ and __float__.  Allows units-aware usage."""
     if float(x) == 0.0:
         if float(y) > 0.0:
             return +0.5 * pi
@@ -120,8 +120,8 @@ def coax_type(x, *types, default=None):
     Traceback (most recent call last):
     ...
     ValueError: Couldn't coax '3.0' to <class 'int'> or <class 'float'>.
-    >>> x = 3 + 2j
-    >>> pa.coax_type(x, int, float, default=x)  # Can't convert, gives default.
+    >>> xa = 3 + 2j
+    >>> pa.coax_type(xa, int, float, default=xa)  # Can't conv., gives default.
     (3+2j)
 
     Parameters

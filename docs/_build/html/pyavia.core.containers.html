@@ -60,19 +60,22 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.MultiBiDict" title="pyavia.core.containers.MultiBiDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.MultiBiDict</span></code></a></p></td>
 <td><p>Bi-directional dict class.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.ValueRange" title="pyavia.core.containers.ValueRange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.ValueRange</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.FortranArray" title="pyavia.core.containers.FortranArray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.FortranArray</span></code></a></p></td>
+<td><p>An index-1 array that can be used directly for Fortran or Matlab style algorithms so that indices do not have to be recomputed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.ValueRange" title="pyavia.core.containers.ValueRange"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.ValueRange</span></code></a></p></td>
 <td><p>Represents any range of scalar values (units agnostic).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.g_link" title="pyavia.core.containers.g_link"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.g_link</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.g_link" title="pyavia.core.containers.g_link"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.g_link</span></code></a></p></td>
 <td><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">builtins.slice</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.WtDirgraph" title="pyavia.core.containers.WtDirgraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.WtDirgraph</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.WtDirgraph" title="pyavia.core.containers.WtDirgraph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.WtDirgraph</span></code></a></p></td>
 <td><p>A weighted directed graph where a value / weight can be assigned to any link / edge between any two hashable nodes / keys.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten" title="pyavia.core.containers.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten" title="pyavia.core.containers.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten</span></code></a></p></td>
 <td><p>Generator returning entries from a flattened representation of any sequence container (except strings).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten_list" title="pyavia.core.containers.flatten_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten_list</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.core.containers.flatten_list" title="pyavia.core.containers.flatten_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.core.containers.flatten_list</span></code></a></p></td>
 <td><p>Generator similar to <code class="docutils literal notranslate"><span class="pre">flatten</span></code>, however only flattens lists until a non-list element is found.</p></td>
 </tr>
 </tbody>
@@ -122,6 +125,104 @@ notation.</p>
 <dt id="pyavia.core.containers.AttrDict.__setattr__">
 <code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em>, <em class="sig-param"><span class="o">/</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.AttrDict.__setattr__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set self[key] to value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyavia.core.containers.FortranArray">
+<em class="property">class </em><code class="sig-prename descclassname">pyavia.core.containers.</code><code class="sig-name descname">FortranArray</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">input_array</span></em>, <em class="sig-param"><span class="n">copy</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'F'</span></em>, <em class="sig-param"><span class="n">subok</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.FortranArray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+<p>An index-1 array that can be used directly for Fortran or Matlab
+style algorithms so that indices do not have to be recomputed.  Indexing
+supports slice-off-the-end which is valid in Fortran 90 and
+NumPy.</p>
+<dl class="simple">
+<dt>Behavious is as per np.ndarray except:</dt><dd><ul class="simple">
+<li><p>There is no element [0], [0, 0], … as expected.</p></li>
+<li><p>Negative indexing to access end elements is not allowed.</p></li>
+<li><p>NumPy advanced indexing is not allowed.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Create a 4x4 array using Fibonacci numbers.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fib_mat</span> <span class="o">=</span> <span class="n">FortranArray</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+<span class="gp">... </span>                        <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">21</span><span class="p">],</span>
+<span class="gp">... </span>                        <span class="p">[</span><span class="mi">34</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">89</span><span class="p">,</span> <span class="mi">144</span><span class="p">],</span>
+<span class="gp">... </span>                        <span class="p">[</span><span class="mi">233</span><span class="p">,</span> <span class="mi">377</span><span class="p">,</span> <span class="mi">610</span><span class="p">,</span> <span class="mi">987</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">fib_mat</span><span class="p">))</span>
+<span class="go">FortranArray([[  1,   1,   2,   3],</span>
+<span class="go">              [  5,   8,  13,  21],</span>
+<span class="go">              [ 34,  55,  89, 144],</span>
+<span class="go">              [233, 377, 610, 987]])</span>
+</pre></div>
+</div>
+<p>Swap the off-diagonal blocks using Fortran indices (copy prevents
+overwrite).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fib_mat</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">],</span> <span class="n">fib_mat</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">fib_mat</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+<span class="gp">... </span>                                        <span class="n">fib_mat</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">fib_mat</span><span class="p">))</span>
+<span class="go">FortranArray([[  1,   1,  34,  55],</span>
+<span class="go">              [  5,   8, 233, 377],</span>
+<span class="go">              [  2,   3,  89, 144],</span>
+<span class="go">              [ 13,  21, 610, 987]])</span>
+</pre></div>
+</div>
+<p>Invert just the bottom left 3x3 using NumPy.  Note that this also
+returns a <code class="docutils literal notranslate"><span class="pre">FortranArray</span></code>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">inv_fib</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">fib_mat</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">inv_fib</span><span class="p">))</span>
+<span class="go">FortranArray([[ 4.57396837e+14, -1.52465612e+14, -1.52465612e+14],</span>
+<span class="go">              [ 7.38871814e+14, -2.46290605e+14, -2.46290605e+14],</span>
+<span class="go">              [-3.51843721e+13,  1.17281240e+13,  1.17281240e+13]])</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="pyavia.core.containers.FortranArray.__getitem__">
+<code class="sig-name descname">__getitem__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.FortranArray.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns <code class="docutils literal notranslate"><span class="pre">self[key]</span></code> where key uses index-1 format.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.containers.FortranArray.__new__">
+<em class="property">static </em><code class="sig-name descname">__new__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">input_array</span></em>, <em class="sig-param"><span class="n">copy</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'F'</span></em>, <em class="sig-param"><span class="n">subok</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.FortranArray.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an np.ndarray that uses base indices of 1, with at
+least one dimension.  Arguments match np.ndarray except that
+<code class="docutils literal notranslate"><span class="pre">ndmin</span> <span class="pre">=</span> <span class="pre">1</span></code>  is already prescribed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_array</strong> (<em>array_like</em>) – As per np.array, any object exposing the array interface,
+an object whose __array__ method returns an array, or any
+(nested) sequence.</p></li>
+<li><p><strong>copy</strong> (<em>bool</em><em>, </em><em>optional</em>) – Default value is True in line with typical Fortran practice.</p></li>
+<li><p><strong>order</strong> (<em>str</em><em>, </em><em>optional</em>) – As per np.array. Default value is <code class="docutils literal notranslate"><span class="pre">'F'</span></code> (Fortran ordering) to
+better suit existing loops written with this in mind, but this
+is not mandatory.</p></li>
+<li><p><strong>subok</strong> (<em>bool</em><em>, </em><em>optional</em>) – As per np.array.  Default value is True.</p></li>
+<li><p><strong>**kwargs</strong> – Remaining arguments are passed directly to np.array.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>obj</strong> – An np.ndarray base object of at least 1-D is returned.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.containers.FortranArray.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.FortranArray.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyavia.core.containers.FortranArray.__str__">
+<code class="sig-name descname">__str__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.containers.FortranArray.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return str(self).</p>
 </dd></dl>
 
 </dd></dl>

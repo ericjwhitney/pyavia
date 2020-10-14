@@ -205,6 +205,14 @@ next_type(<cite>x</cite>) == x.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt id="pyavia.core.util.count_op">
+<code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">count_op</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">it</span><span class="p">:</span> <span class="n">Iterable</span></em>, <em class="sig-param"><span class="n">oper</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.count_op" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a count of the number of items in <cite>it</cite> where <strong>oper</strong> <strong>value</strong>
+== True.  This allows user-defined objects to be included and is subtly
+different to <code class="docutils literal notranslate"><span class="pre">[...].count(...)</span></code> which uses the __eq__ operator.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt id="pyavia.core.util.first">
 <code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">first</code><span class="sig-paren">(</span><em class="sig-param">it: Iterable</em>, <em class="sig-param">condition=&lt;function &lt;lambda&gt;&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.core.util.first" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function returning the first item in the iterable that satisfies the
@@ -272,7 +280,7 @@ conversion validity.</p>
 <dt id="pyavia.core.util.kind_atan2">
 <code class="sig-prename descclassname">pyavia.core.util.</code><code class="sig-name descname">kind_atan2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span> &#x2192; float<a class="headerlink" href="#pyavia.core.util.kind_atan2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implementation of atan2 that allows any object as an argument provided
-it supports div() and float().  Allows units-aware usage.</p>
+it supports __div__ and __float__.  Allows units-aware usage.</p>
 </dd></dl>
 
 <dl class="py function">
