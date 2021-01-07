@@ -6,7 +6,9 @@ error.  Unit conversions not previously known are cached for fast lookup the
 next time they are used.
 """
 
-# Last updated: 27 September 2020 by Eric J. Whitney
+# TODO Add NumPy ufunc support for e.g. sqrt method, etc?
+
+# Last updated: 7 January 2021 by Eric J. Whitney
 
 from __future__ import annotations
 from pyavia.core.containers import WtDirgraph, MultiBiDict
@@ -21,9 +23,8 @@ import warnings
 
 __all__ = ['output_ucode_pwr', 'UnitsError', 'Units', 'Dim',
            'add_base_unit', 'add_unit', 'base_unit', 'get_conversion',
-           'assign_units', 'set_conversion', 'similar_to',
-           'total_temperature_convert', 'make_total_temp',
-           'from_ucode_super', 'to_ucode_super']
+           'set_conversion', 'similar_to', 'total_temperature_convert',
+           'make_total_temp', 'from_ucode_super', 'to_ucode_super']
 
 # Generate unicode chars for power values in strings.
 output_ucode_pwr = True
@@ -90,18 +91,13 @@ _OFFSET_TEMPS = {'°C', '°F'}
 #   N:  Amount of substance.
 #   I:  Electric current.
 #   J:  Luminous intensity.
-#   A:  Plane angle (1).
-#   Ω:  Solid angle (1).
-
-# Notes:
-#   (1) Plane angle radians and solid angle steradians are dimensionless and
-#   eliminated by multiplication and division.  These 'units' are retained
-#   to allow consistency checks on mathematics, especially if degrees are
-#   used, etc.
+#   A:  Plane angle (see Units() definition for permanence).
+#   Ω:  Solid angle (see Units() definition for permanence).
 
 
 class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
                                   'A', 'Ω'],
+                       # defaults=[1, *(('', 0),) * 7, ('rad', 0), ('sr', 0)])):
                        defaults=[1, *(('', 0),) * 9])):
     """
     Combination of basis units and a factor representing a specific base or
@@ -109,9 +105,20 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
     unit is a tuple of a string label and power.  Units are hashable so
     they can be looked up for quick conversions.
 
-    .. note:: Direct manipulation of Units objects is not required very
+    .. Note:: Direct manipulation of Units objects is not required very
        often in practical situations.  Almost all problems are dealt with
        entirely by Dim objects which contain a Units object.
+
+    .. Note::  Plane angle radians and solid angle steradians are effectively
+       dimensionless:
+            - These 'units' are retained to allow consistency checks on
+              mathematics, especially if angular degrees are used, etc.
+            - Radians / steradians are retained during creation of new units,
+              which allows for correct conversion of things like rotational
+              speeds, etc.
+            - Radians / steradians disappear after multiplication with a
+              different set of units (i.e. a calculation) if they finish with
+              power == 1.
     """
 
     # noinspection PyTypeChecker
@@ -214,7 +221,11 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
                 mult = kind_div(1, mult)
                 pwr = -pwr
 
-            combined_units *= mult * sub_sig ** pwr
+            # When building units, don't drop angles.
+            combined_units = _dim_mul_generic(combined_units, sub_sig ** pwr,
+                                              drop_rads=False)
+            combined_units = _dim_mul_generic(combined_units, mult,
+                                              drop_rads=False)
 
         # Return with k factored back in.
         res = Units(combined_units.value, *combined_units.units[1:])
@@ -239,7 +250,7 @@ class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
         """Follows the same rules as __mul__."""
         return Dim(lhs) / Dim(1, self)
 
-    # Misc operators.
+    # -- Misc Operators -------------------------------------------------------
 
     def __str__(self):
         """If a unique label exists return it, otherwise builds a generic
@@ -314,6 +325,9 @@ class Dim:
             - If units is Units() object: Directly assigned, no label given.
             - If units is string:  Parsed into Units() and used as label.
             - If units is None: Dimensionless (equivalent to Units())
+        - Dim(Dim(), units): Construct a new Dim() object by converting to
+          given units. If units are not compatible x.convert() will raise an
+          exception.
         """
         self.label = None
 
@@ -330,7 +344,11 @@ class Dim:
                                   args[0])
 
         elif len(args) == 2:
-            self.value = args[0]
+            if isinstance(args[0], Dim):  # Construct by conversion.
+                self.value = args[0].convert(args[1]).value
+            else:
+                self.value = args[0]
+
             if isinstance(args[1], Units):
                 self.units = args[1]
             elif isinstance(args[1], str):
@@ -343,9 +361,7 @@ class Dim:
         else:
             raise TypeError(f"Incorrect number of arguments.")
 
-    #
-    # Unary operators.
-    #
+    # -- Unary Operators ------------------------------------------------------
 
     def __abs__(self):
         ret_val = Dim(abs(self.value), self.units)
@@ -374,9 +390,7 @@ class Dim:
         ret_val.label = self.label
         return ret_val
 
-    #
-    # Binary operators.
-    #
+    # -- Binary Operators -----------------------------------------------------
 
     def __add__(self, rhs) -> Dim:
         """If `rhs` is Units() or an ordinary value, it is promoted to Dim()
@@ -462,66 +476,15 @@ class Dim:
             return res_value
 
     def __mul__(self, rhs):
-        """Multiplication of dimensioned values.  This is the central
-        function used by most other operators / conversions.
+        """Multiplication of dimensioned values.  If either `self` or `rhs`
+        units have a k-factor, this is multiplied out and becomes part of
+        `self.value` leaving `k` = 1 for both `self` and `rhs`.  If `rhs` is
+        Units() or an ordinary value, it is promoted before multiplication.
 
-        If either `self` or `rhs` units have a k-factor, this is multiplied
-        out and becomes part of `self.value` leaving `k` = 1 for both `self`
-        and `rhs`.  If `rhs` is Units() or an ordinary value, it is promoted
-        before multiplication.
-
-        If the resulting units include radians^1 or steradians^1, these
-        disappear as they are dimensionless and have served their purpose.
+        If resulting angular units include radians^1 or steradians^1, these
+        are dropped as they are dimensionless and have served their purpose.
         """
-        # Shortcut scalar multiplication. Check for dimless case.
-        if not isinstance(rhs, (Dim, Units)):
-            if not self.units.dimless():
-                res = Dim(self.value * rhs, self.units)
-                res.label = self.label
-                return res
-            else:
-                return self.value * rhs
-
-        if not isinstance(rhs, Dim):
-            rhs = Dim(rhs)  # Promote.
-
-        res_k = rhs.units.k * self.units.k
-        res_basis = []
-        for (l_u, l_p), (r_u, r_p) in zip(self.units[1:], rhs.units[1:]):
-            res_p = l_p + r_p
-            res_u = l_u if l_u else r_u
-
-            # Multiply by a factor if required.
-            if l_u and r_u and l_u != r_u:
-                factor = get_conversion(r_u, l_u)
-                if factor is None:
-                    raise UnitsError(f"No conversion available for "
-                                     f"{r_u} -> {l_u}.")
-                res_k *= factor ** r_p
-
-            # Store or cleanup if cancelled out.
-            if res_p != 0:
-                res_basis += [(res_u, res_p)]
-            else:
-                res_basis += [('', 0)]
-
-        # Build units and check if multiplication has cancelled radians.
-        res_units = Units(1, *res_basis)
-        if res_units.A == ('rad', 1):
-            # noinspection PyProtectedMember
-            res_units = res_units._replace(A=('', 0))
-
-        # Uncertain at this stage that steradians cancel out. XX TODO
-        # if res_units.Ω == ('sr', 1):
-        #     res_units = res_units._replace(Ω=('', 0))
-
-        res_value = self.value * rhs.value * coax_type(res_k, (int, float),
-                                                       default=res_k)
-
-        if not res_units.dimless():
-            return Dim(res_value, res_units)
-        else:
-            return res_value
+        return _dim_mul_generic(self, rhs, drop_rads=True)
 
     def __truediv__(self, rhs):
         """Follws the same rules as __mul__."""
@@ -567,9 +530,7 @@ class Dim:
         """LHS is promoted to Dim()."""
         return Dim(lhs) / self
 
-    #
-    # Comparison operators.
-    #
+    # -- Comparison Operators -------------------------------------------------
 
     def __lt__(self, rhs):
         return _common_cmp(self, rhs, operator.lt)
@@ -589,7 +550,7 @@ class Dim:
     def __gt__(self, rhs):
         return _common_cmp(self, rhs, operator.gt)
 
-    # String magic methods.
+    # -- String Magic Methods -------------------------------------------------
 
     def __format__(self, format_spec: str):
         if self.label is not None:
@@ -612,7 +573,7 @@ class Dim:
     def __str__(self):
         return self.__format__('')
 
-    # Methods.
+    # -- Normal Methods -------------------------------------------------------
 
     def convert(self, to_units: Union[Units, str]) -> Dim:
         """
@@ -669,15 +630,15 @@ class Dim:
 
 def _check_units(u_tuple):
     """Do certain checks on validity of unit tuple during construction."""
-    # Blank units cannot have powers.  Note: Reverse is permitted, and is
-    # useful for unit conversion.
+    # Blank units cannot have non-zero powers.  Note: Reverse is permitted,
+    # and is useful for unit conversion.
     if any((not u and p != 0) for u, p in u_tuple[1:]):
-        raise UnitsError(f"Blank units must have no power.")
+        raise UnitsError("Blank units must have no power.")
 
     # Offset temperatures must be standalone.
     if u_tuple.θ[0] in _OFFSET_TEMPS and not base_unit(u_tuple):
-        raise UnitsError(f"Offset temperature units are only permitted to "
-                         f"be base units.")
+        raise UnitsError("Offset temperature units are only permitted to "
+                         "be base units.")
 
 
 def _common_cmp(lhs: Dim, rhs: Dim, op: Callable[..., bool]):
@@ -687,6 +648,63 @@ def _common_cmp(lhs: Dim, rhs: Dim, op: Callable[..., bool]):
         return op(lhs.value, rhs.value)
     else:
         return op(lhs.value, rhs.convert(lhs.units).value)
+
+
+def _dim_mul_generic(lhs, rhs, drop_rads=True):
+    """Generic multiplication function for Dim() objects.  This is the
+    central function used by most other operators / conversions.  See
+    Dim.__mul__ for expected results.  If drop_rads == True then
+    resulting angular units of radians^1 or steradians^1 are dropped."""
+    # Shortcut scalar multiplication. Check for dimless case.
+    if not isinstance(rhs, (Dim, Units)):
+        if not lhs.units.dimless():
+            res = Dim(lhs.value * rhs, lhs.units)
+            res.label = lhs.label
+            return res
+        else:
+            return lhs.value * rhs
+
+    if not isinstance(rhs, Dim):
+        rhs = Dim(rhs)  # Promote.
+
+    res_k = rhs.units.k * lhs.units.k
+    res_basis = []
+    for (l_u, l_p), (r_u, r_p) in zip(lhs.units[1:], rhs.units[1:]):
+        res_p = l_p + r_p
+        res_u = l_u if l_u else r_u
+
+        # Multiply by a factor if required.
+        if l_u and r_u and l_u != r_u:
+            factor = get_conversion(r_u, l_u)
+            if factor is None:
+                raise UnitsError(f"No conversion available for "
+                                 f"{r_u} -> {l_u}.")
+            res_k *= factor ** r_p
+
+        # Store or cleanup if cancelled out.
+        if res_p != 0:
+            res_basis += [(res_u, res_p)]
+        else:
+            res_basis += [('', 0)]
+
+    # Build units and check if multiplication has cancelled radians.
+    res_units = Units(1, *res_basis)
+    if drop_rads:
+        if res_units.A == ('rad', 1):
+            # noinspection PyProtectedMember
+            res_units = res_units._replace(A=('', 0))
+
+        if res_units.Ω == ('sr', 1):
+            # noinspection PyProtectedMember
+            res_units = res_units._replace(Ω=('', 0))
+
+    res_value = lhs.value * rhs.value * coax_type(res_k, (int, float),
+                                                  default=res_k)
+
+    if not res_units.dimless():
+        return Dim(res_value, res_units)
+    else:
+        return res_value
 
 
 def _unique_unit_label(u: Units) -> str:
@@ -885,35 +903,6 @@ def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
     if cache_computed_convs:
         _comp_conv_cache[from_unit, to_unit] = factor
     return factor
-
-
-# TODO add make_consistent which takes an arbitrary number of units and
-#  converts them all to be on the same base units.
-
-def assign_units(x, to_units: Union[Units, str]) -> Dim:
-    """
-    Assign units to value `x` returning a `Dim` object:
-    - If `x` is already of type `Dim`, converted to the units requested.  If
-      units are not compatible x.convert() will raise an exception.
-    - If `x` has no units, converts to a `Dim` object with the given units
-      (assumes `x` represents a scalar).
-
-    Parameters
-    ----------
-    x : Any or Dim
-        Value to assign units.
-    to_units : Units or str
-        Target units.
-
-    Returns
-    -------
-    result : Dim
-        Converted result with new units.
-    """
-    if isinstance(x, Dim):
-        return x.convert(to_units)
-    else:
-        return Dim(x, to_units)
 
 
 def set_conversion(from_label: str, to_label: str, *, fwd: Any,
@@ -1252,7 +1241,7 @@ add_base_unit(['cd'], 'J')
 #
 
 # Signatures.
-add_base_unit(['rev', 'rad', 'deg', '°'], 'A')
+add_base_unit(['deg', 'rad', 'rev', '°'], 'A')
 # This is the only use of the ° symbol on its own, but note that ° != deg
 # for comparison purposes.
 
@@ -1306,9 +1295,12 @@ add_unit('US_hhd', '2×US_fl_bl')  # Hogshead
 # Speed.
 #
 
+add_unit('fps', 'ft/s')
 add_unit('kt', 'NM/hr')
 add_unit('mph', 'sm/hr')  # Normally defined as US statute miles / hour.
 add_unit('kph', 'km/hr')
+
+add_unit('RPM', 'rev/min')
 
 #
 # Acceleration.
