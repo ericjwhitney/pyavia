@@ -149,7 +149,7 @@ class TestDim(TestCase):
         self.assertAlmostEqual(x.value, 1, places=5)
         self.assertEqual(x.units, Units('kg'))
 
-    def test_convert(self):
+    def test_convert_operations(self):
         from pyavia import Dim, Units, UnitsError
 
         # Test conversion to lhs does nothing.
@@ -179,12 +179,20 @@ class TestDim(TestCase):
         # (requires shortcut definitions to be in units.py).
         x = Dim(1, 'nmol').convert('Gmol')  # Should give no warning.
 
-        # Test conversion of known derived units.
-        x = (9.80665 * Units('m.s⁻²')).convert('ft/s/s')
-        self.assertAlmostEqual(x.value, 32.17404856, places=8)
-        x = Dim(100, 'hp')
-        x = x.convert('kW')
-        self.assertAlmostEqual(x.value, 74.56999, places=3)
+        # Test unit multipliers are carried correctly.
+        x = Dim(1, 'US_gal').convert('in^3')
+        self.assertEqual(x.value, 231)
+
+        # Test passing Dim to itself does conversion.
+        x = Dim(Dim(25.4, 'mm'), 'in')
+        self.assertAlmostEqual(x.value, 1.0)
+        self.assertEqual(x.units, Units('in'))
+
+        with self.assertRaises(UnitsError):
+            x = Dim(Dim(100, 'm'), 'ha')
+
+    def test_convert_fundamental(self):
+        from pyavia import Dim, Units, UnitsError
 
         # Test total temperatures °C, °F, etc (special case units).
         x = Dim(32, '°F').convert('°C')
@@ -209,9 +217,12 @@ class TestDim(TestCase):
         self.assertEqual(x.value, y.value)
         x, y = Dim(1, 'Δ°F'), Dim(1, '°F')
         self.assertEqual(x.value, y.value)
+
+        # Test temperature components including denominator.
         air_const_metric = Dim(287.05287, 'J/kg/K')
         air_const_imp_slug = air_const_metric.convert('ft.lbf/slug/°R')
-        self.assertAlmostEqual(air_const_imp_slug.value, 1716.56188, places=5)
+        self.assertAlmostEqual(air_const_imp_slug.value, 1716.56188,
+                               places=5)
         air_const_imp_lbm = air_const_metric.convert('ft.lbf/lbm/°R')
         self.assertAlmostEqual(air_const_imp_lbm.value, 53.35, places=2)
         check_delta = air_const_metric.convert('J/kg/Δ°C')
@@ -226,6 +237,13 @@ class TestDim(TestCase):
         # Test angle units.
         x = (5 * Units('m/°')).convert('m/rad')
         self.assertAlmostEqual(x.value, 286.47889, places=4)
+
+    def test_convert_derived(self):
+        from pyavia import Dim, Units, UnitsError
+
+        # Test acceleration.
+        x = (9.80665 * Units('m.s⁻²')).convert('ft/s/s')
+        self.assertAlmostEqual(x.value, 32.17404856, places=8)
 
         # Test pressures (a common derived unit with many forms).
         x = Dim(1, 'atm')
@@ -242,6 +260,19 @@ class TestDim(TestCase):
         self.assertAlmostEqual(psi, 14.696, places=3)  # Approx check value.
         self.assertAlmostEqual(psf, 2116.22, places=2)  # Approx check value.
 
+        # Test speed.
+        rpm = Dim(2500, 'RPM')  # Rotational speed.
+        omega = rpm.convert('rad/s')
+        self.assertAlmostEqual(omega.value, 261.799388, places=5)
+        v_t = Dim(3, 'ft') * omega  # Radians should fall off at this point.
+        self.assertAlmostEqual(v_t.value, 785.398163, places=5)
+        self.assertEqual(v_t.units, Units('fps'))
+
+        # Test power.
+        x = Dim(100, 'hp')
+        x = x.convert('kW')
+        self.assertAlmostEqual(x.value, 74.56999, places=3)
+
         # Test some unusual units.
         k_ic_metric = Dim(51.3, 'MPa.m⁰ᐧ⁵')  # Fracture toughness 7039-T6351.
         k_ic_imp = k_ic_metric.convert('ksi.in^0.5')
@@ -250,7 +281,3 @@ class TestDim(TestCase):
         self.assertAlmostEqual(cal_energy.convert('J').value, 4.184, places=3)
         self.assertAlmostEqual(cal_energy.convert('Btu').value, 0.003965667,
                                places=6)
-
-        # Test unit multipliers are carried correctly.
-        x = Dim(1, 'US_gal').convert('in^3')
-        self.assertEqual(x.value, 231)
