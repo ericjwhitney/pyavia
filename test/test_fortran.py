@@ -178,10 +178,21 @@ class TestFortranArray(TestCase):
                                  [5, 8, 13, 21],
                                  [34, 55, 89, 144],
                                  [233, 377, 610, 987]], ftype='REAL')
+
+        # Sum (a typical operaiton on all elements).
         self.assertAlmostEqual(fib_mat.sum(), 2583)
         self.assertTrue(np.allclose(fib_mat.sum(axis=0), [273, 441, 714, 1155]))
         self.assertTrue(np.allclose(fib_mat.sum(axis=1), [7, 47, 322, 2207]))
         self.assertEqual(fib_mat.flatten().shape, (16,))
+
+        # Matrix inverse.
+        p = fortran_array([[1, -1,  2,  0],
+                           [-1, 4, -1,  1],
+                           [2, -1,  6, -2],
+                           [0,  1, -2,  4]], ftype='real*8')
+        p_inv = np.linalg.inv(p)
+        self.assertTrue(np.allclose(p @ p_inv, np.eye(4, dtype=np.float64)))
+        self.assertTrue(np.allclose(p_inv @ p, np.eye(4, dtype=np.float64)))
 
     def test_typical_example(self):
         from pyavia.core.fortran import FortranArray, fortran_do
