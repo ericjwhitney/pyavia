@@ -1,22 +1,19 @@
 """
 Adds useful, less common containers not available in the standard library.
 """
-# Last updated: 4 February 2020 by Eric J. Whitney
+# Last updated: 8 March 2021 by Eric J. Whitney
 
 import collections
-import numpy as np
 from functools import reduce
 from operator import is_
 from typing import (Dict, Any, Iterable, Sequence, Callable, Hashable,
                     Optional, List)
 
-__all__ = ['AttrDict', 'MultiBiDict', 'FortranArray', 'ValueRange',
+__all__ = ['AttrDict', 'MultiBiDict', 'ValueRange',
            'WtDirgraph', 'g_link', 'flatten', 'flatten_list']
 
 # -----------------------------------------------------------------------------
 # noinspection PyProtectedMember
-from numpy.core.arrayprint import (dtype_is_implied, array2string,
-                                   dtype_short_repr)
 
 from pyavia.core.util import count_op
 
@@ -132,142 +129,6 @@ class MultiBiDict(dict):
         if self_key in self.inverse and not self.inverse[self_key]:
             del self.inverse[self_key]
         super(MultiBiDict, self).__delitem__(key)
-
-
-# -----------------------------------------------------------------------------
-
-class FortranArray(np.ndarray):
-    """An index-1 array that can be used directly for Fortran or Matlab
-    style algorithms so that indices do not have to be recomputed.  Indexing
-    supports slice-off-the-end which is valid in Fortran 90 and
-    NumPy.
-
-    Behavious is as per np.ndarray except:
-        - There is no element [0], [0, 0], ... as expected.
-        - Negative indexing to access end elements is not allowed.
-        - NumPy advanced indexing is not allowed.
-
-    Examples
-    --------
-    Create a 4x4 array using Fibonacci numbers.
-
-    >>> fib_mat = FortranArray([[1, 1, 2, 3],
-    ...                         [5, 8, 13, 21],
-    ...                         [34, 55, 89, 144],
-    ...                         [233, 377, 610, 987]])
-    >>> print(repr(fib_mat))
-    FortranArray([[  1,   1,   2,   3],
-                  [  5,   8,  13,  21],
-                  [ 34,  55,  89, 144],
-                  [233, 377, 610, 987]])
-
-    Swap the off-diagonal blocks using Fortran indices (copy prevents
-    overwrite).
-
-    >>> fib_mat[1:2, 3:4], fib_mat[3:4, 1:2] = (fib_mat[3:4, 1:2].copy(),
-    ...                                         fib_mat[1:2, 3:4].copy())
-    >>> print(repr(fib_mat))
-    FortranArray([[  1,   1,  34,  55],
-                  [  5,   8, 233, 377],
-                  [  2,   3,  89, 144],
-                  [ 13,  21, 610, 987]])
-
-    Invert just the bottom left 3x3 using NumPy.  Note that this also
-    returns a ``FortranArray``:
-
-    >>> inv_fib = np.linalg.inv(fib_mat[2:4, 1:3])
-    >>> print(repr(inv_fib))
-    FortranArray([[ 4.57396837e+14, -1.52465612e+14, -1.52465612e+14],
-                  [ 7.38871814e+14, -2.46290605e+14, -2.46290605e+14],
-                  [-3.51843721e+13,  1.17281240e+13,  1.17281240e+13]])
-    """
-
-    def __new__(cls, input_array, copy=True, order='F', subok=True, **kwargs):
-        """
-        Create an np.ndarray that uses base indices of 1, with at
-        least one dimension.  Arguments match np.ndarray except that
-        ``ndmin = 1``  is already prescribed.
-
-        Parameters
-        ----------
-        input_array : array_like
-            As per np.array, any object exposing the array interface,
-            an object whose __array__ method returns an array, or any
-            (nested) sequence.
-        copy : bool, optional
-            Default value is True in line with typical Fortran practice.
-        order : str, optional
-            As per np.array. Default value is ``'F'`` (Fortran ordering) to
-            better suit existing loops written with this in mind, but this
-            is not mandatory.
-        subok : bool, optional
-            As per np.array.  Default value is True.
-        **kwargs :
-            Remaining arguments are passed directly to np.array.
-
-        Returns
-        -------
-            obj : np.ndarray
-                An np.ndarray base object of at least 1-D is returned.
-        """
-
-        return np.array(input_array, copy=copy, order=order, subok=subok,
-                        ndmin=1, **kwargs).view(cls)
-
-    def __getitem__(self, key):
-        """Returns ``self[key]`` where key uses index-1 format."""
-        return super().__getitem__(self._py_idx(key)).view(FortranArray)
-
-    def __repr__(self):
-        prefix = self.__class__.__name__ + '('
-        if dtype_is_implied(self.dtype) and self.size > 0:
-            suffix = ")"
-        else:
-            suffix = f", dtype={dtype_short_repr(self.dtype)})"
-        body = array2string(np.asarray(self), max_line_width=None,
-                            precision=None, suppress_small=None,
-                            separator=', ', prefix=prefix, suffix=suffix)
-        return prefix + body + suffix
-
-    def __str__(self):
-        return str(np.asarray(self))
-
-    def _py_idx(self, fort_idx):
-        """Convert Fortran-style array slices (index-0) or indiviudal indices
-        into Python / C equivalent (index-0)."""
-        if not isinstance(fort_idx, tuple):
-            fort_idx = fort_idx,  # Handle 0-D requests.
-        if len(fort_idx) != self.ndim:
-            raise TypeError(f"Incorrect number of indices: Got "
-                            f"{len(fort_idx)}, needed {self.ndim}.")
-        py_idx = []
-        for ax_idx, ax_dim in zip(fort_idx, self.shape):
-            if isinstance(ax_idx, slice):
-                py_step = ax_idx.step or 1
-                if py_step == 0:
-                    raise IndexError("Zero stride not allowed.")
-
-                if py_step >= 0:
-                    py_start = (ax_idx.start or 1) - 1
-                    py_stop = ax_idx.stop or ax_dim
-                else:
-                    py_start = (ax_idx.start or ax_dim) - 1
-                    py_stop = (ax_idx.stop or 1) - 2
-                    if py_stop < 0:
-                        py_stop = None
-
-                if 0 <= py_start and (py_stop is None or 0 <= py_stop):
-                    py_idx.append(slice(py_start, py_stop, py_step))
-                else:
-                    raise IndexError(f"Invalid Fortran-style array slice: "
-                                     f"{ax_idx}")
-
-            else:
-                if not 1 <= ax_idx <= ax_dim:
-                    raise IndexError(f"Fortran-style index out of range:"
-                                     f" {fort_idx}.")
-                py_idx.append(ax_idx - 1)
-        return tuple(py_idx)
 
 
 # -----------------------------------------------------------------------------

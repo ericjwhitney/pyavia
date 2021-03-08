@@ -24,16 +24,13 @@ def bisect_root(func, x_a, x_b, maxits: int = 50, ftol=1e-6, verbose=False):
 
     .. note: This function is able to be used with arbirary units.
 
-    ..
-        >>> import pyavia as pa
-
     Examples
     --------
     >>> f = lambda x: x**2 - x - 1
-    >>> pa.solve.bisect_root(f, 1, 2, 25)  # This will take 17 iterations.
+    >>> bisect_root(f, 1, 2, 25)  # This will take 17 iterations.
     1.6180343627929688
     >>> f = lambda x: (2*x - 1)*(x - 3)
-    >>> pa.solve.bisect_root(f, 0, 1, 10)  # Only 1 it. (soln was in centre).
+    >>> bisect_root(f, 0, 1, 10)  # Only 1 it. (soln was in centre).
     0.5
 
     Parameters
@@ -127,15 +124,12 @@ def fixed_point(func, x0, xtol, h: float = 1.0, maxits: int = 15,
     We take :math:`\zeta = 1` because critical damping is generally the
     shortest path to convergence.
 
-    ..
-        >>> import pyavia as pa
-
     Examples
     --------
         A fixed-point iteration of a scalar function:
 
-        >>> def f(x): return (x + 10) ** 0.25
-        >>> x_scalar = pa.solve.fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
+        >>> def f(x_): return (x_ + 10) ** 0.25
+        >>> x_scalar = fixed_point(f, x0=-3, xtol=1e-6, verbose=True)
         Second-Order Damped Fixed Point Iteration:
         ... Iteration 1: x = [   -3.0000]
         ... Iteration 2: x = [    1.6266]
@@ -151,7 +145,7 @@ def fixed_point(func, x0, xtol, h: float = 1.0, maxits: int = 15,
     arrays, provided component-wise operations are valid and `func(x)` can
     also return a list:
 
-        >>> x_vector = pa.solve.fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2,
+        >>> x_vector = fixed_point(f, x0=[-3, -4], xtol=[1e-6]*2,
         ... verbose=True)
         Second-Order Damped Fixed Point Iteration:
         ... Iteration 1: x = [   -3.0000    -4.0000]
@@ -175,14 +169,14 @@ def fixed_point(func, x0, xtol, h: float = 1.0, maxits: int = 15,
     xtol : scalar or list_like
         Stop when ``abs(x' - x) < xtol``.  The type/s or element/s of `xtol`
         should correspond to `x`.
-    h : float
+    h : float, optional
         Step size (time-like) to advance `x` to next estimate.  The default
         value of 1.0 should be acceptable in most cases.  Reduce if
         instability is suspected (e.g. 0.5, 0.25, etc).
-    maxits : int
-        Iteration limit.
-    verbose : bool
-        If True, print iterations.
+    maxits : int, optional
+        Iteration limit (default = 15).
+    verbose : bool, optional
+        If True, print iterations (default = False).
 
     Returns
     -------

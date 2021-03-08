@@ -11,13 +11,16 @@ such as:
 # Last updated: 28 September 2020 by Eric J. Whitney.
 
 import operator as op
+import uuid
+from dataclasses import fields, is_dataclass
 from math import log, exp, pi, nan, atan
-from typing import Union, Iterable
+from typing import Union, Iterable, Sequence, List, Type
 
 __all__ = ['kind_atan2', 'kind_div', 'force_type', 'coax_type', 'all_none',
-           'all_not_none', 'any_none', 'first', 'count_op', 'bounded_by',
-           'bracket_list', 'line_pt', 'linear_int_ext', 'min_max', 'monotonic',
-           'strict_decrease', 'strict_increase']
+           'all_not_none', 'any_in', 'any_none', 'first', 'count_op',
+           'dataclass_fromlist', 'dataclass_names', 'bounded_by',
+           'bracket_list', 'line_pt', 'linear_int_ext', 'min_max',
+           'monotonic', 'strict_decrease', 'strict_increase', 'temp_filename']
 
 
 # ----------------------------------------------------------------------------
@@ -25,7 +28,7 @@ __all__ = ['kind_atan2', 'kind_div', 'force_type', 'coax_type', 'all_none',
 
 def kind_atan2(y, x) -> float:
     """Implementation of atan2 that allows any object as an argument provided
-    it supports __div__ and __float__.  Allows units-aware usage."""
+    it supports __div__ and __float__, allowing units-aware usage."""
     if float(x) == 0.0:
         if float(y) > 0.0:
             return +0.5 * pi
@@ -63,29 +66,26 @@ def force_type(x, *types):
     Try converting `x` into a series of types, with no check on the
     conversion validity.
 
-    ..
-        >>> import pyavia as pa
-
     Examples
     --------
-    >>> pa.force_type(3.5, int, float)
+    >>> force_type(3.5, int, float)
     ... # Results in an int, because int(x) accepts float and truncates.
     3
-    >>> pa.force_type("3.5+4j", float, complex)
+    >>> force_type("3.5+4j", float, complex)
     (3.5+4j)
-    >>> pa.force_type(3.5+4j, int, float, str)
+    >>> force_type(3.5+4j, int, float, str)
     '(3.5+4j)'
 
     Parameters
     ----------
-    x
+    x :
         Argument to be converted.
     types : list_like
         Target types to use when trying conversion.
 
     Returns
     -------
-    :
+    x_converted :
         `x` converted to the first successful type, if possible.
 
     Raises
@@ -107,35 +107,32 @@ def coax_type(x, *types, default=None):
     Try converting `x` into a series of types, returning first result where
     next_type(`x`) == x.
 
-    ..
-        >>> import pyavia as pa
-
     Examples
     --------
-    >>> pa.coax_type(3.5, int, float)  # float result.
+    >>> coax_type(3.5, int, float)  # float result.
     3.5
-    >>> pa.coax_type(3.0, int, str)  # int result.
+    >>> coax_type(3.0, int, str)  # int result.
     3
-    >>> pa.coax_type ("3.0", int, float)  # Error: 3.0 != "3.0".
+    >>> coax_type ("3.0", int, float)  # Error: 3.0 != "3.0".
     Traceback (most recent call last):
     ...
     ValueError: Couldn't coax '3.0' to <class 'int'> or <class 'float'>.
     >>> xa = 3 + 2j
-    >>> pa.coax_type(xa, int, float, default=xa)  # Can't conv., gives default.
+    >>> coax_type(xa, int, float, default=xa)  # Can't conv., gives default.
     (3+2j)
 
     Parameters
     ----------
-    x
+    x :
         Argument to be converted.
     types : list_like
         Target types to use when trying conversion.
-    default
+    default :
         Value to return if conversion was unsuccessful.
 
     Returns
     -------
-    :
+    x_converted :
         `x` converted to the first successful type (if possible) or default.
 
     Raises
@@ -158,7 +155,7 @@ def coax_type(x, *types, default=None):
 
 
 # ----------------------------------------------------------------------------
-# Shorthand functions for checking lists.
+# Shorthand functions for lists.
 
 def all_none(*args):
     """Shorthand function for ``all(x is None for x in args)``.  Returns
@@ -172,6 +169,12 @@ def all_not_none(*args):
     return all(x is not None for x in args)
 
 
+def any_in(it: Iterable, target):
+    """Shorthand function for ``any(x in target for x in iterable)``.
+    Returns True if found, otherwise False."""
+    return any(x in target for x in it)
+
+
 def any_none(*args):
     """Shorthand function for ``any(x is None for x in args)``.  Returns
     True if any of `*args` are None, otherwise False."""
@@ -180,30 +183,31 @@ def any_none(*args):
 
 def first(it: Iterable, condition=lambda x: True):
     # noinspection PyUnresolvedReferences
-    """
-    Function returning the first item in the iterable that satisfies the
+    """Function returning the first item in the iterable that satisfies the
     condition.  This function is taken almost directly from:
     https://stackoverflow.com/a/35513376
 
-    ..
-        >>> import pyavia as pa
-
-    >>> pa.first((1,2,3), condition=lambda x: x % 2 == 0)
+    >>> first((1,2,3), condition=lambda x: x % 2 == 0)
     2
-    >>> pa.first(range(3, 100))
+    >>> first(range(3, 100))
     3
-    >>> pa.first(())
+    >>> first(())
     Traceback (most recent call last):
     ...
     StopIteration
 
-    Args:
-        it: Iterable to search.
-        condition: (Opt) Boolean condition applied to each iterable.  If the
-            condition is not given, the first item is returned.
+    Parameters
+    ----------
+    it : Iterable
+        Iterable to search.
+    condition : boolean function (optional)
+        Boolean condition applied to each iterable.  If the condition is not
+        given, the first item is returned.
 
-    Returns:
-        First item in the iterable 'it' that satisfying the condition.
+    Returns
+    -------
+    first_item :
+        First item in the iterable `it` that satisfying the condition.
 
     Raises:
         StopIteration if no item satysfing the condition is found.
@@ -216,6 +220,29 @@ def count_op(it: Iterable, oper, value):
     == True.  This allows user-defined objects to be included and is subtly
     different to ``[...].count(...)`` which uses the __eq__ operator."""
     return [oper(x, value) for x in it].count(True)
+
+
+# ----------------------------------------------------------------------------
+# Useful loop constructs / generator functions.
+
+def dataclass_fromlist(dc_type: Type, init_vals: Sequence):
+    """Initialise a dataclass of type ``dc_type`` using a list of values
+    ``init_vals`` ordered to match the class fields (i.e. as returned by
+    ``dataclass_names``).  The length of the ``init_vals`` cannot exceed the
+    number of dataclass field names.  If shorter, remaining fields are
+    unassigned."""
+    return dc_type(**{k: v for k, v in zip(dataclass_names(dc_type),
+                                           init_vals)})
+
+
+def dataclass_names(dc) -> List[str]:
+    """When passed a type or specific instance of a dataclass, returns an
+    ordered list containing the names of the individual fields."""
+    if not is_dataclass(dc):
+        raise AttributeError("Can't give field names for non-dataclass object.")
+    if not isinstance(dc, type):
+        dc = type(dc)
+    return [f.name for f in fields(dc)]
 
 
 # ----------------------------------------------------------------------------
@@ -238,19 +265,24 @@ def bracket_list(li, x, key=None):
     bracket `x`.
     I.E. where `li`[`l_idx`] <= `x` <= `li`[`r_idx`].
 
-    Note:
-        This is not the same as the usual one-sided methods which ensure
-        strict inequality on one side (e.g. low <= x < high).  This means
-        that for boundary values two brackets may satisfy the condition.
+    .. Note:: This is not the same as the usual one-sided methods which ensure
+       strict inequality on one side (e.g. low <= x < high).  This means
+       that for boundary values two brackets may satisfy the condition.
 
-    Args:
-        li: Sorted list / tuple.  Sorting can be in either direction.
-        x: Value to bracket.
-        key: Comparison function if supplied.  Default = None.
+    Parameters
+    ----------
+    li : List
+        Sorted list / tuple.  Sorting can be in either direction.
+    x :
+        Value to bracket.
+    key : function
+        Comparison function if supplied.  Default = None.
 
-    Returns:
-        (l_idx, r_idx).  Note that r_idx = l_idx + 1 on return.   For x
-        equal to a middle list value, the left side bracket is returned.
+    Returns
+    -------
+    l_idx, r_idx : Tuple
+        Note that r_idx = l_idx + 1 on return.   For `x` equal to a middle
+        list value, the left side bracket is returned.
     """
     l_idx = 0
     r_idx = len(li) - 1
@@ -436,3 +468,14 @@ def strict_increase(iterable, key=None):
     Returns True *i.f.f.* all :math:`x_{i+1} > x_i`.  Comparison provided
     using `key` if supplied."""
     return monotonic(iterable, +1, strict=True, key=key)
+
+
+# -----------------------------------------------------------------------------
+# Useful file functions.
+
+def temp_filename(prefix: str = '', suffix: str = '', rand_length: int = None):
+    """Generates a (nearly unique) temporary file name with given `preifx` and
+    `suffix` using a hex UUID, truncated to `rand_length` if required.  This is
+    useful for interfacing with older DOS and FORTRAN style codes with
+    specific rules about filename length."""
+    return prefix + uuid.uuid4().hex[:rand_length] + suffix

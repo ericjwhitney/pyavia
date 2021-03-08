@@ -6,9 +6,13 @@ error.  Unit conversions not previously known are cached for fast lookup the
 next time they are used.
 """
 
+# TODO Add __getattr__ to Dim so it could be possible to simply do
+#  conversions like this:
+#  >>> blah = Dim(100.0, 'ft/s')
+#  >>> print(blah.kts)
 # TODO Add NumPy ufunc support for e.g. sqrt method, etc?
 
-# Last updated: 7 January 2021 by Eric J. Whitney
+# Last updated: 18 January 2021 by Eric J. Whitney
 
 from __future__ import annotations
 from pyavia.core.containers import WtDirgraph, MultiBiDict
@@ -1328,6 +1332,7 @@ add_unit('MPa', 'N/mm²')
 add_unit('Pa', 'N/m²')
 add_unit('hPa', '100.Pa')
 add_unit('kPa', '1000*Pa')
+add_unit('GPa', '1e9*Pa')
 
 add_unit('atm', '101325 Pa')  # ISO 2533-1975
 add_unit('bar', '100000*Pa')

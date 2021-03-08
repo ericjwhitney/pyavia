@@ -38,16 +38,16 @@ Notes:
 
 from pyavia.core.units import Dim, Units, make_total_temp
 from pyavia.core.util import bracket_list
-from pyavia.solve import bisect_root
+from pyavia.core.solve import bisect_root
 
 from math import exp, log, isclose
 
-__all__ = ['Atmosphere', 'geo_alt_to_pot', 'pot_alt_to_geo']
+__all__ = ['Atmosphere', 'G_N', 'R_EARTH', 'geo_alt_to_pot', 'pot_alt_to_geo']
 
 
 # -----------------------------------------------------------------------------
 
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,NonAsciiCharacters
 class Atmosphere:
     """
     An Atmosphere class giving a fixed representation of atmospheric
@@ -266,9 +266,7 @@ class Atmosphere:
             return Atmosphere(H=Dim(H_try, H_units)).density.convert(
                 dens_reqd.units).value - dens_reqd.value
 
-        maxits = 50
-        H_d = bisect_root(density_err, H_lhs, H_rhs, maxits,
-                          ftol=1e-6)
+        H_d = bisect_root(density_err, H_lhs, H_rhs, maxits=50, ftol=1e-6)
 
         return Dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
 
@@ -341,17 +339,17 @@ class Atmosphere:
         return self._T / Atmosphere(H='SSL').T
 
     # Method Aliases ---------------------------------------------------------
-    P = pressure
-    T = temperature
-    a = speed_of_sound
+    P: Dim = pressure
+    T: Dim = temperature
+    a: Dim = speed_of_sound
 
-    δ = delta
-    γ = gamma
-    θ = theta
-    μ = dynamic_viscosity
-    ν = kinematic_viscosity
-    ρ = density
-    σ = sigma
+    δ: float = delta
+    γ: float = gamma
+    θ: float = theta
+    μ: Dim = dynamic_viscosity
+    ν: Dim = kinematic_viscosity
+    ρ: Dim = density
+    σ: float = sigma
 
 
 # ----------------------------------------------------------------------------

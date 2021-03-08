@@ -7,6 +7,9 @@ includes things like units, containers, shorthand functions, etc.
 
 # All modules define __all__.
 from pyavia.core.containers import *
+from pyavia.core.fortran import *
+from pyavia.core.interpolate import *
+from pyavia.core.solve import *
+from pyavia.core.switch import *
 from pyavia.core.units import *
 from pyavia.core.util import *
-from pyavia.core.switch import *

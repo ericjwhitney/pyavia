@@ -5,4 +5,5 @@ and fluid dynamics in general.
 
 # All sub-modules define __all__.
 from ._atmosphere import *
+from ._foil import *
 from ._gasflow import *

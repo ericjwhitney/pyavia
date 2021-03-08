@@ -6,7 +6,7 @@ __all__ = ['sn_raithby']
 
 from math import log10
 
-from pyavia.core.units import assign_units
+from pyavia.core.units import Dim
 from pyavia.core.containers import ValueRange
 
 
@@ -41,8 +41,8 @@ def sn_raithby(s_range: ValueRange):
     ValueError
         If :math:`\sigma_{mean} > 30 ksi`.
     """
-    s_m = max(assign_units(s_range.mean, 'ksi').value, 0)
-    s_a = assign_units(s_range.ampl, 'ksi').value
+    s_m = max(Dim(s_range.mean, 'ksi').value, 0)
+    s_a = Dim(s_range.ampl, 'ksi').value
     if 0 <= s_m < 2:
         a = 10.0556 - 0.51285 * s_m
         b = 4.8023 - 0.44000 * s_m

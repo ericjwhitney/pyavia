@@ -4,7 +4,7 @@ Equations and constants relating to gases and compressible flow.
 # Last updated: 11 January by Eric J. Whitney
 
 from __future__ import annotations
-from pyavia.solve import fixed_point, solve_dqnm
+from pyavia.core.solve import fixed_point, solve_dqnm
 from pyavia.core.units import Dim, make_total_temp
 from pyavia.core.util import all_not_none, all_none
 from abc import ABC, abstractmethod

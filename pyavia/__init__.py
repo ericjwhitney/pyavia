@@ -17,7 +17,7 @@ engineering or engineering in general.  Some things to note:
 
 Version
 -------
-The current version is **0.0.1**.  **PyAvia** is designed for Python >= 3.7
+The current version is **0.0.3**.  **PyAvia** is designed for Python >= 3.7
 and is platform agnostic.
 
 .. note::
@@ -30,15 +30,16 @@ Coming Soon
 - Modular jet engine performance model.
 """
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 # Import core functions into pyavia.* namespace.  Note that all sub-packages
 # define __all__.
-from pyavia.core import *
+from .core import *
 
 # Sub-modules / sub-packages.
-import pyavia.aero
-import pyavia.solve
+from . import aero
+from . import struct
+
 
 import sys
 
