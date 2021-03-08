@@ -6,15 +6,14 @@
 from pyavia import WtDirgraph
 
 wdg = WtDirgraph()
-wdg['a':'b'] = 'Here'
+wdg['a':'b'] = '*** a -> b Connector ***'
 print(wdg)  # WtDirgraph({'a': {'b': 'Here'}, 'b': {}})
-print(wdg['a':'b'])  # Here
-# print(wdg['b':'a'])  # KeyError: 'a'
+print(f"'a' -> 'b' Connection?  {wdg['a':'b']}")
+# print(f"'b' -> 'a' Connection? {wdg['b':'a']}")  # KeyError: 'a'
 wdg['a':3.14159] = (22, 7)
-wdg['b':'c'] = 'it'
-wdg['c':'d'] = 'is.'
+wdg['b':'c'] = '*** b -> c Connector ***'
+wdg['c':'d'] = '*** c -> d Connector ***'
 path, joined = wdg.trace('a', 'd', op=lambda x, y: ' '.join([x, y]))
-print(path, joined)  # ['a', 'b', 'c', 'd'] Here it is.
+print(path, joined)
 del wdg['a']
-print(wdg)  # WtDirgraph({'b': {'c': 'it'}, 3.14159: {},
-# 'c': {'d': 'is.'}, 'd': {}})
+print(wdg)
