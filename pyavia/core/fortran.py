@@ -52,7 +52,7 @@ by its inverse gives the unit matrix:
          [-8.88178420e-16, 1.33226763e-15,-2.66453526e-15, 1.00000000e+00]]
 """
 
-# Last updated: 27 March 2021 by Eric J. Whitney
+# Last updated: 8 March 2021 by Eric J. Whitney
 
 from __future__ import annotations
 import numpy as np
@@ -133,11 +133,12 @@ def fortran_array(arr, dtype=None, *, copy=True, order='F', subok=False,
                   ndmin=1, ftype=None):
     """Return a new FortranArray object using identical arguments to np.array(),
     with the following differences:
-        - Fortran type `ftype` (case insensitive) may be given instead of
-          `dtype` (but not both).  See FortranArray.__new__ for types.
+
+        - Fortran type ``ftype`` (case insensitive) may be given instead of
+          ``dtype`` (but not both).  See ``FortranArray.__new__`` for types.
         - Default layout is order='F'.
         - Minimum of ``ndmin=1``  is enforced.
-        - `like` keyword is not provided.
+        - ``like`` keyword is not provided.
     """
     if ndmin < 1:
         raise ValueError("FortranArrays must be of dimension one or higher.")
@@ -169,18 +170,17 @@ class FortranArray(np.ndarray):
         - The additional ``FortranArray.ftype`` property returns the Fortran
           equivalent of theunderlying Numpy data type in use.
 
-    ..note:: FortranArray values by default are initialised to zero,
-             however this can be changed by setting
-             ``FortranArray.INIT_DEFAULT``.  This is because different Fortran
-             compilers offer different system-wide initialisation policies
-             such as zero, nothing / garbage, etc.
+    .. Note:: FortranArray values by default are initialised to zero,
+              however this can be changed by setting
+              ``FortranArray.INIT_DEFAULT``.  This is because different Fortran
+              compilers offer different system-wide initialisation policies
+              such as zero, nothing / garbage, etc.
     """
 
     INIT_DEFAULT = 0  # Initialisation for directly constructed FortranArray().
 
     def __new__(cls, *dims, ftype='real*8'):
-        """
-        Creates a new FortranArray.
+        """Creates a new FortranArray.
 
         Examples
         --------
@@ -197,22 +197,24 @@ class FortranArray(np.ndarray):
         dims : int, int, ...
             Size of the array on each axis.  At least one dimension is
             required (zero dimension FortranArrays are not supported).
+
         ftype : str (case insensitive)
             Fortran datatype for array (default = 'real*8').  This is
             converted to a corresponding Numpy type:
-                - 'logical*1':  bool_
-                - 'logical':    bool_       (default flogical)
-                - 'complex*32': complex64
-                - 'complex*64': complex128
-                - 'complex':    complex128  (default complex)
-                - 'integer*1':  int8
-                - 'integer*2':  int16
-                - 'integer*4':  int32
-                - 'integer*8':  int64
-                - 'integer':    int32       (default integer)
-                - 'real*4':     float32
-                - 'real*8':     float64
-                - 'real':       float64     (default floating point)
+
+                - 'logical*1':  `bool_`
+                - 'logical':    `bool_`       (default flogical)
+                - 'complex*32': `complex64`
+                - 'complex*64': `complex128`
+                - 'complex':    `complex128`  (default complex)
+                - 'integer*1':  `int8`
+                - 'integer*2':  `int16`
+                - 'integer*4':  `int32`
+                - 'integer*8':  `int64`
+                - 'integer':    `int32`       (default integer)
+                - 'real*4':     `float32`
+                - 'real*8':     `float64`
+                - 'real':       `float64`     (default floating point)
 
         Returns
         -------
@@ -222,8 +224,10 @@ class FortranArray(np.ndarray):
 
         Raises
         ------
-        AttributeError if `*dims` are not provided.
-        ValueError if `ftype` is invalid.
+        AttributeError
+            If `*dims` are not provided.
+        ValueError
+            If `ftype` is invalid.
         """
         if not dims:
             raise AttributeError("At least one array dimension must be "
@@ -237,10 +241,12 @@ class FortranArray(np.ndarray):
                        dtype=np.dtype(np_type), order='F').view(cls)
 
     def __getitem__(self, key):
+        """Get array element using Fortran-style indexing."""
         return np.ndarray.__getitem__(self, self._f2py_idx(key)).view(
             FortranArray)
 
     def __setitem__(self, key, value):
+        """Set array element using Fortran-style indexing to `value`."""
         self.view(np.ndarray)[self._f2py_idx(key)] = np.asarray(value)
 
     def __repr__(self):
