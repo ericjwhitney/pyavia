@@ -4,7 +4,7 @@
 # Written by: Eric J. Whitney  Last updated: 8 January 2020.
 
 from math import isclose
-from pyavia.aero import PerfectGasFlow, GasFlowWF
+from pyavia.aerodynamics import PerfectGasFlow, GasFlowWF
 from pyavia import Dim
 
 M, M_stop, M_step = 0.00, 2.50, 0.05
