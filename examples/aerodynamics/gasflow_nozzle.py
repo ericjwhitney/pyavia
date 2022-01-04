@@ -8,7 +8,7 @@
 # Written by: Eric J. Whitney  Last updated: 5 January 2020.
 
 import matplotlib.pyplot as plt
-from pyavia.aero import GasFlowWF
+from pyavia.aerodynamics import GasFlowWF
 from pyavia import Dim
 
 chamber = GasFlowWF(T=Dim(700, 'K'), P=Dim(25.0, 'atm'), M=0.1,
