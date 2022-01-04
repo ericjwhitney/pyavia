@@ -3,7 +3,7 @@
 # Comparison of gas models.
 # Written by: Eric J. Whitney  Last updated: 28 December 2019.
 
-from pyavia.aero import PerfectGasFlow, GasFlowWF, GasError
+from pyavia.aerodynamics import PerfectGasFlow, GasFlowWF, GasError
 from pyavia import Dim
 
 T, T_step = Dim(200, 'K'), Dim(100, 'K')
