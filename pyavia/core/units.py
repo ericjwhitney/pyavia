@@ -1,540 +1,444 @@
 """
-Module of practical unit conversions that don't use any underlying
-absolute or fixed basis values.  Calculation is via a weighted directed
-graph which finds the shortest route between units, minimising calculation
-error.  Unit conversions not previously known are cached for fast lookup the
-next time they are used.
+Implementation of main units object Dim, factory function dim() and other
+associated functions.
+
+Examples
+--------
+
+Creation of dimensioned values is done via ``dim()`` in a natural way,
+and gives a ``Dim`` object as a result.  See documentation for ``dim()``
+for details on valid formats.
+
+>>> r = dim(10, 'ft')
+>>> ω = dim(30, 'rad/s')
+>>> r * ω  # Centripetal motion v_t = r.ω
+Dim(300, 'fps')
+
+Calling dim() with no arguments results in a dimensionless unity value.
+
+>>> dim()
+Dim(1, '')
+
+This gives the expected result of dimensions dropping out in normal
+calculations:
+>>> 6 * 7 * dim()
+42
+
+The ``convert`` function can be used with normal numeric inputs to give
+a conversion.  Note that the we try to preserve the type of the input
+argument where possible (int to int, float to float, etc):
+>>> convert(288, 'in^2', 'ft^2')  # Convert sq. in to sq. ft.
+2
+
+Alternatively, ``Dim`` objects can provide a converted value of themselves
+directly:
+>>> area = dim(144, 'in^2')
+>>> area.convert('ft^2')
+Dim(1, 'ft^2')
+
+Derived (compound) units will cancel out where possible to provide the
+most direct base unit related to the LHS.  For example, because 1 N = 1
+kg.m/s², then under 1 G acceleration:
+
+>>> dim(9.80665, 'N') / dim(1, 'G').convert('ft/s^2')
+Dim(0.9999999999999999, 'kg')
+
+Units with unusual powers are handled without difficulty:
+
+>>> k_ic_metric = dim(51.3, 'MPa.m⁰ᐧ⁵')  # Metric fracture toughness.
+>>> k_ic_metric.convert('ksi.in^0.5')  # Convert to imperial.
+Dim(46.68544726800077, 'ksi.in^0.5')
+
+Temperature values are a special case and specific rules exist for handling
+them.  This is because different temperatures can have offset scales or
+represent different quantities:
+
+    - `Absolute` or `Offset` scales:  `Absolute` temperatures have their zero
+      values located at absolute zero whereas `offset` temperatures use
+      some other reference point for zero.
+    - Represent `Total` values or `Change`/`Δ`:  `Total` temperatures
+      represent the actual temperature state of a body, whereas `Δ` values
+      represent the change in temperature (or difference between two total
+      temperatures).
+
+What the different temperature units can represent can be summarised as
+follows:
+    +------------------+----------+--------+-------+--------+
+    |                  |     Total Scale   | Can Represent  |
+    | Temperature Unit +-------------------+----------------+
+    |                  | Absolute | Offset | Total | Change |
+    +==================+==========+========+=======+========+
+    |        K         |    Yes   |   No   |  Yes  |   Yes  |
+    +------------------+----------+--------+-------+--------+
+    |        °R        |    Yes   |   No   |  Yes  |   Yes  |
+    +------------------+----------+--------+-------+--------+
+    |        °C        |    No    |   Yes  |  Yes  |   No   |
+    +------------------+----------+--------+-------+--------+
+    |        °F        |    No    |   Yes  |  Yes  |   No   |
+    +------------------+----------+--------+-------+--------+
+    |       Δ°C        |    ---   |   ---  |   No  |   Yes  |
+    +------------------+----------+--------+-------+--------+
+    |       Δ°F        |    ---   |   ---  |   No  |   Yes  |
+    +------------------+----------+--------+-------+--------+
+
+Note that although Δ°C and Δ°F are not considered as existing on a total
+temperature scale, they can be added or subtracted from total temperatures.
+As such these can be used with either absolute or offset total temperature
+units, because there is a direct conversion available to an appropriate
+type e.g.  Δ°C -> K, Δ°F -> °R.
+
+A simple example converting from an absolute temperature scale to an offset
+scale:
+
+>>> dim(373.15, 'K').convert('°F')  # Offset temperature
+Dim(211.99999999999994, '°F')
+
+Temperature changes can be added or subtracted from total temperatures,
+giving total temperatures:
+>>> dim(25, '°C') + dim(5, 'Δ°C')
+Dim(30, '°C')
+>>> dim(25, '°C') - dim(5, 'Δ°C')
+Dim(20, '°C')
+
+Two total temperatures on offset scales can be subtracted, but in this case
+they give a temperature change which is considered to be a distinct unit:
+
+>>> dim(32, '°F') - dim(0, '°C')  # Result will be approx. zero.
+Dim(5.684341886080802e-14, 'Δ°F')
+
+Total temperatures on absolute scales or temperature changes can be used in
+derived / compound units and converted freely:
+
+>>> air_const_metric = dim(287.05287, 'J/kg/K')
+>>> air_const_imp_slug = air_const_metric.convert('ft.lbf/slug/°R')
+
+Total temperatures on offset scales are not allowed to be used in derived /
+compound units:
+
+>>> dim('km.°F')  # doctest: +ELLIPSIS, +IGNORE_EXCEPTION_DETAIL
+Traceback (most recent call last):
+...
+ValueError: Offset temperature units are only permitted to be base units.
+
+``Dim`` objects supports any format statements that can be used directly on
+their numeric value:
+>>> print(f"Slug value = {air_const_imp_slug:.2f}")
+Slug value = 1716.56 ft.lbf/slug/°R
 """
 
-# TODO Add __getattr__ to Dim so it could be possible to simply do
-#  conversions like this:
-#  >>> blah = Dim(100.0, 'ft/s')
-#  >>> print(blah.kts)
-# TODO Add NumPy ufunc support for e.g. sqrt method, etc?
-
-# Last updated: 18 January 2021 by Eric J. Whitney
-
 from __future__ import annotations
-from pyavia.core.containers import WtDirgraph, MultiBiDict
-from pyavia.core.util import coax_type, force_type, kind_div
 from collections import namedtuple
 from fractions import Fraction
 import math
 import operator
 import re
-from typing import Optional, Any, Union, Iterable, Callable
+from numbers import Number
+from typing import Callable, Optional, Union
 import warnings
 
-__all__ = ['output_ucode_pwr', 'UnitsError', 'Units', 'Dim',
-           'add_base_unit', 'add_unit', 'base_unit', 'get_conversion',
-           'set_conversion', 'similar_to', 'total_temperature_convert',
-           'make_total_temp', 'from_ucode_super', 'to_ucode_super']
+import numpy as np
 
-# Generate unicode chars for power values in strings.
-output_ucode_pwr = True
+from pyavia.core.containers import MultiBiDict, WtDirgraph
+from pyavia.core.util import coax_type, force_type, kind_div
 
-# Computed conversions are cached for faster repeat access. To ensure
-# accurate handling of values only the requested conversion 'direction' is
-# cached; the reverse conversion is not automatically computed and would
-# need to be separately cached when encountered.
-cache_computed_convs = True
+__all__ = ['OUTPUT_UCODE_PWR', 'STD_UNIT_SYSTEM', 'CACHE_COMPUTED_CONVS',
+           'CONV_PATH_LENGTH_WARNING', 'Dim', 'RealScalar', 'RealArray',
+           'DimScalar', 'DimArray', 'add_base_unit', 'add_unit', 'convert',
+           'dim', 'is_dimarray', 'set_conversion', 'similar_to',
+           'split_dim', 'to_absolute_temp']
+
+# ---------------------------------------------------------------------------
+
+
+CACHE_COMPUTED_CONVS = True
+"""Computed conversions are cached for faster repeat access. To ensure
+accurate handling of values only the requested conversion 'direction' is
+cached; the reverse conversion is not automatically computed and would
+need to be separately cached when encountered."""
 
 # Note: There is presently no size limit on this cache. This is normally not
 # a problem as only a few types of conversions occur in any application.
 
-# Issue a warning if a unit conversion traces a path longer than
-# _CONV_PATH_LENGTH_WARNING.  It could indicate a potential buildup of error
-# and usually means that a suitable conversion for these units should be
-# added.
-_CONV_PATH_LENGTH_WARNING = 4
+CONV_PATH_LENGTH_WARNING = 4
+"""Issue a warning if a unit conversion traces a path longer than 
+CONV_PATH_LENGTH_WARNING.  It could indicate a potential buildup of error 
+and usually means that a suitable conversion for these units should be 
+added. """
 
-# -----------------------------------------------------------------------------
+OUTPUT_UCODE_PWR = True
+"""Generate unicode chars for power values in strings."""
 
-# Module level containers.
-
-_known_units = MultiBiDict()  # All Units(), base and derived.
-_known_base_units = set()  # Single entry ^1 Units().
-_conversions = WtDirgraph()  # Conversions between Units().
-_comp_conv_cache = {}  # {(Units, Units): Factor, ...}
-
-
-class UnitsError(Exception):
-    """Exception class for units specific errors."""
-    pass
+STD_UNIT_SYSTEM = 'kg.m.s.K.mol.A.cd.rad.sr'
+"""This module variable represents a standard system used as the default 
+value for any calls to Dim.to_system().  Some unit types may be omitted with 
+default values assumed - refer to the documentation for ``Dim.to_system()`` 
+for details. """
 
 
-# Precompiled parser.
+# -- Type Definitions -------------------------------------------------------
 
-_UCODE_SS_CHARS = ('⁺⁻ᐧ⁰¹²³⁴⁵⁶⁷⁸⁹', '+-.0123456789')
-_UC_SGN = _UCODE_SS_CHARS[0][0:2]
-_UC_DOT = _UCODE_SS_CHARS[0][2]
-_UC_DIG = _UCODE_SS_CHARS[0][3:]
-_uc_pwr_pattern = fr'''[{_UC_SGN}]?[{_UC_DIG}]+(?:[{_UC_DOT}][{_UC_DIG}]+)?'''
-
-_unitparse_rx = re.compile(fr'''
-    ([.*×/])?                                               # Operator.
-    (?:([+-]?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)(?:[.*×]?))?    # Mult w/ sep
-    ([a-zA-Z_Δ°μ]+)                                         # Unit
-    ((?:\^[+-]?[\d]+(?:[.][\d]+)?)|                         # Pwr (ascii), or
-    (?:{_uc_pwr_pattern}))?                                 # Pwr (ucode)
-    |(.+)                                                   # OR mismatch.
-''', flags=re.DOTALL | re.VERBOSE)
-
-# Special case units.
-
-_OFFSET_TEMPS = {'°C', '°F'}
-
-
-# -----------------------------------------------------------------------------
-# Unit field names:
-#   k:  Multiplier (always first).
-#   M:  Mass.
-#   L:  Length.
-#   T:  Time.
-#   θ:  Temperature.
-#   N:  Amount of substance.
-#   I:  Electric current.
-#   J:  Luminous intensity.
-#   A:  Plane angle (see Units() definition for permanence).
-#   Ω:  Solid angle (see Units() definition for permanence).
-
-
-class Units(namedtuple('_Units', ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J',
-                                  'A', 'Ω'],
-                       # defaults=[1, *(('', 0),) * 7, ('rad', 0), ('sr', 0)])):
-                       defaults=[1, *(('', 0),) * 9])):
+class Dim(namedtuple('Dim', ['value', 'units'])):
     """
-    Combination of basis units and a factor representing a specific base or
-    derived unit.  The Units object is an extended namedtuple.  Each basis
-    unit is a tuple of a string label and power.  Units are hashable so
-    they can be looked up for quick conversions.
+    ``Dim`` represents a dimensioned quantity, consisting of a value and a
+    string giving the associated units.  A ``Dim`` object can be used in
+    mathematical expressions and the units conversions are automatically
+    done to make the result 'units aware'.
 
-    .. Note:: Direct manipulation of Units objects is not required very
-       often in practical situations.  Almost all problems are dealt with
-       entirely by Dim objects which contain a Units object.
+    ``Dim`` objects are implemented as a namedtuple and are thus nominally
+    immutable.  This means that they can be treated like scalars,
+    and their `value` and `units` fields cannot simply be changed or
+    overwritten by other functions once they are created.
 
-    .. Note::  Plane angle radians and solid angle steradians are effectively
-       dimensionless:
-            - These 'units' are retained to allow consistency checks on
-              mathematics, especially if angular degrees are used, etc.
-            - Radians / steradians are retained during creation of new units,
-              which allows for correct conversion of things like rotational
-              speeds, etc.
-            - Radians / steradians disappear after multiplication with a
-              different set of units (i.e. a calculation) if they finish with
-              power == 1.
+    .. note:: ``Dim`` objects are not normally created by the user.
+       Refer to factory function ``dim()`` for normal construction methods.
     """
 
-    # noinspection PyTypeChecker
-    def __new__(cls, *args, **kwargs):
-        """
-        ..
-            >>> import pyavia as pa
-
-        Units objects can be created in a number of ways:
-
-        - As conventional namedtuple where the first item is the factor and
-          remaining items are each basis unit as a tuple of an alpha-only
-          label and power. Unused fields default to dimensionless.  This
-          example is equivalent to a metric tonne:
-
-          >>> print(pa.Units(1000, ('kg', 1)))
-          1000*kg
-
-        - Alternatively the named fields can be used:
-
-          >>> print(pa.Units(k=1000, M=('kg', 1)))
-          1000*kg
-
-        - No arguments or a single None results in a dimensionless unit object:
-
-          >>> print(pa.Units())  # k = 1, all bases are ('', 0)
-          (No Units)
-          >>> print(pa.Units(None))  # Same as Units().
-          (No Units)
-
-        - As a string expression to be parsed.  This will multiply out
-          sub-units L -> R giving the resulting unit.  Whitespace is
-          ignored. Unicode characters for powers and separators can be used.
-
-          >>> print(pa.Units('1000 × kg'))
-          1000*kg
-          >>> print(pa.Units('N.m^-2'))
-          Pa
-          >>> print(pa.Units('slug.ft/s²'))
-          lbf
-          >>> print(pa.Units('kg*m*s⁻²'))
-          N
-
-        .. note:: The divide symbol is not supported due it looking very
-           similar to the 'plus' on-screen.
-        """
-        if len(args) == 1 and args[0] is None:
-            # Intentionally blank case: Units(None).
-            res = super().__new__(cls)
-            _check_units(res)
-            return res
-
-        if not (len(args) == 1 and isinstance(args[0], str)):
-            # All other normal cases, including Units().  Handle positional
-            # and keyword arguments as a tuple.
-            res = super().__new__(cls, *args, **kwargs)
-            _check_units(res)
-            return res
-
-        # Remaining case is a single string argument is for parsing.  If
-        # already known, return a copy.
-        if args[0] in _known_units:
-            res = super().__new__(cls, *_known_units[args[0]])
-            _check_units(res)
-            return res
-
-        # Otherwise, parse string into subunits.
-        tokens = re.findall(_unitparse_rx, ''.join(args[0].split()))
-        if tokens[0][0]:
-            raise ValueError("Invalid leading operator in unit "
-                             "definition.")
-
-        combined_units = Dim(1, None)
-        for opstr, multstr, sub_label, pwrstr, mismatch in tokens:
-            if mismatch:
-                raise ValueError(f"Invalid term '{mismatch}' in unit "
-                                 f"definition.")
-
-            # If multiplier is present, try to get an int, otherwise float.
-            if multstr:
-                mult = coax_type(float(multstr), int, float)
-            else:
-                mult = 1
-
-            try:
-                sub_sig = Dim(1, _known_units[sub_label])
-            except KeyError:
-                # If the sub-units doesn't exist, we *really* don't
-                # know this unit.
-                raise ValueError(f"Unknown sub-unit '{sub_label}' in "
-                                 f"unit definition.")
-
-            pwrstr = pwrstr.strip('^')  # Reqd for ASCII powers.
-            pwrstr = from_ucode_super(pwrstr)
-            if pwrstr:
-                pwr = force_type(pwrstr, int, float)
-            else:
-                pwr = 1
-            if opstr == '/':
-                mult = kind_div(1, mult)
-                pwr = -pwr
-
-            # When building units, don't drop angles.
-            combined_units = _dim_mul_generic(combined_units, sub_sig ** pwr,
-                                              drop_rads=False)
-            combined_units = _dim_mul_generic(combined_units, mult,
-                                              drop_rads=False)
-
-        # Return with k factored back in.
-        res = Units(combined_units.value, *combined_units.units[1:])
-        _check_units(res)
-        return res
-
-    def __mul__(self, rhs):
-        """For all multiplication / division (and equivalent RHS variants)
-        Units() are promoted to Dim() (along with the LHS if required) which
-        then does the actual multiplication."""
-        return Dim(1, self) * rhs
-
-    def __truediv__(self, rhs):
-        """Follows the same rules as __mul__."""
-        return Dim(1, self) / rhs
-
-    def __rmul__(self, lhs):
-        """Follows the same rules as __mul__."""
-        return Dim(lhs) * Dim(1, self)
-
-    def __rtruediv__(self, lhs):
-        """Follows the same rules as __mul__."""
-        return Dim(lhs) / Dim(1, self)
-
-    # -- Misc Operators -------------------------------------------------------
-
-    def __str__(self):
-        """If a unique label exists return it, otherwise builds a generic
-        string."""
-        try:
-            labels = _known_units.inverse[self]
-            if len(labels) == 1:
-                return labels[0]
-        except KeyError:
-            pass
-
-        # Generate generic string.
-        base_parts = []
-        for base in self[1:]:
-            if base[0]:
-                u_substr = f'{base[0]}'
-                if base[1] != 1:
-                    if output_ucode_pwr:
-                        u_substr += to_ucode_super(f'{base[1]}')
-                    else:
-                        u_substr += f'^{base[1]}'
-                base_parts += [u_substr]
-        label = '.'.join(base_parts)
-        if not label:  # Cover dimless case.
-            label = '(No Units)'
-        if self.k != 1:
-            label = f'{self.k}*' + label
-        return label
-
-    # noinspection PyUnresolvedReferences
-    def __repr__(self):
-        unique_label = _unique_unit_label(self)
-        if unique_label:
-            return f"Units('{unique_label}')"
-
-        arglist = []
-        for f in self._fields:
-            thisarg = getattr(self, f)
-            if thisarg != self._fields_defaults[f]:
-                arglist += [f + '=' + repr(thisarg)]
-        return 'Units(' + ', '.join(arglist) + ')'
-
-    def dimless(self) -> bool:
-        """Returns false if any indicies in the signature are nonzero,
-        otherwise returns true."""
-        if any(p != 0 for _, p in self[1:]):
-            return False
-        else:
-            return True
-
-
-# -----------------------------------------------------------------------------
-
-
-class Dim:
-    """
-    Combination of a Python value of any type with Units and an optional
-    label.
-    """
-    def __init__(self, *args):
-        """
-        Constructs a dimensioned quantity, consisting of a value, units and
-        optional label.  It may be constructed in a number of ways:
-
-        - Dim(): Assumes value = 1 and dimensionless.
-        - Dim(Units): Assumes value = 1, i.e. this method promotes Units()
-          to Dim().
-        - Dim(value): Assumes dimensionless, i.e. this method promotes a value
-          to Dim().
-        - Dim(value, units): Normal construction:
-
-            - If units is Units() object: Directly assigned, no label given.
-            - If units is string:  Parsed into Units() and used as label.
-            - If units is None: Dimensionless (equivalent to Units())
-        - Dim(Dim(), units): Construct a new Dim() object by converting to
-          given units. If units are not compatible x.convert() will raise an
-          exception.
-        """
-        self.label = None
-
-        if len(args) == 0:
-            self.value, self.units = 1, Units()
-
-        elif len(args) == 1:
-            if isinstance(args[0], Units):
-                self.value, self.units = 1, args[0]
-            else:
-                self.value, self.units = args[0], Units()
-                if isinstance(args[0], str):
-                    warnings.warn("Warning: Assigned string to Dim() value: " +
-                                  args[0])
-
-        elif len(args) == 2:
-            if isinstance(args[0], Dim):  # Construct by conversion.
-                self.value = args[0].convert(args[1]).value
-            else:
-                self.value = args[0]
-
-            if isinstance(args[1], Units):
-                self.units = args[1]
-            elif isinstance(args[1], str):
-                self.units = Units(args[1])
-                self.label = args[1]
-            elif args[1] is None:
-                self.units = Units()
-            else:
-                raise TypeError(f"Units must be string, Units() or None.")
-        else:
-            raise TypeError(f"Incorrect number of arguments.")
-
-    # -- Unary Operators ------------------------------------------------------
+    # -- Unary Operators ----------------------------------------------------
 
     def __abs__(self):
-        ret_val = Dim(abs(self.value), self.units)
-        ret_val.label = self.label
-        return ret_val
+        return Dim(abs(self.value), self.units)
 
     def __float__(self):
-        """Returns float(self.value).
+        """
+        Returns float(self.value).
 
-        .. note:: Units are removed and checking ability is lost."""
+        .. note:: Units are removed and checking ability is lost.
+        """
         return float(self.value)
 
     def __int__(self):
-        """Returns int(self.value).
+        """
+        Returns int(self.value).
 
-        .. note:: Units are removed and checking ability is lost."""
+        .. note:: Units are removed and checking ability is lost.
+        """
         return int(self.value)
 
     def __neg__(self):
-        ret_val = Dim(-self.value, self.units)
-        ret_val.label = self.label
-        return ret_val
+        return Dim(-self.value, self.units)
 
     def __round__(self, n=None):
-        ret_val = Dim(round(self.value, n), self.units)
-        ret_val.label = self.label
-        return ret_val
+        return Dim(round(self.value, n), self.units)
 
-    # -- Binary Operators -----------------------------------------------------
+    # -- Binary Operators ---------------------------------------------------
 
-    def __add__(self, rhs) -> Dim:
-        """If `rhs` is Units() or an ordinary value, it is promoted to Dim()
-        before addition.  This allows the case of a dimensionless intermediate
-        product.
-
-        .. note:: Addition to offset temperatures is limited to Δ values
-           only."""
+    def __add__(self, rhs: DimArray) -> DimArray:
+        """
+        Add two dimensioned values.  If `rhs` is an ordinary value,
+        it is promoted to ``Units`` before addition.  This allows for the
+        case of a dimensionless intermediate product in expressions.
+        Addition of offset temperatures is limited to Δ values only.
+        """
         if not isinstance(rhs, Dim):
-            rhs = Dim(rhs)
+            # Promote to Dim. Addition to a dimless value would only be
+            # valid if we were dimless ourselves anyway.
+            rhs = Dim(rhs, '')
 
-        new_rhs_units = self.units
+        l_basis = _Units(self.units)
+        r_basis = _Units(rhs.units)
+        new_r_basis = l_basis
 
         # Offset temperatures are a special case.
-        if self.units.θ[0] in _OFFSET_TEMPS:
-            assert base_unit(self.units)
+        if l_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
+            assert _base_unit(l_basis)
 
             # Disallowed:  LHS (°C, °F) + RHS (°C, °F)
-            if rhs.units.θ[0] in _OFFSET_TEMPS:
-                raise UnitsError(f"Cannot add offset temperatures: "
-                                 f"{self.units.θ[0]} + {rhs.units.θ[0]}")
+            if r_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
+                raise ValueError(f"Cannot add offset temperatures: "
+                                 f"{l_basis.θ[0]} + {r_basis.θ[0]}")
 
             # For LHS (°C, °F) change conversion target to (Δ°C, Δ°F)
             # noinspection PyProtectedMember
-            new_rhs_units = new_rhs_units._replace(**{'θ': ('Δ' +
-                                                            self.units.θ[0],
-                                                            1)})
+            new_r_basis = new_r_basis._replace(
+                **{'θ': ('Δ' + l_basis.θ[0], 1)})
 
-        # Normal addition.
-        res_value = self.value + rhs.convert(new_rhs_units).value
+        res_value = self.value + _convert(rhs.value, r_basis, new_r_basis)
+
         res_value = coax_type(res_value, type(self.value + rhs.value),
                               default=res_value)
 
-        if not self.units.dimless():
-            res = Dim(res_value, self.units)
-            res.label = self.label
-            return res
+        if not l_basis.is_dimless():
+            return Dim(res_value, self.units)
         else:
-            return res_value
+            return res_value  # Units disappeared.
 
-    def __sub__(self, rhs) -> Dim:
-        """Follows the same rules as __add__.
-
-        .. note:: Subtraction of offset temperatures is permitted and
-           will result in a Δ value."""
+    def __sub__(self, rhs: DimArray) -> DimArray:
+        """
+        Subtract two dimensioned values.  Follows the same rules as
+        __add__, with some minor differences. Subtraction of offset
+        temperatures is permitted and will result in a Δ value.
+        """
         if not isinstance(rhs, Dim):
-            rhs = Dim(rhs)
+            # Promote to Dim. Subtracting a dimless value would only be
+            # valid if we were dimless ourselves anyway.
+            rhs = Dim(rhs, '')
 
         # LHS offset temperatures are a special case.
-        res_units = self.units
-        new_rhs_units = self.units
-        if self.units.θ[0] in _OFFSET_TEMPS:
-            assert base_unit(self.units)
+        l_basis = _Units(self.units)
+        r_basis = _Units(rhs.units)
+        new_r_basis = l_basis
+        res_basis = l_basis
 
-            # Possible cases are:
-            # Case 1: LHS (°C, °F) - RHS (°C, °F) -> Result (Δ°C, Δ°F):
-            #   - Direct conversion of RHS -> LHS and subtract.  Return Δ
-            #   result.
-            # Case 2: LHS (°C, °F) - RHS (All others Δ) -> Result (°C, °F)
-            #   - Convert to corresponding (Δ°C, Δ°F) then subtract.  Return
-            #   offset result.
+        if l_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
+            assert _base_unit(l_basis)
 
-            if rhs.units.θ[0] in _OFFSET_TEMPS:
-                res_units = Units('Δ' + self.units.θ[0])
+            # Two possible cases exist.
+            if r_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
+                # Case 1: LHS (°C, °F) - RHS (°C, °F) -> Result (Δ°C, Δ°F):
+                # -> Direct conversion of RHS -> LHS and subtract.  Return Δ
+                #    result.
+                res_basis = _Units('Δ' + l_basis.θ[0])
             else:
-                new_rhs_units = Units('Δ' + self.units.θ[0])
+                # Case 2: LHS (°C, °F) - RHS (All others Δ) -> Result (°C, °F)
+                # -> Convert to corresponding (Δ°C, Δ°F) then subtract.
+                #    Return offset result.
+                new_r_basis = _Units('Δ' + l_basis.θ[0])
         else:
             # Isolated RHS offset temperatures are not allowed.
-            if rhs.units.θ[0] in _OFFSET_TEMPS:
-                raise UnitsError(f"Cannot subtract offset from total "
-                                 f"temperatures: {self.units} - {rhs.units}")
+            if r_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
+                raise TypeError(
+                    f"Cannot subtract offset from total temperatures: "
+                    f"{str(l_basis)} - {str(r_basis)}")
 
-        # Normal subtraction.
-        res_value = self.value - rhs.convert(new_rhs_units).value
+        res_value = self.value - _convert(rhs.value, r_basis, new_r_basis)
         res_value = coax_type(res_value, type(self.value + rhs.value),
                               default=res_value)
 
-        if not res_units.dimless():
-            res = Dim(res_value, res_units)
-            res.label = self.label
-            return res
+        if not res_basis.is_dimless():
+            return Dim(res_value, str(res_basis))
         else:
-            return res_value
+            return res_value  # Units disappeared.
 
-    def __mul__(self, rhs):
-        """Multiplication of dimensioned values.  If either `self` or `rhs`
-        units have a k-factor, this is multiplied out and becomes part of
-        `self.value` leaving `k` = 1 for both `self` and `rhs`.  If `rhs` is
-        Units() or an ordinary value, it is promoted before multiplication.
-
-        If resulting angular units include radians^1 or steradians^1, these
-        are dropped as they are dimensionless and have served their purpose.
+    def __mul__(self, rhs: DimArray) -> DimArray:
         """
-        return _dim_mul_generic(self, rhs, drop_rads=True)
+        Multiply two dimensioned values.   Rules are as follows:
 
-    def __truediv__(self, rhs):
-        """Follws the same rules as __mul__."""
+            - ``Dim`` * ``Dim``:  Typical case, see general procedure below.
+            - ``Dim`` * ``Scalar``:  Returns a ``Dim`` object retaining the
+               units string of the LHS argument, with the value simply
+               multiplied by the scalar.  This means that *effectively*
+               'dimensionless' units (e.g. radians, m/m, etc) can be
+               *retained*.  If there are no *actual* units (i.e. units =
+               '') then these are dropped.
+            - ``Scalar`` * ``Dim``:  ``__rmul__`` case.  The LHS argument is
+              promoted to a ``Dim`` object.  This is different to the
+              ``__mul__`` case above, because if resulting angular units
+              are radians or steradians, these will be *dropped* as they are
+              dimensionless and have served their purpose in the
+              multiplication of two dimensioned values.
+
+        .. note:: If either argument is an offset temperature base unit
+           (°C, °F), this is allowed however it is first converted to a
+           total temperature before multiplying.  Offset temperatures can't
+           be part of derived units as there is no way to multiply them out.
+
+        General multiplication procedure:  The general principle is that
+        when any units are different between the two arguments, the LHS
+        argument is given priority. Multiplication of two ``Dim``
+        objects is acheived by multiplying their unit bases (except for
+        offset temperature base units - see below).  If either ``self`` or
+        ``rhs`` units have a k-factor, this is multiplied out and becomes
+        part of `self.value` leaving `k` = 1 for both ``self`` and ``rhs``.
+        """
+        # if not isinstance(rhs, Dim):
+        #     if self.units:
+        #         # Return using existing units.
+        #         return Dim(self.value * rhs, self.units)
+        #     else:
+        #         # Drop dimensions.
+        #         return self.value * rhs
+        #
+        # # Offset-scale temperatures are allowed as multiplication arguments
+        # # as a special case provided they are isolated.
+        # lhs = self
+        # lhs_units, rhs_units = _Units(lhs.units), _Units(rhs.units)
+        # if lhs_units.is_base_temp():
+        #     lhs = to_absolute_temp(lhs)
+        #     lhs_units = _Units(lhs.units)
+        # if rhs_units.is_base_temp():
+        #     rhs = to_absolute_temp(rhs)
+        #     rhs_units = _Units(rhs.units)
+        #
+        # # Build final basis and factor out 'k' into result.
+        # res_basis = lhs_units * rhs_units
+        # res_value = lhs.value * rhs.value * res_basis.k
+        # # noinspection PyProtectedMember
+        # res_basis = res_basis._replace(k=1)
+        #
+        # # Check if multiplication resulted in radians, which can be of any
+        # # power (as they are dimensionless).
+        # if res_basis.A[0] == 'rad':
+        #     # noinspection PyProtectedMember
+        #     res_basis = res_basis._replace(A=('', 0))
+        #
+        # if res_basis.Ω[0] == 'sr':
+        #     # noinspection PyProtectedMember
+        #     res_basis = res_basis._replace(Ω=('', 0))
+        #
+        # if not res_basis.is_dimless():
+        #     return Dim(res_value, str(res_basis))
+        # else:
+        #     return res_value  # Units disappeared.
+        return _dim_mul_generic(self, rhs, operator.mul)
+
+    def __truediv__(self, rhs: DimArray) -> DimArray:
+        """
+        Divide two dimensioned values.  The same rules as __mul__ apply.
+        """
         if not isinstance(rhs, Dim):
-            rhs = Dim(rhs)
-        return self * (rhs ** -1)
+            return Dim(self.value / rhs, self.units)
 
-    def __pow__(self, pwr):
-        """Raises `self.value` to `pwr`.
+        # Offset-scale temperatures are allowed as a special case provided
+        # they are isolated.
+        lhs = self
+        if _Units(lhs.units).is_base_temp():
+            lhs = to_absolute_temp(lhs)
+        if _Units(rhs.units).is_base_temp():
+            rhs = to_absolute_temp(rhs)
 
-        .. note:: Any `k` value in self.units is multiplied out and becomes
-           part of value, leaving `k` = 1 in the result."""
+        return lhs * (rhs ** -1)
 
-        # Build resulting units. Most units have integer powers; try to
-        # preserve int-ness.
-        res_basis = []
-        for u, p in self.units[1:]:
-            res_basis += [(u, coax_type(p * pwr, int, default=p * pwr))]
-        res_units = Units(1, *res_basis)
+    def __matmul__(self, rhs: DimArray) -> DimArray:
+        """
+        Matrix multiply operator, handled in the same fashion as __mul__. 
+        Note that this applies to amn array wrapped in a ``Dim()`` object, 
+        not an array *of* ``Dim()`` objects. 
+        """
+        return _dim_mul_generic(self, rhs, operator.matmul)
 
-        # Try to retain value type in result.
-        res_value = (self.units.k * self.value) ** pwr
+    def __pow__(self, pwr: RealScalar) -> DimArray:
+        """
+        Raise dimensioned value to a power. Any `k` value in `self.units` is
+        multiplied out and becomes part of `result.value`, i.e. the
+        resulting units have `k` = 1.
+        """
+        pwr_basis = _Units(self.units) ** pwr
+        res_value = pwr_basis.k * (self.value ** pwr)
         res_value = coax_type(res_value, type(self.value), default=res_value)
+        res_basis = _Units(1, *pwr_basis[1:])  # k factored out.
 
-        if not res_units.dimless():
-            return Dim(res_value, res_units)
+        if not res_basis.is_dimless():
+            return Dim(res_value, str(res_basis))
         else:
-            return res_value
+            return res_value  # Units disappeared.
 
-    def __radd__(self, lhs):
-        """LHS is promoted to Dim()."""
-        return Dim(lhs) + self
+    def __radd__(self, lhs: DimArray) -> DimArray:
+        """See ``__add__`` for addition rules."""
+        return Dim(lhs, '') + self
 
-    def __rsub__(self, lhs):
-        """LHS is promoted to Dim()."""
-        return Dim(lhs) - self
+    def __rsub__(self, lhs: DimArray) -> DimArray:
+        """See ``__sub__`` for subtraction rules."""
+        return Dim(lhs, '') - self
 
-    def __rmul__(self, lhs):
-        """Commutaive with __mul__."""
-        return self * lhs
+    def __rmul__(self, lhs: DimArray) -> DimArray:
+        """See ``__mul__`` for multiplication rules."""
+        return Dim(lhs, '') * self
 
-    def __rtruediv__(self, lhs):
-        """LHS is promoted to Dim()."""
-        return Dim(lhs) / self
-
-    # -- Comparison Operators -------------------------------------------------
+    def __rtruediv__(self, lhs: DimArray) -> DimArray:
+        """See ``__truediv__`` for division rules."""
+        return Dim(lhs, '') / self
+    
+    # -- Comparison Operators -----------------------------------------------
 
     def __lt__(self, rhs):
         return _common_cmp(self, rhs, operator.lt)
@@ -554,174 +458,201 @@ class Dim:
     def __gt__(self, rhs):
         return _common_cmp(self, rhs, operator.gt)
 
-    # -- String Magic Methods -------------------------------------------------
+    # -- String Magic Methods -----------------------------------------------
 
     def __format__(self, format_spec: str):
-        if self.label is not None:
-            ustr = self.label
-        else:
-            ustr = str(self.units)
-        return format(self.value, format_spec) + f" {ustr}"
+        return format(self.value, format_spec) + f" {self.units}"
 
     def __repr__(self):
-        if self.label is not None:
-            ustr = repr(self.label)
-        else:
-            ustr = _unique_unit_label(self.units)
-            if ustr:
-                ustr = repr(ustr)
-            else:
-                ustr = repr(self.units)
-        return f"Dim({self.value}, {ustr})"
+        return f"Dim({self.value}, '{self.units}')"
 
     def __str__(self):
         return self.__format__('')
 
-    # -- Normal Methods -------------------------------------------------------
+    # -- Normal Methods -----------------------------------------------------
 
-    def convert(self, to_units: Union[Units, str]) -> Dim:
+    def convert(self, to_units: str) -> DimArray:
+        """Generate new ``Dim`` object converted to requested units."""
+        return Dim(convert(self.value, from_units=self.units,
+                           to_units=to_units), to_units)
+
+    def is_base_temp(self) -> bool:
         """
-        Generate new object converted to compatible units.
+        Returns ``True`` if the only field in the units signature is θ¹
+        (of any type), otherwise returns ``False``.
+        """
+        return _Units(self.units).is_base_temp()
+
+    def is_dimless(self) -> bool:
+        """Return True if the value has no effective dimensions."""
+        return _Units(self.units).is_dimless()
+
+    # # TODO re-evaluate this ... move outside Dim() ?
+    # @classmethod
+    # def from_str(cls, txt: str, val_type=float) -> Dim:
+    #     """
+    #     Convert a string ``txt`` of the format 'X.XXX <units>' into a Dim
+    #     object.  String conversion rules for values and units apply (see
+    #     __init__). TODO Amend  If no units part is provided, returns a
+    #     dimensionless Dim object i.e. Dim(value).
+    #
+    #     Parameters
+    #     ----------
+    #     txt : str
+    #         String containing value and units for conversion.
+    #     val_type : Callable (optional)
+    #         Default type / function called with the leading part of ``txt``
+    #         to do the numeric conversion.  Default is ``float``.
+    #
+    #     Returns
+    #     -------
+    #     result : Dim
+    #         Dim(value, units) object.
+    #
+    #     Raises
+    #     ------
+    #     ValueError if an error occured during numeric conversion.
+    #     """
+    #     tokens = txt.split()
+    #     if len(tokens) == 2:
+    #         return Dim(val_type(tokens[0]), tokens[1])
+    #     elif len(tokens) == 1:
+    #         return Dim(val_type(tokens[0]), '')
+    #     else:
+    #         raise ValueError(f"Dim.from_str: Can't convert string to Dim ->"
+    #                          f" {txt}")
+
+    def is_equiv(self, rhs) -> bool:
+        """
+        Returns ``True`` if ``self`` and ``rhs`` have equivalent unit bases
+        (e.g. both are pressures, currents, speeds, etc), otherwise
+        returns ``False``.
+
+        - If ``rhs`` is not a ``Dim`` object then we return ``True`` only if
+          ``self.is_dimless() == True``, otherwise we return ``False``.
+        - If ``rhs`` has unknown units then we return ``False``.
+        - The actual compatibility test used is:
+            ``result = Dim(1, self.units) / Dim(1, rhs.units)``
+          If the result of this division has no units then we return
+          ``True``.  This allows for cancellation of units (and radians,
+          etc).
+        """
+        if not isinstance(rhs, Dim):
+            if self.is_dimless():
+                return True
+            else:
+                return False
+
+        try:
+            if not isinstance(Dim(1, self.units) / Dim(1, rhs.units), Dim):
+                return True
+        except ValueError:
+            return False
+
+    def is_temp_change(self) -> bool:
+        """
+        Returns ``True`` if this is a base temperature and can represent
+        a temperature change, e.g. K, °R, Δ°C, Δ°F.  Otherwise returns False.
+        """
+        return _Units(self.units).is_temp_change()
+
+    def is_total_temp(self) -> bool:
+        """
+        Returns ``True`` if this is a base temperature as well as a
+        recognised total temperature (on either absolute or offset scales).
+        Otherwise returns ``False``.
+        """
+        return _Units(self.units).is_total_temp()
+
+    def to_real(self, to_units: str = None) -> RealArray:
+        """
+        Remove dimensions and return a plain real number type.  The target
+        units and number type can be optionally specified.  This is a
+        convenience method equivalent to:
+            ``self.convert(to_units).value``
+
+        .. note:: Unit information is lost. See operators ``__int__``,
+        ``__float__``, etc.
 
         Parameters
         ----------
-        to_units : Units or str
-            Target units.
+        to_units : str (optional)
+            Convert to these units prior to returning numeric value
+            (default = `self.units`).
 
         Returns
         -------
-        result : Dim
-            Converted result with new units.
+        result : Number
+            Plain numeric value of type `to_type` using units `to_units`.
         """
-        use_label = None
-        if isinstance(to_units, str):
-            use_label = to_units
-            to_units = Units(to_units)
 
-        # Shortcut conversion to units already in use.
-        if to_units == self.units:
-            res = Dim(self.value, self.units)
-            res.label = use_label or self.label
-            return res
-
-        # Conversion to °C and °F base units are special cased due to
-        # offset of scales.
-        from_temp, to_temp = self.units.θ[0], to_units.θ[0]
-        if from_temp in _OFFSET_TEMPS or to_temp in _OFFSET_TEMPS:
-            if not base_unit(self.units) or not base_unit(to_units):
-                raise UnitsError(f"Cannot convert offset temperature "
-                                 f"between derived units: {self.units} -> "
-                                 f"{to_units}")
-            res_value = total_temperature_convert(self.value, from_temp,
-                                                  to_temp)
-
+        if to_units is not None:
+            return self.convert(to_units).value
         else:
-            # All rhs unit types.
-            factor = get_conversion(self.units, to_units)
-            if factor is None:
-                raise UnitsError(f"No conversion found: {self.units} -> "
-                                 f"{to_units}")
-            res_value = self.value * factor
-            res_value = coax_type(res_value, type(self.value),
-                                  default=res_value)
+            return self.value
 
-        res = Dim(res_value, to_units)
-        res.label = use_label
-        return res
+    def to_real_sys(self, unit_system: str = None) -> RealArray:
+        """
+        Similar to ``to_real()`` except that instead of giving target units
+        for conversion, a complete target system of units is given instead.
+        This is used to put many values on a standard basis for numeric
+        algorithms that don't accept ``Dim`` objects.
 
+        Parameters
+        ----------
+        unit_system : str
+            A unit string (as per ``dim()``) representing a consistent set of
+            units.  The units must all be of unit power and there must be no
+            multiplying factor. If ``unit_system = None`` the module variable
+            ``STD_UNIT_SYSTEM`` is used.
 
-# -----------------------------------------------------------------------------
+            Unit types for mass (M), length (L), time (T) and temperature (θ)
+            must always be provided.  Other types may be omitted for brevity
+            and will have the following default values assigned:
+                - Amount of substance (N): mol
+                - Electric current (I): A
+                - Luminous intensity (J): cd
+                - Plain angle (A): rad
+                - Solid angle (Ω): sr
 
-def _check_units(u_tuple):
-    """Do certain checks on validity of unit tuple during construction."""
-    # Blank units cannot have non-zero powers.  Note: Reverse is permitted,
-    # and is useful for unit conversion.
-    if any((not u and p != 0) for u, p in u_tuple[1:]):
-        raise UnitsError("Blank units must have no power.")
+        Returns
+        -------
+        result :
+            A plain number or object of the same type as held in ``Dim.value``.
 
-    # Offset temperatures must be standalone.
-    if u_tuple.θ[0] in _OFFSET_TEMPS and not base_unit(u_tuple):
-        raise UnitsError("Offset temperature units are only permitted to "
-                         "be base units.")
+        """
+        unit_system = unit_system or STD_UNIT_SYSTEM
+        partial_sys = _Units(unit_system)
 
-
-def _common_cmp(lhs: Dim, rhs: Dim, op: Callable[..., bool]):
-    """Common comparison method between two Dim objects called by all
-    magic methods."""
-    if lhs.units == rhs.units:
-        return op(lhs.value, rhs.value)
-    else:
-        return op(lhs.value, rhs.convert(lhs.units).value)
-
-
-def _dim_mul_generic(lhs, rhs, drop_rads=True):
-    """Generic multiplication function for Dim() objects.  This is the
-    central function used by most other operators / conversions.  See
-    Dim.__mul__ for expected results.  If drop_rads == True then
-    resulting angular units of radians^1 or steradians^1 are dropped."""
-    # Shortcut scalar multiplication. Check for dimless case.
-    if not isinstance(rhs, (Dim, Units)):
-        if not lhs.units.dimless():
-            res = Dim(lhs.value * rhs, lhs.units)
-            res.label = lhs.label
-            return res
-        else:
-            return lhs.value * rhs
-
-    if not isinstance(rhs, Dim):
-        rhs = Dim(rhs)  # Promote.
-
-    res_k = rhs.units.k * lhs.units.k
-    res_basis = []
-    for (l_u, l_p), (r_u, r_p) in zip(lhs.units[1:], rhs.units[1:]):
-        res_p = l_p + r_p
-        res_u = l_u if l_u else r_u
-
-        # Multiply by a factor if required.
-        if l_u and r_u and l_u != r_u:
-            factor = get_conversion(r_u, l_u)
-            if factor is None:
-                raise UnitsError(f"No conversion available for "
-                                 f"{r_u} -> {l_u}.")
-            res_k *= factor ** r_p
-
-        # Store or cleanup if cancelled out.
-        if res_p != 0:
-            res_basis += [(res_u, res_p)]
-        else:
-            res_basis += [('', 0)]
-
-    # Build units and check if multiplication has cancelled radians.
-    res_units = Units(1, *res_basis)
-    if drop_rads:
-        if res_units.A == ('rad', 1):
-            # noinspection PyProtectedMember
-            res_units = res_units._replace(A=('', 0))
-
-        if res_units.Ω == ('sr', 1):
-            # noinspection PyProtectedMember
-            res_units = res_units._replace(Ω=('', 0))
-
-    res_value = lhs.value * rhs.value * coax_type(res_k, (int, float),
-                                                  default=res_k)
-
-    if not res_units.dimless():
-        return Dim(res_value, res_units)
-    else:
-        return res_value
+        factor = _basis_factor(_Units(self.units), partial_sys)
+        return self.value * factor
 
 
-def _unique_unit_label(u: Units) -> str:
-    """If 'u' is unique in _known_units return it's label.  Otherwise return
-    an empty string."""
-    matches = _known_units.inverse.get(u, [])
-    if len(matches) == 1:
-        return matches[0]
-    else:
-        return ''
+RealScalar = Union[int, float, complex]
+"""A `RealScalar` is a shorthand defined for type checking porpoises as 
+``Union[int, float, complex]`` and represents a general numeric scalar.  Such 
+a scalar does not have units but could be potentially assigned them. """
+
+RealArray = Union[RealScalar, np.ndarray]
+"""A `RealArray` is a shorthand defined for type checking porpoises as 
+``Union[RealScalar, np.ndarray]`` and represents either an array or an 
+array-like real value that can be coaxed into an array. """
+
+DimScalar = Union[Dim, RealScalar]
+"""A `DimScalar` is a shorthand defined for type checking porpoises as 
+``Union[Dim, RealScalar]`` and represents a value that is expected to be 
+either a general numeric scalar or dimensioned equivalent. """
+
+DimArray = Union[Dim, np.ndarray, RealScalar]
+"""A `DimArray` is a shorthand defined for type checking porpoises as 
+``Union[Dim, RealArray]`` and is used where an argument is expected to be 
+either an array or an array-like real value that can be coaxed into an array, 
+or dimensioned equivalent. """
 
 
-def add_base_unit(labels: Iterable[str], base: str) -> None:
+# -- Public Functions -------------------------------------------------------
+
+def add_base_unit(units: [str], base_type: str):
     """
     Simplified version of ``add_unit()`` for base unit cases where `k` = 1,
     and power = 1 (linear).  Labels are taken in turn and assigned to the
@@ -730,187 +661,181 @@ def add_base_unit(labels: Iterable[str], base: str) -> None:
 
     Parameters
     ----------
-    labels : Iterable[str]
+    units : [str]
         New base units to make.
-    base : str
+    base_type : str
         Base dimension for all new units, e.g. mass `M` or length `L`.
     """
-    for label in labels:
-        uargs = {base: (label, 1)}
-        add_unit(label, Units(**uargs))
+    for unit in units:
+        uargs = {base_type: (unit, 1)}
+        _add_unit(unit, _Units(**uargs))
 
 
-def add_unit(label: str, new_unit: Union[Units, str]) -> None:
+def add_unit(unit: str, basis: str):
     """
-    Register a new standard Units() object with given label.
+    Register a new unit basis associated with the given label. The unit
+    basis will be sanity checked as part of this process.
 
     Parameters
     ----------
-    label : str
-        Case-sensitive string to assign as a label for the resulting
-        Units object.
-    new_unit : Units or str
-        Units to assign, otherwise a string to be parsed for conversion
-        to Units.  String can include alphabetic characters, ° or Δ.
+    unit : str
+        Case-sensitive string to use as a label for the resulting units.
+    basis : str
+        A string to be parsed for conversion to a unit basis.  See
+        ``dim()`` for complete details on valid unit basis strings.
 
     Raises
     ------
     ValueError
-        Incorrect arguments.
-    TypeError
-        Incorrect argument types.
-    UnitsError
-        Mismatched labels.
+        Incorrect arguments / types.
     """
-    # Check label.
-    allowed_chars = {'_', '°', 'Δ'}
-    if any(not c.isalpha() and c not in allowed_chars for c in label):
-        raise ValueError(f"Invalid unit label '{label}'.")
-
-    if label in _known_units:
-        raise ValueError(f"Unit '{label}' already defined.")
-
-    if isinstance(new_unit, str):
-        new_unit = Units(new_unit)
-
-    if not isinstance(new_unit, Units):
-        raise TypeError(f"Expected Units or str argument, got "
-                        f"'{type(new_unit)}'.")
-
-    if new_unit.k == 0:
-        raise UnitsError(f"k must be non-zero.")
-
-    _known_units[label] = new_unit
-
-    # Is this a derived unit? If so we are finished.
-    base_u = base_unit(new_unit)
-    if not base_u:
-        return
-
-    # Base units are added to known list.  Labels must match.
-    if base_u != label:
-        raise UnitsError(f"Basis unit label must match Units object, got: "
-                         f"'{label}' != '{base_u}'")
-    _known_base_units.add(new_unit)
+    _add_unit(unit, _Units(basis))
 
 
-def base_unit(u_tuple):
+def convert(value: RealArray, from_units: str, to_units: str) -> RealArray:
     """
-    Check if the argument is a base unit.
+    Convert ``value`` in ``from_units`` to requested ``to_units``.  This is
+    used for doing conversions without using ``Dim`` objects.
+
+    Examples
+    --------
+    >>> length = 1.0  # Inches.
+    >>> mm_length = convert(length, from_units='in', to_units='mm')
+    >>> print(f"Length = {mm_length} mm.")
+    Length = 25.4 mm.
 
     Parameters
     ----------
-    u_tuple : tuple(tuple, ...)
-        Tuple of basis units and powers, i.e. the equivalent of a Units
-        namedtuple.
+    value : scalar or array-like
+        Value (not ``Dim`` object) for conversion.
+    from_units : str
+        Units of ``value``.
+    to_units : str
+        Target units.
 
     Returns
     -------
-    str or None :
-        If `u_tuple` is a base unit - i.e. `k` = 1 and only one linear base
-        unit is used - the string label is returned, otherwise returns None.
+    result : scalar or array-like
+        Converted value using new units.
     """
-    bases_used, last_u, last_p = 0, None, 0
-    for u, p in u_tuple[1:]:
-        if p != 0:
-            bases_used += 1
-            last_u, last_p = u, p
-    if bases_used != 1 or last_p != 1 or u_tuple.k != 1:
-        return None
+    if to_units == from_units:
+        return value  # Shortcut for identical units.
+
+    return _convert(value, _Units(from_units), _Units(to_units))
+
+
+# noinspection PyIncorrectDocstring
+def dim(value: Union[DimArray, str] = 1, units: str = None) -> Dim:
+    """
+    This factory function is the standard means for constructing a
+    dimensioned quantity.  The following argument combinations are possible:
+
+        - dim(value, units): Normal construction.  If units is ``None`` it
+          is converted to an empty string.
+        - dim(): Assumes value = 1 (integer) and dimensionless.
+        - dim(units): If a string is passed as the first argument,
+          this is transferred to the ``units`` argument and value = 1 is
+          assumed.
+        - dim(value): Assumes dimensionless, i.e. this method promotes a
+          plain value to Units().
+        - dim(Dim): Returns Dim object argument directly (no effect).
+        - dim(Dim, units): Returns a Dim object after attempting to convert
+          the `value` ``Dim`` object to the given `units`.
+
+    The `units` string has the following format:
+
+        - Base unit strings can include characters from the alphabet, °, _,
+          Δ, °, μ.
+        - Individual base units can be separated by common operators such as
+          `. * × /`.  The division symbol is not used as it looks too
+          similar to addition on screens.
+        - A numerical leading constant may be optionally included,
+          along with an operator if this is required e.g. `1000m³`,
+          `12.0E-02.ft²'.
+        - Unit power can be indicated using `^` or unicode
+          superscript characters, e.g. `m³` or `m^3`.
+        - Dividing units can be indicated by using the division operator
+          `/` or directly showing negative powers, e.g. `kg.m⁻³` or `kg/m^3`.
+
+    Parameters
+    ----------
+    value : Number
+        Non-dimensional value.
+    units : str (Optional)
+        String representing the combination of base units associated
+        with this value.
+    """
+    # TODO: Performance improvement - Create a dict for 'user created'
+    #  non-simple units (similar to _KNOWN_UNITS) where we can store these
+    #  for faster lookup the next time the same type is requested.
+
+    if units is None:
+        # Called with no arguments or one argument.
+
+        if isinstance(value, Dim):
+            # Case dim(Dim): dim() called on Dim.  Return Dim object.
+            return value
+
+        elif isinstance(value, str):
+            # Case dim(units): Transfer first argument to units, assume
+            # value = 1.  If units are not already known, do a sanity check.
+            value, units = 1, value
+            if units not in _KNOWN_UNITS:
+                _check_units(_Units(units))
+
+            return Dim(value, units)
+
+        else:
+            # Case dim() or dim(value): No units.
+            return Dim(value, '')  # Convert None to empty string.
+
     else:
-        return last_u
+        # Called with two arguments.
+
+        if isinstance(value, str):
+            # Warn if both value and units were strings.  This is normally
+            # unintnetional.
+            warnings.warn("Warning: dim() received string where a numeric "
+                          "value was expected.")
+
+        if isinstance(value, Dim):
+            # Case dim(Dim, units): Attempt to convert Dim to new units
+            # and return.
+            return value.convert(units)
+
+        else:
+            # Case dim(value, units): Typical usage to make Dim object.  If
+            # units are not already known, do a sanity check.
+            if units not in _KNOWN_UNITS:
+                _check_units(_Units(units))
+            return Dim(value, units)
 
 
-def get_conversion(from_unit: [Units, str], to_unit: [Units, str]):
+def is_dimarray(x: DimArray) -> bool:
     """
-    Determine the conversion factor between `from_unit` and `to_unit`.  When
-    multiplying a `from_unit` quantity this factor would result in the
-    correct `to_units` quantity.   A three step process is used:
-
-    1. If caching is active, see if this conversion has been done previously.
-    2. Look for a conversion by tracing between (combining) Units()
-       conversions already known.
-    3. Compute the factor by breaking down Units() objects corresponding to
-       from_units and to_units.  Note: This step is skipped when converting
-       base units because in that case it cannot be further broken down by
-       computation (and trying to do so would result in an infinite loop).
-
-    .. note:: If caching is active, this can occur at step 2 or 3.
-
-    Parameters
-    ----------
-        from_unit,to_unit : Units or str
-
-    Returns
-    -------
-    int or float
-        Conversion factor coaxed to int or float.
-
-    Raises
-    ------
-    UnitsError
-        Inconsistent units or indicies.
+    Returns ``True`` if `x` is one of the ``DimArray`` types.
     """
-    if isinstance(from_unit, str):
-        from_unit = Units(from_unit)
-    if isinstance(to_unit, str):
-        to_unit = Units(to_unit)
-
-    # Conversion to lhs gives unity.
-    if from_unit == to_unit:
-        return 1
-
-    # Step 1: See if this conversion has been cached.
-    if cache_computed_convs:
-        try:
-            return _comp_conv_cache[from_unit, to_unit]
-        except KeyError:
-            pass
-
-    # Step 2: See if a shortcut is available (base units will only take
-    # this path).
-    if (from_unit in _conversions) and (to_unit in _conversions):
-        path, factor = _conversions.trace(from_unit, to_unit, operator.mul)
-        if path and len(path) > _CONV_PATH_LENGTH_WARNING:
-            warnings.warn(f"Warning: Converting '{from_unit}' -> '{to_unit}'"
-                          f" gives overlong path: " + ' -> '.join(str(x) for
-                                                                  x in path))
-        if factor is not None:
-            if cache_computed_convs:
-                _comp_conv_cache[from_unit, to_unit] = factor
-            return factor
-
-    # Don't compute conversions if we are at base units (otherwise infinite
-    # loop).
-    if (from_unit in _known_base_units) or (to_unit in _known_base_units):
-        return None
-
-    # Step 3: Try to compute the factor from the base units.  Conversion is
-    # equivalent to multiplying by (1/k)*to_units^0 on LHS.  Also check
-    # consistency.
-    new_basis = []
-    for (from_u, from_p), (to_u, to_p) in zip(from_unit[1:], to_unit[1:]):
-        # Dim must both be either something or nothing.
-        if bool(from_u) != bool(to_u):  # XOR check.
-            raise UnitsError(f"Inconsistent base units converting "
-                             f"'{from_unit}' -> '{to_unit}': "
-                             f"'{from_u}' and '{to_u}'")
-
-        # Must have same indicies.
-        if from_p != to_p:
-            raise UnitsError(f"Inconsistent indices converting "
-                             f"'{from_unit}' -> '{to_unit}': "
-                             f"'{from_u}^{from_p}' and '{to_u}^{to_p}'")
-        new_basis += [(to_u, 0)]
-
-    factor = (Dim(1 / to_unit.k, Units(1, *new_basis)) * from_unit).value
-    if cache_computed_convs:
-        _comp_conv_cache[from_unit, to_unit] = factor
-    return factor
+    # if isinstance(x, DimArray):  # TODO Python 3.10 allows this.
+    if isinstance(x, (Dim, np.ndarray, int, float, complex)):
+        return True
+    else:
+        return False
 
 
-def set_conversion(from_label: str, to_label: str, *, fwd: Any,
-                   rev: Optional[Any] = 'auto') -> None:
+# TODO May no longer be required?
+# def join_dim(value: Number, units: Optional[str]) -> DimScalar:
+#     """
+#     Helper function to construct a ``Dim`` object if ``units`` is not
+#     ``None``, otherwise return the value unchanged.
+#     """
+#     if units is not None:
+#         return Dim(value, units)
+#     else:
+#         return value
+
+
+def set_conversion(from_label: str, to_label: str, *, fwd: Number,
+                   rev: Union[Number, str, None] = 'auto'):
     """
     Set a conversion between units in the directed graph of conversions.
 
@@ -918,9 +843,9 @@ def set_conversion(from_label: str, to_label: str, *, fwd: Any,
     ----------
     from_label,to_label : str
         Case-sensitive identifier.
-    fwd :
+    fwd : Number
         Value of the multiplier to convert from -> to.
-    rev : optional
+    rev : Number or str, optional
         Value of reverse conversion to -> from:
 
         - If rev == None, no reverse conversion is added.
@@ -936,113 +861,81 @@ def set_conversion(from_label: str, to_label: str, *, fwd: Any,
     ValueError
         if either unit does not exist or not a base unit.
     """
-    from_unit = _known_units[from_label]
-    to_unit = _known_units[to_label]
+    from_unit = _KNOWN_UNITS[from_label]
+    to_unit = _KNOWN_UNITS[to_label]
 
-    _conversions[from_unit:to_unit] = fwd  # Keys are namedtuples.
+    # Record the forward conversion.
+    _CONVERSIONS[from_unit:to_unit] = fwd  # Keys are namedtuples.
 
+    # Handle the reverse conversion as requested.
     if rev is None:
-        return
-    if rev != 'auto':
-        _conversions[to_label:from_label] = rev
-        return
+        # Case - No reverse conversion: Record nothing.
+        pass
 
-    # Deduce a sensible reverse conversion.
-    if isinstance(fwd, Fraction):
-        rev = 1 / fwd
-        if rev.denominator == 1:  # Check if int.
-            rev = rev.numerator
-    elif isinstance(fwd, int) and fwd > 1:
-        rev = Fraction(1, fwd)
+    elif rev == 'auto':
+        # Case - Automatic reverse conversion:  Deduce a sensible value.
+        if isinstance(fwd, Fraction):
+            rev = 1 / fwd
+            if rev.denominator == 1:  # Check if int.
+                rev = rev.numerator
+        elif isinstance(fwd, int) and fwd > 1:
+            rev = Fraction(1, fwd)
+        else:
+            # noinspection PyTypeChecker
+            rev = 1 / fwd
+            rev = coax_type(rev, int, default=rev)
+
+        _CONVERSIONS[to_unit:from_unit] = rev
+
     else:
-        rev = 1 / fwd
-        rev = coax_type(rev, int, default=rev)
-
-    _conversions[to_unit:from_unit] = rev
+        # Case - Explicit conversion given: Record directly.
+        _CONVERSIONS[to_label:from_label] = rev
 
 
-def similar_to(example: Union[Units, Dim, str]) -> set:
+def similar_to(example: Union[Dim, str]) -> set[str]:
     """
-    Returns a set of labels of all known units with the same dimensions as the
-    example given.
-
-    Parameters
-    ----------
-        example : Units or Dim.
-
-    Returns
-    -------
-    set[str]
+    Returns a set of all known units (as strings) with the same dimensions
+    as the example given.
     """
     if isinstance(example, Dim):
-        example = example.units
-    if isinstance(example, str):
-        example = Units(example)
+        example = _Units(example.units)
+    else:
+        example = _Units(example)
 
     matching = set()
-    for label, unit in _known_units.items():
+    for label, units in _KNOWN_UNITS.items():
         if all(True if kn_p == ex_p else False
-               for (_, kn_p), (_, ex_p) in zip(unit[1:], example[1:])):
+               for (_, kn_p), (_, ex_p) in zip(units[1:], example[1:])):
             matching.add(label)
     return matching
 
 
-def total_temperature_convert(x, from_u: str, to_u: str):
+# TODO May no longer be required as we are now a namedtuple with
+#  constructor functin dim() that accepts Dim objects.  So this would be
+#  equivalent to:
+#    value, units = dim(x)
+def split_dim(x: DimArray) -> (RealArray, Optional[str]):
     """
-    Conversions of total temperatures are a special case due to the offset of
-    the °C and °F base units scales.  Conversion is simplified by converting
-    `x` to Kelvin then converting to final units.
-
-    Parameters
-    ----------
-    x :
-        Value to be converted.
-    from_u,to_u : str
-        String matching °C, °F, K, °R.
-
-    Returns
-    -------
-    :
-        Converted value.
+    Helper function to extract value and units from either a ``Dim()``
+    object or a regular value.
     """
-    # Convert 'from' -> Kelvin.
-    if from_u == '°C':
-        x += 273.15
-    elif from_u == 'K':
-        pass
-    elif from_u == '°F':
-        x = (x + 459.67) * 5 / 9
-    elif from_u == '°R':
-        x *= 5 / 9
+    if isinstance(x, Dim):
+        return x.value, x.units
     else:
-        raise UnitsError(f"Cannot convert total temperature: {from_u} -> "
-                         f"{to_u}")
-
-    # Convert Kelvin -> 'to'.
-    if to_u == '°C':
-        x -= 273.15
-    elif to_u == 'K':
-        pass
-    elif to_u == '°F':
-        x = (x * 9 / 5) - 459.67
-    elif to_u == '°R':
-        x *= 9 / 5
-    else:
-        raise UnitsError(f"Cannot convert total temperature: {from_u} -> "
-                         f"{to_u}")
-
-    return x
+        return x, None
 
 
-def make_total_temp(x: Dim) -> Dim:
+def to_absolute_temp(x: Dim) -> Dim:
     """
-    Function to convert an offset to a total temperature if required
-    (°C → K or °F → °R).  Raises exception for Δ°C or Δ°F.  If neither,
-    it returns the original object.
+    Function to convert a total temperature on an offset scale to the
+    equivalent on an absolute scale (°C → K or °F → °R).  If `x` is already
+    on an absolute scale, returns `x` directly.  Raises exception for other
+    unit types or temperature changes (Δ°C or Δ°F).
 
     Parameters
     ----------
     x : Dim
+        Value with base temperature dimensions only.
 
     Returns
     -------
@@ -1052,35 +945,642 @@ def make_total_temp(x: Dim) -> Dim:
     Raises
     ------
     ValueError
-        If x is a delta temperature.
+        If x is not a base total temperature, i.e. is mixed units or is a
+        temperature change / Δ.
     """
-    if x.units == Units('°C'):
-        return x.convert('K')
-    elif x.units == Units('°F'):
-        return x.convert('°R')
-    elif x.units.θ[0] == 'Δ':
-        raise ValueError(f"Delta temperature not allowed.")
+    unit_obj = _Units(x.units)
+
+    if unit_obj.is_total_temp():  # Check for recognised base temperature.
+        if unit_obj.θ[0] in _ABS_SCALE_TOTAL_TEMPS:
+            # Case x = absolute: No conversion required.
+            return x
+
+        else:
+            # Case x = offset: Convert to absolute.
+            try:
+                target_ustr = _OFF_ABS_TEMP_CONV[unit_obj.θ[0]]
+                return x.convert(target_ustr)
+            except KeyError:
+                raise ValueError(f"No absolute temperature conversion "
+                                 f"target set for unit '{unit_obj.θ[0]}'.")
+
     else:
-        return x
+        raise ValueError(f"Not a total temperature, got: {unit_obj}")
+
+
+# == Private Attributes & Functions ===========================================
+
+_KNOWN_UNITS = MultiBiDict()  # All Units(), base and derived.
+_KNOWN_BASE_UNITS: set[_Units] = set()  # Single entry ^1 Units().
+_CONVERSIONS = WtDirgraph()  # Conversions between Units().
+_COMP_CONV_CACHE = {}  # {(Units, Units): Factor, ...}
+
+# Precompiled parser.
+
+_UCODE_SS_CHARS = ('⁺⁻ᐧ⁰¹²³⁴⁵⁶⁷⁸⁹', '+-.0123456789')
+_UC_SGN = _UCODE_SS_CHARS[0][0:2]
+_UC_DOT = _UCODE_SS_CHARS[0][2]
+_UC_DIG = _UCODE_SS_CHARS[0][3:]
+_UC_PWR_PATTERN = fr'''[{_UC_SGN}]?[{_UC_DIG}]+(?:[{_UC_DOT}][{_UC_DIG}]+)?'''
+
+# noinspection RegExpUnnecessaryNonCapturingGroup
+_unitparse_rx = re.compile(fr'''
+    ([.*×/])?                                               # Operator.
+    (?:([+-]?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)(?:[.*×]?))?    # Mult w/ sep
+    ([a-zA-Z_Δ°μ]+)                                         # Unit
+    ((?:\^[+-]?[\d]+(?:[.][\d]+)?)|                         # Pwr (ascii), or
+    (?:{_UC_PWR_PATTERN}))?                                 # Pwr (ucode)
+    |(.+)                                                   # OR mismatch.
+''', flags=re.DOTALL | re.VERBOSE)
+
+# The following are setup to hold temperature units so that special rules
+# can be applied.
+
+# _OFFSET_TEMPS = {'°C', '°F'}
+_OFF_SCALE_TOTAL_TEMPS = set()  # Offset scale temps {str, ...}
+_ABS_SCALE_TOTAL_TEMPS = set()  # Absolute scale temps {str, ...}
+_OFF_ABS_TEMP_CONV = {}  # Preferred conv. {from_str: to_str, ...}
+_DELTA_TEMPS = set()  # Can represent temperature change Δ {str, ...}
+
+
+# ---------------------------------------------------------------------------
+
+
+class _Units(namedtuple('_Units',
+                        ['k', 'M', 'L', 'T', 'θ', 'N', 'I', 'J', 'A', 'Ω'],
+                        defaults=[1, *(('', 0),) * 9])):
+    """
+    The ``_Units`` type is a namedtuple typerepresenting a combination of
+    individual basis units and a leading factor representing a specific
+    base or derived unit.   Each basis unit is a tuple of a string label
+    and power. Units are hashable so they can be looked up for quick
+    conversions.
+
+    Field names in order:
+        - k:  Multiplier.
+        - M:  Mass.
+        - L:  Length.
+        - T:  Time.
+        - θ:  Temperature.
+        - N:  Amount of substance.
+        - I:  Electric current.
+        - J:  Luminous intensity.
+        - A:  Plane angle (see Units() definition for permanence).
+        - Ω:  Solid angle (see Units() definition for permanence).
+
+   .. note:: Direct manipulation of ``_Units`` objects is not normally
+      required.
+
+   .. Note::  Plane angle radians and solid angle steradians are effectively
+      dimensionless:
+
+        - These 'units' are retained to allow consistency checks on
+          mathematics, especially if angular degrees are used, etc.
+        - Radians / steradians are retained during creation of new units,
+          which allows for correct conversion of things like rotational
+          speeds, etc.
+        - Radians / steradians disappear after multiplication with a
+          different set of units (i.e. a calculation) if they finish with
+          power == 1.
+   """
+
+    def __new__(cls, *args, **kwargs):
+        """
+        ``_Units`` objects can either be created by passing a single string
+        argument to be parsed, or otherwise by directly initialising as
+        a namedtuple.
+
+        After parsing a unit basis string, the units are sanity checked
+        prior to return.
+        """
+        # Case: All except a single string.
+        # -> Positional and keyword arguments passed direct to namedtuple.
+        # Note: This includes blank i.e. ``_Units()``.
+        if not (len(args) == 1 and isinstance(args[0], str)):
+            res = super().__new__(cls, *args, **kwargs)
+            _check_units(res)
+            return res
+
+        # Case:  Single empty string.
+        # -> Return blank Units().
+        if not args[0]:
+            return super().__new__(cls)
+
+        # Case: Single non-empty string.
+        # -> Check if already known.  If so, return a copy.
+        try:
+            return _Units(*_KNOWN_UNITS[args[0]])  # Known units pre-checked.
+        except KeyError:
+            pass
+
+        # -> Not already known.  Parse string into subunits.
+        tokens = re.findall(_unitparse_rx, ''.join(args[0].split()))
+
+        if tokens[0][0]:
+            raise ValueError("Invalid leading operator in unit definition.")
+
+        # Build result by multiplying sub-parts.
+        res_units = _Units()
+        for opstr, multstr, sub_label, pwrstr, mismatch in tokens:
+            if mismatch:
+                raise ValueError(f"Invalid term '{mismatch}' in unit "
+                                 f"definition.")
+
+            # If multiplier is present, try to get an int, otherwise float.
+            if multstr:
+                mult = coax_type(float(multstr), int, float)
+            else:
+                mult = 1
+
+            try:
+                sub_basis = _KNOWN_UNITS[sub_label]
+            except KeyError:
+                # If the sub-units doesn't exist, we *really* don't know this
+                # unit.
+                raise ValueError(f"Unknown component '{sub_label}' in "
+                                 f"unit definition.")
+
+            pwrstr = pwrstr.strip('^')  # Reqd for ASCII powers.
+            pwrstr = _from_ucode_super(pwrstr)
+            if pwrstr:
+                pwr = force_type(pwrstr, int, float)
+            else:
+                pwr = 1
+            if opstr == '/':
+                mult = kind_div(1, mult)
+                pwr = -pwr
+
+            res_units *= sub_basis ** pwr  # Apply power.
+            res_units *= _Units(k=mult)  # Apply multiplier.
+
+        _check_units(res_units)
+        return res_units
+
+    # -- Binary Operators ---------------------------------------------------
+
+    def __mul__(self, rhs: _Units) -> _Units:
+        """
+        Multiply two units combining component bases and 'k' value. This is
+        the central function used by most other operators / conversions.
+        See Dim.__mul__ for expected results.
+
+        .. note:: Angular units of radians or steradians are retained by
+           this operator.
+        """
+        res_k = rhs.k * self.k
+        res_bases = []
+        for (l_ustr, l_pwr), (r_ustr, r_pwr) in zip(self[1:], rhs[1:]):
+            res_pwr = l_pwr + r_pwr
+            res_ustr = l_ustr if l_ustr else r_ustr
+
+            # Multiply by a factor if required.
+            if l_ustr and r_ustr and l_ustr != r_ustr:
+                factor = _conversion_factor(_Units(r_ustr), _Units(l_ustr))
+                if factor is None:
+                    raise TypeError(f"No conversion available for {r_ustr} ->"
+                                    f" {l_ustr}.")
+                # noinspection PyUnresolvedReferences
+                res_k *= factor ** r_pwr
+
+            # Store or cleanup if cancelled out.
+            if res_pwr != 0:
+                res_bases += [(res_ustr, res_pwr)]
+            else:
+                res_bases += [('', 0)]
+
+        res_k = coax_type(res_k, (int, float), default=res_k)
+        return _Units(res_k, *res_bases)
+
+    def __pow__(self, pwr: RealScalar) -> _Units:
+        """
+        Raises unit basis to a given power, including leading factor 'k'.
+        """
+
+        # Build resulting units. Most units have integer powers; try to
+        # preserve int-ness.
+        res_basis = [coax_type(self.k ** pwr, type(self.k),
+                               default=self.k ** pwr)]  # Set 'k'.
+        for u, p in self[1:]:
+            res_basis += [(u, coax_type(p * pwr, int, default=p * pwr))]
+
+        return _Units(*res_basis)
+
+    # -- String Magic Methods -----------------------------------------------
+
+    def __str__(self):
+        """
+        If a unique label exists return it, otherwise builds a generic
+        string.
+        """
+        try:
+            labels = _KNOWN_UNITS.inverse[self]
+            if len(labels) == 1:
+                return labels[0]
+        except KeyError:
+            pass
+
+        # Generate generic string.
+        base_parts = []
+        for base in self[1:]:
+            if base[0]:
+                u_substr = f'{base[0]}'
+                if base[1] != 1:
+                    if OUTPUT_UCODE_PWR:
+                        u_substr += _to_ucode_super(f'{base[1]}')
+                    else:
+                        u_substr += f'^{base[1]}'
+                base_parts += [u_substr]
+        label = '.'.join(base_parts)
+
+        if not label:  # Cover dimless case.
+            label = ''
+
+        if self.k != 1:
+            label = f'{self.k}*' + label
+
+        return label
+
+    # -- Public Methods -----------------------------------------------------
+
+    def is_base_temp(self) -> bool:
+        """
+        Refer to Dim() for documentation.
+        """
+        if self.θ[1] == 1 and self.θ[0]:
+            # θ¹ present.  Check all other powers are zero.
+            if all(p == 0 for i, (_, p) in enumerate(self[1:], start=1)
+                   if self._fields[i] != 'θ'):
+                return True
+
+        return False
+
+    def is_dimless(self) -> bool:
+        """
+        Returns ``False`` if any indicies in the signature are nonzero or
+        k != 1, otherwise returns ``True`` (dimensionless units).
+        """
+        if any(p != 0 for _, p in self[1:]) or self[0] != 1:
+            return False
+        else:
+            return True
+
+    def is_temp_change(self) -> bool:
+        """
+        Refer to Dim() for documentation.
+        """
+        if self.is_base_temp() and self.θ[0] in _DELTA_TEMPS:
+            return True
+        else:
+            return False
+
+    def is_total_temp(self) -> bool:
+        """
+        Refer to Dim() for documentation.
+        """
+        if self.is_base_temp() and self.θ[0] in (
+                _ABS_SCALE_TOTAL_TEMPS | _OFF_SCALE_TOTAL_TEMPS):
+            return True
+        else:
+            return False
+
+
+# ---------------------------------------------------------------------------
+
+
+def _add_unit(unit: str, basis: _Units):
+    """Private function for registering a new ``_Units`` entry. """
+
+    # Check string.
+    allowed_chars = {'_', '°', 'Δ'}
+    if any(not c.isalpha() and c not in allowed_chars for c in unit):
+        raise ValueError(f"Invalid unit string: '{unit}'.")
+
+    if unit in _KNOWN_UNITS:
+        raise ValueError(f"Unit '{unit}' already defined.")
+
+    # Check unit basis.  If everything is OK, store as a known unit.
+    _check_units(basis)
+    _KNOWN_UNITS[unit] = basis
+
+    # Is this a derived unit? If so we are already finished.
+    base_unit_str = _base_unit(basis)
+    if not base_unit_str:
+        return
+
+    # Base units are also added to a separate known group.  Labels must match.
+    if base_unit_str != unit:
+        raise ValueError(f"Basis unit string must match supplied basis, got: "
+                         f"'{unit}' != '{base_unit_str}'")
+
+    _KNOWN_BASE_UNITS.add(basis)
+
+
+def _base_unit(unit: _Units) -> Optional[str]:
+    """
+    Check if the given basis represents a single base unit.
+
+    Parameters
+    ----------
+    unit : _Units
+        Unit basis to check.
+
+    Returns
+    -------
+    str or None :
+        If ``basis`` is a base unit - i.e. ``k = 1`` and only one linear base
+        unit is used - that string label is returned, otherwise returns None.
+    """
+    bases_used, last_u, last_p = 0, None, 0
+    for u, p in unit[1:]:
+        if p != 0:
+            bases_used += 1
+            last_u, last_p = u, p
+    if bases_used != 1 or last_p != 1 or unit.k != 1:
+        return None
+    else:
+        return last_u
+
+
+def _basis_factor(from_units: _Units, to_basis: _Units) -> RealScalar:
+    """
+    Similar to _conversion_factor, however this is for changing
+    `from_units` to a completely different consistent basis, so all fields
+    are included.  If `to_basis` is only partial, default values are
+    inserted.  The required multiplier is returned along with a
+    representative string of the final applicable units.
+    """
+
+    # Check provided system.
+    if to_basis[0] != 1:
+        raise ValueError(f"Target unit system can't include multiplier, "
+                         f"got k = {to_basis[0]}")
+
+    # noinspection PyProtectedMember
+    for str_i, pwr_i in to_basis[1:]:
+        if str_i and pwr_i != 1:
+            raise ValueError(f"Unit system powers must be 1.  Got "
+                             f"{str_i}^{pwr_i}.")
+
+    # Assign defaults to any missing units.
+    final_sys = []
+    # noinspection PyProtectedMember
+    for (part_u, _), (def_u, _), field_u in zip(to_basis[1:],
+                                                _DEFAULT_UNIT_SYS[1:],
+                                                to_basis._fields[1:]):
+        if part_u:
+            final_sys.append((part_u, 0))
+        else:
+            # Not provided: Try to use a default.
+            if def_u:
+                final_sys.append((def_u, 0))
+            else:
+                raise ValueError(f"Unit system missing type for field "
+                                 f"'{field_u}'.")
+
+    final_sys = _Units(1, *final_sys)
+
+    # Final system now has k = 1, entries for all units and all powers = 0.
+    # A LHS multiplication gives the required factor to change bases.
+    return (final_sys * from_units).k
+
+
+def _conversion_factor(from_basis: _Units,
+                       to_basis: _Units) -> Optional[Number]:
+    """
+    Compute the factor for converting between two units.
+    """
+    # Conversion to lhs gives unity.
+    if from_basis == to_basis:
+        return 1
+
+    # Step 1: See if this conversion has been cached.
+    if CACHE_COMPUTED_CONVS:
+        try:
+            return _COMP_CONV_CACHE[from_basis, to_basis]
+        except KeyError:
+            pass
+
+    # Step 2: See if a shortcut is available (base units will take
+    # this path only).
+    if (from_basis in _CONVERSIONS) and (to_basis in _CONVERSIONS):
+        path, factor = _CONVERSIONS.trace(from_basis, to_basis, operator.mul)
+        if path and len(path) > CONV_PATH_LENGTH_WARNING:
+            warnings.warn(
+                f"Warning: Converting '{from_basis}' -> '{to_basis}' gives "
+                f"overlong path: " + ' -> '.join(str(x) for x in path))
+
+        if factor is not None:
+            if CACHE_COMPUTED_CONVS:
+                _COMP_CONV_CACHE[from_basis, to_basis] = factor
+            return factor
+
+    # Don't compute conversions if we are at base units (otherwise infinite
+    # loop).
+    if (from_basis in _KNOWN_BASE_UNITS) or (to_basis in _KNOWN_BASE_UNITS):
+        return None
+
+    # Step 3: Try to compute the factor from the base units.  This is done
+    # by forming new 'power-zero' target basis and multiplying on the LHS,
+    # i.e.: (1/k_to)*to_units^0 * original.
+    new_basis = []
+    for (from_ustr, from_pwr), (to_ustr, to_pwr) in zip(from_basis[1:],
+                                                        to_basis[1:]):
+        # Check each part must both be either something or nothing.
+        if bool(from_ustr) != bool(to_ustr):  # XOR check.
+            raise ValueError(f"Inconsistent base units converting "
+                             f"'{from_basis}' -> '{to_basis}'")
+
+        # Check each part has the same indicies.
+        if from_pwr != to_pwr:
+            raise ValueError(
+                f"Inconsistent indices converting '{from_basis}' -> "
+                f"'{to_basis}': '{from_ustr}^{from_pwr}' and "
+                f"'{to_ustr}^{to_pwr}'")
+        new_basis += [(to_ustr, 0)]
+
+    new_basis = _Units(1 / to_basis.k, *new_basis)
+
+    # Do multiplication, factor contains the result.
+    factor = (new_basis * from_basis).k
+    if CACHE_COMPUTED_CONVS:
+        _COMP_CONV_CACHE[from_basis, to_basis] = factor
+
+    return factor
+
+
+def _convert(value: RealArray, from_units: _Units,
+             to_units: _Units) -> RealArray:
+    """
+    Convert ``value`` given ``_Units`` bases.
+    """
+
+    # Conversion to °C and °F base units are special cased due to
+    # offset of scales.
+    from_θ, to_θ = from_units.θ[0], to_units.θ[0]
+    if from_θ in _OFF_SCALE_TOTAL_TEMPS or to_θ in _OFF_SCALE_TOTAL_TEMPS:
+        if not _base_unit(from_units) or not _base_unit(to_units):
+            raise TypeError(f"Cannot convert offset temperatures in derived "
+                            f"units: {from_units} -> {to_units}")
+        conv_value = _convert_total_temp(value, from_θ, to_θ)
+
+    else:
+        # All other unit types.
+        factor = _conversion_factor(from_units, to_units)
+        if factor is None:
+            raise ValueError(f"No conversion found: {from_units} -> "
+                             f"{to_units}")
+        conv_value = value * factor
+        conv_value = coax_type(conv_value, type(value), default=conv_value)
+
+    return conv_value
+
+
+def _check_units(unit: _Units):
+    """
+    Do certain checks on validity of unit tuple during construction. Blank
+    units cannot have non-zero powers.  Note that the reverse case is
+    permitted, and is useful for unit conversion.
+    """
+    if any((not u and p != 0) for u, p in unit[1:]):
+        raise ValueError("Blank units must have no power.")
+
+    if unit.k == 0:
+        raise ValueError(f"k must be non-zero.")
+
+    # Offset temperatures must be standalone.
+    if unit.θ[0] in _OFF_SCALE_TOTAL_TEMPS and not _base_unit(unit):
+        raise ValueError("Offset temperature units are only permitted to "
+                         "be base units.")
+
+
+def _convert_total_temp(x: RealArray, from_unit: str,
+                        to_unit: str) -> RealArray:
+    """
+    Conversions of total temperatures are a special case due to the offset of
+    the °C and °F base units scales.
+
+    .. note: Arithmetic is simplified by converting `x` to Kelvin then
+       converting to final units.
+
+    Parameters
+    ----------
+    x : scalar or array-like
+        Temperature to be converted.
+    from_unit, to_unit : str
+        String matching °C, °F, K, °R.
+
+    Returns
+    -------
+    result : scalar or array-like
+        Converted temperature value.
+    """
+    # Convert 'from' -> Kelvin.
+    if from_unit == '°C':
+        x = x + 273.15  # This style (instead of +=) allows for NumPy ufunc.
+    elif from_unit == 'K':
+        pass
+    elif from_unit == '°F':
+        x = (x + 459.67) * 5 / 9
+    elif from_unit == '°R':
+        x = x * 5 / 9
+    else:
+        raise TypeError(f"Cannot convert total temperature: {from_unit} -> "
+                        f"{to_unit}")
+
+    # Convert Kelvin -> 'to'.
+    if to_unit == '°C':
+        x = x - 273.15
+    elif to_unit == 'K':
+        pass
+    elif to_unit == '°F':
+        x = (x * 9 / 5) - 459.67
+    elif to_unit == '°R':
+        x = x * 9 / 5
+    else:
+        raise ValueError(f"Cannot convert total temperature: {from_unit} -> "
+                         f"{to_unit}")
+
+    return x
+
+
+def _common_cmp(lhs: Dim, rhs, op: Callable[..., bool]):
+    """
+    Common method used for comparison of a Dim object and another object
+    called by all magic methods.  If ``rhs`` is not a ``Dim`` object is is
+    promoted before comparison.
+    """
+    if not isinstance(rhs, Dim):
+        rhs = Dim(rhs, '')
+
+    if lhs.units == rhs.units:
+        return op(lhs.value, rhs.value)
+    else:
+        return op(lhs.value, rhs.convert(lhs.units).value)
+
+
+# Default entries when doing conversion between consistent bases.  Types M, L,
+# T, θ are not used here, they must always be provided.
+_DEFAULT_UNIT_SYS = _Units(N=('mol', 0), I=('A', 0), J=('cd', 0), A=('rad', 0),
+                           Ω=('sr', 0))
+
+
+def _dim_mul_generic(lhs: Dim, rhs: DimArray, multop: Callable) -> DimArray:
+    """
+    Multiply two dimensioned values using multuiplication operator ``op``.
+    This is the generic version used by Dim.__mul__, Dim.__matmul__,
+    etc allowing for scalar or matrix multiplication.  See Dim.__mul__ for
+    rules.
+    """
+    if not isinstance(rhs, Dim):
+        if lhs.units:
+            # Return using existing units.
+            return Dim(multop(lhs.value, rhs), lhs.units)
+        else:
+            # Drop dimensions.
+            return multop(lhs.value, rhs)
+
+    # Offset-scale temperatures are allowed as multiplication arguments 
+    # as a special case provided they are isolated.
+    lhs = lhs
+    lhs_units, rhs_units = _Units(lhs.units), _Units(rhs.units)
+    if lhs_units.is_base_temp():
+        lhs = to_absolute_temp(lhs)
+        lhs_units = _Units(lhs.units)
+    if rhs_units.is_base_temp():
+        rhs = to_absolute_temp(rhs)
+        rhs_units = _Units(rhs.units)
+
+    # Build final basis and factor out 'k' into result.
+    res_basis = lhs_units * rhs_units
+    res_value = multop(lhs.value, rhs.value)
+    res_value *= res_basis.k  # Scalar multiply for factor.
+
+    # noinspection PyProtectedMember
+    res_basis = res_basis._replace(k=1)
+
+    # Check if multiplication resulted in radians, which can be of any
+    # power (as they are dimensionless).
+    if res_basis.A[0] == 'rad':
+        # noinspection PyProtectedMember
+        res_basis = res_basis._replace(A=('', 0))
+
+    if res_basis.Ω[0] == 'sr':
+        # noinspection PyProtectedMember
+        res_basis = res_basis._replace(Ω=('', 0))
+
+    if not res_basis.is_dimless():
+        return Dim(res_value, str(res_basis))
+    else:
+        return res_value  # Units disappeared.
 
 
 # ----------------------------------------------------------------------------
 # Functions for unicode indices.
 
-def from_ucode_super(ss: str) -> str:
+def _from_ucode_super(ss: str) -> str:
     """
-    Convert any unicode numeric superscipt characters in the string to
-    normal ascii text.
-
-    Parameters
-    ----------
-    ss : str
-        String with unicode superscript characters.
-
-    Returns
-    -------
-    str :
-        Converted string.
+    Convert any unicode numeric superscipt characters in the string ``ss``
+    to normal ascii text.
     """
     result = ''
     for c in ss:
@@ -1092,19 +1592,9 @@ def from_ucode_super(ss: str) -> str:
     return result
 
 
-def to_ucode_super(ss: str) -> str:
+def _to_ucode_super(ss: str) -> str:
     """
-    Convert numeric characters in the string to unicode superscript.
-
-    Parameters
-    ----------
-    ss : str
-        String with ascii numeric characters.
-
-    Returns
-    -------
-    str :
-        Converted string.
+    Convert numeric characters in the string ``ss`` to unicode superscript.
     """
     result = ''
     for c in ss:
@@ -1116,19 +1606,12 @@ def to_ucode_super(ss: str) -> str:
     return result
 
 
-# ----------------------------------------------------------------------------
+# == Base Unit Definitions ==================================================
 
-#
-# Base units.
-#
-
-#
-# Mass.
-#
+# -- Mass -------------------------------------------------------------------
 
 #  Signatures.
-add_base_unit(['t', 'kg', 'g', 'mg', 'μg'], 'M')
-# Note: t = Metric tonne.
+add_base_unit(['t', 'kg', 'g', 'mg', 'μg'], 'M')  # Note: t = Metric tonne.
 add_base_unit(['slug', 'lbm'], 'M')
 
 # Conversions.
@@ -1139,9 +1622,7 @@ set_conversion('lbm', 'kg', fwd=0.45359237)  # Defn Intl & US Standard Pound.
 set_conversion('slug', 'lbm', fwd=32.17404855643045)  # CALC of G in ft/s^2
 set_conversion('t', 'kg', fwd=1000)  # Metric tonne.
 
-#
-# Length.
-#
+# -- Length -----------------------------------------------------------------
 
 #  Signatures.
 add_base_unit(['km', 'm', 'cm', 'mm'], 'L')
@@ -1155,14 +1636,17 @@ add_base_unit(['NM', 'sm', 'mi', 'rod', 'yd', 'ft_US', 'ft', 'in'], 'L')
 # Conversions.
 set_conversion('NM', 'm', fwd=1852)  # International NM.
 # Note the older UK NM was slightly different = 1853 m (or 6,080 ft).
+
 set_conversion('sm', 'ft_US', fwd=5280)
 # 'sm' is the US statute mile defined as 5,280 US survey feet.
 # Interestingly, although this corresponds to exactly 1,760 yards in the
 # same manner as the international mile ('mi', below) there is no formal
 # definition of a 'US survey yard'.
+
 set_conversion('mi', 'yd', fwd=1760)
-# 'mi' is is the international mile defined relative to the international yard
-# and foot.
+# 'mi' is is the international mile defined relative to the international
+# yard and foot.
+
 set_conversion('km', 'm', fwd=1000)
 set_conversion('rod', 'yd', fwd=Fraction(11, 2))  # 1 rod = 5-1/2 yd
 set_conversion('yd', 'ft', fwd=3)
@@ -1172,13 +1656,12 @@ set_conversion('m', 'cm', fwd=100)
 set_conversion('m', 'mm', fwd=1000)
 set_conversion('ft_US', 'm', fwd=1200 / 3937)
 # US Survey Foot per National Bureau of Standards F.R. Doc. 59-5442.
+
 set_conversion('ft', 'in', fwd=12)  # International foot.
 set_conversion('in', 'cm', fwd=2.54)  # To shorten conv. path
 set_conversion('in', 'mm', fwd=25.4)  # Defn British / US / Industrial Inch
 
-#
-# Time.
-#
+# -- Time -------------------------------------------------------------------
 
 #  Signatures.
 add_base_unit(['day', 'hr', 'min', 's', 'ms'], 'T')
@@ -1189,24 +1672,25 @@ set_conversion('hr', 'min', fwd=60)
 set_conversion('min', 's', fwd=60)
 set_conversion('s', 'ms', fwd=1000)
 
-#
-# Temperature.
-#
+# -- Temperature ------------------------------------------------------------
 
 #  Signatures.
 add_base_unit(['°C', 'Δ°C', 'K'], 'θ')
 add_base_unit(['°F', 'Δ°F', '°R'], 'θ')
 
-# Conversions.  Note: Only temperature differences are given here.  Absolute
-# temperatures are handled by a special function because the °C and °F
-# scales are offset.
+_ABS_SCALE_TOTAL_TEMPS |= {'K', '°R'}
+_OFF_SCALE_TOTAL_TEMPS |= {'°C', '°F'}
+_OFF_ABS_TEMP_CONV |= {'°C': 'K', '°F': '°R'}  # From -> to.
+_DELTA_TEMPS |= {'K', '°R', 'Δ°C', 'Δ°F'}
+
+# Conversions.  Note: Only conversions for temperature changes are given
+# here.  Absolute scale temperatures are handled by a special function
+# because of offset scales used by °C and °F.
 set_conversion('K', 'Δ°C', fwd=1)
-set_conversion('K', 'Δ°F', fwd=Fraction(9, 5))  # Changed from float 9/5.
+set_conversion('K', 'Δ°F', fwd=Fraction(9, 5))
 set_conversion('°R', 'Δ°F', fwd=1)
 
-#
-# Amount of substance.
-#
+# -- Amount of Substance ----------------------------------------------------
 
 # Signatures.
 add_base_unit(['Gmol', 'Mmol', 'kmol', 'mol', 'mmol', 'μmol', 'nmol'], 'N')
@@ -1221,9 +1705,7 @@ set_conversion('μmol', 'nmol', fwd=1000)
 set_conversion('Gmol', 'mol', fwd=1e9)  # To shorten conv. path.
 set_conversion('mol', 'nmol', fwd=1e9)  # To shorten conv. path.
 
-#
-# Electric current.
-#
+# Electric Current ----------------------------------------------------------
 
 # Signatures.
 add_base_unit(['A', 'mA'], 'I')
@@ -1231,18 +1713,14 @@ add_base_unit(['A', 'mA'], 'I')
 # Conversions.
 set_conversion('A', 'mA', fwd=1000)
 
-#
-#   Luminous intensity.
-#
+# -- Luminous intensity -----------------------------------------------------
 
 # Signatures.
 add_base_unit(['cd'], 'J')
 
 # Conversions.
 
-#
-# Plane angle.
-#
+# -- Plane Angle ------------------------------------------------------------
 
 # Signatures.
 add_base_unit(['deg', 'rad', 'rev', '°'], 'A')
@@ -1255,9 +1733,7 @@ set_conversion('rev', 'deg', fwd=360)
 set_conversion('rad', 'deg', fwd=180 / math.pi)
 set_conversion('deg', '°', fwd=1)
 
-#
-# Solid angle.
-#
+# -- Solid angle ------------------------------------------------------------
 
 # Signatures.
 add_base_unit(['sp', 'sr'], 'Ω')
@@ -1265,27 +1741,19 @@ add_base_unit(['sp', 'sr'], 'Ω')
 # Conversions.
 set_conversion('sp', 'sr', fwd=4 * math.pi)  # 1 spat = 4*pr steradians.
 
-# -----------------------------------------------------------------------------
-
-#
-# Derived units.
-#
+# == Derived Unit Definitions ===============================================
 
 # Notes:
-# -  A a variety of signature types / operators / unicode (*, /, ×, ²,
-# etc) are used in which acts as an automatic check on the parser.
+# - A a variety of signature types / operators / unicode (*, /, ×, ²,
+#   etc) are used in which acts as an automatic check on the parser.
 # - Exact standard for G = 9.80665 m/s/s (WGS-84 defn). Full float
-# conversion gives 32.17404855643045 func/s^2.
+#   conversion gives 32.17404855643045 func/s^2.
 
-#
-# Area
-#
+# -- Area -------------------------------------------------------------------
 
 add_unit('ha', '10000*m^2')
 
-#
-# Volume
-#
+# -- Volume -----------------------------------------------------------------
 
 add_unit('cc', 'cm^3')
 add_unit('L', '1000×cm^3')
@@ -1295,9 +1763,7 @@ add_unit('US_qt', '0.25*US_gal')  # Fluid quart
 add_unit('US_fl_bl', '31.5*US_gal')  # Fluid barrel
 add_unit('US_hhd', '2×US_fl_bl')  # Hogshead
 
-#
-# Speed.
-#
+# -- Speed ------------------------------------------------------------------
 
 add_unit('fps', 'ft/s')
 add_unit('kt', 'NM/hr')
@@ -1306,15 +1772,11 @@ add_unit('kph', 'km/hr')
 
 add_unit('RPM', 'rev/min')
 
-#
-# Acceleration.
-#
+# -- Acceleration -----------------------------------------------------------
 
 add_unit('G', '9.80665 m/s^2')  # WGS-84 definition
 
-#
-# Force.
-#
+# -- Force ------------------------------------------------------------------
 
 add_unit('kgf', 'kg×G')
 add_unit('N', 'kg.m.s⁻²')
@@ -1323,9 +1785,7 @@ add_unit('kN', '1000×N')
 add_unit('lbf', 'slug.ft/s²')
 add_unit('kip', '1000*lbf')
 
-#
-# Pressure
-#
+# -- Pressure ---------------------------------------------------------------
 
 #  Signatures.
 add_unit('MPa', 'N/mm²')
@@ -1338,16 +1798,15 @@ add_unit('atm', '101325 Pa')  # ISO 2533-1975
 add_unit('bar', '100000*Pa')
 add_unit('mmHg', '133.322387415*Pa')
 # mmHg conversion from BS 350: Part 1: 1974 – Conversion factors and tables
+
 add_unit('Torr', f'{1 / 760}*atm')
 
-add_unit('psf', 'lbf/ft^2')
+add_unit('psf', 'lbf/ft²')
 add_unit('inHg', '25.4*mmHg')
-add_unit('psi', 'lbf/in^2')
+add_unit('psi', 'lbf/in²')
 add_unit('ksi', '1000*psi')
 
-#
-# Energy.
-#
+# -- Energy -----------------------------------------------------------------
 
 add_unit('J', 'N.m')
 add_unit('kJ', '1000.J')
@@ -1355,19 +1814,15 @@ add_unit('MJ', '1000.kJ')
 add_unit('cal', '4.184×J')  # ISO Thermochemical calorie (cal_th).
 add_unit('kcal', '1000.cal')
 add_unit('Btu', '778.1723212164716×ft.lbf')  # ISO British Thermal Unit.
-# The ISO Btu is defined as exactly 1055.06 J. The above value is the
-# calculated conversion to ft.lbf.
+# The ISO Btu is defined as exactly 1055.06 J. The above value is the full
+# float calculated conversion to ft.lbf.
 
-#
-# Power.
-#
+# -- Power ------------------------------------------------------------------
 
 add_unit('W', 'J/s')
 add_unit('kW', '1000*W')
 add_unit('hp', '550×ft.lbf/s')
 
-#
-# Luminous.
-#
+# -- Luminous ---------------------------------------------------------------
 
 add_unit('lm', 'cd.sr')  # Lumen.
