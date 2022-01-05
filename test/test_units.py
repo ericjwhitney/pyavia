@@ -178,9 +178,10 @@ class TestDim(TestCase):
         self.assertEqual(x.units, 'J')
 
     def test_change_basis(self):
-        from pyavia.core.units import dim, STD_UNIT_SYSTEM
+        from pyavia.core.units import dim
+        import pyavia.core.units as pa_units
 
-        STD_UNIT_SYSTEM = 'kg.m.s'  # Abbreviated, allows check on defaults.
+        pa_units.STD_UNIT_SYSTEM = 'kg.m.s.K'  # Abbrev. to check defaults.
         x = dim(1000, 'psi')
         y = x.to_real_sys()  # Result should be in Pa.
         self.assertAlmostEqual(y, 6894757.2932, places=3)
