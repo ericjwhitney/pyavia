@@ -36,13 +36,12 @@ Notes:
 
 # Last updated: 8 January 2020 by Eric J. Whitney
 
-from pyavia.core.units import Dim, Units, make_total_temp
-from pyavia.core.util import bracket_list
-from pyavia.core.solve import bisect_root
-
 from math import exp, log, isclose
+from typing import List, Optional
 
-__all__ = ['Atmosphere', 'G_N', 'R_EARTH', 'geo_alt_to_pot', 'pot_alt_to_geo']
+from pyavia.iter import bracket_list
+from pyavia.units import dim, Dim, to_absolute_temp
+from pyavia.solve import bisect_root
 
 
 # -----------------------------------------------------------------------------
@@ -55,7 +54,7 @@ class Atmosphere:
     properties are then made available through class properties.
 
     ..
-        >>> import pyavia as pa
+        #>>> import pyavia as pa
 
     Examples
     --------
@@ -63,38 +62,38 @@ class Atmosphere:
     Set default result units as US or SI.  Individual defaults can be
     set for each unit type:
 
-    >>> pa.aero.Atmosphere.set_default_style('SI')
-    >>> pa.aero.Atmosphere.unitdef_press = 'psi'
+    >>> Atmosphere.set_default_style('SI')
+    >>> Atmosphere.unitdef_press = 'psi'
 
     Show some ISA SSL values:
 
-    >>> atm = pa.aero.Atmosphere(H='SSL')
+    >>> atm = Atmosphere(H='SSL')
     >>> print(f"P = {atm.pressure:.3f}, T = {atm.temperature:.2f}")
     P = 14.696 psi, T = 288.15 K
 
     Show density for an ISA standard altitude (note that these are
     formally geopotential altitudes):
 
-    >>> atm = pa.aero.Atmosphere(H=Dim(10000, 'ft'))
+    >>> atm = Atmosphere(H=dim(10000, 'ft'))
     >>> print(f"ρ = {atm.ρ:.3f}")
     ρ = 0.905 kg/m³
 
     Show the temperature ratio for a pressure altitude with a
     temperature offset:
 
-    >>> atm = pa.aero.Atmosphere(H_press=Dim(34000,'ft'),
-    ... T_offset=Dim(+15,'Δ°C'))
+    >>> atm = Atmosphere(H_press=dim(34000,'ft'), T_offset=dim(+15,'Δ°C'))
     >>> print(f"Theta = {atm.theta:.3f}")
     Theta = 0.818
 
     Show the density ratio for an arbitrary non-standard atmosphere
     based on temperature / pressure:
 
-    >>> atm = pa.aero.Atmosphere(P=Dim(90, 'kPa'), T=Dim(-15, '°C'))
+    >>> atm = Atmosphere(P=dim(90, 'kPa'), T=dim(-15, '°C'))
     >>> print(f"σ = {atm.σ:.3f}")
     σ = 0.991
     """
 
+    # noinspection PyProtectedMember
     def __init__(self, **kwargs):
         """
         Construct an atmosphere using a variety of possible methods,
@@ -105,7 +104,7 @@ class Atmosphere:
         kwargs :
             The following keyword combinations can be used.  In each case
             the associated value must be a Dim object, e.g. ``H =
-            Dim(5000, 'ft')``:
+            dim(5000, 'ft')``:
 
             - **H**:
                 - If `H` == 'SSL':  Construct an ISA standard sea level
@@ -135,7 +134,8 @@ class Atmosphere:
 
                 # SSL atmosphere.
                 if isinstance(H, str) and H == 'SSL':
-                    tmp = Atmosphere(H=Dim(0, 'm'))
+                    tmp = Atmosphere(H=dim(0, 'm'))
+                    # noinspection PyUnresolvedReferences
                     self._T, self._P = tmp._T, tmp._P
                     return
 
@@ -154,6 +154,7 @@ class Atmosphere:
             if 'h_geometric' in kwargs:
                 # Set an ISA atmosphere based on geometric altitude h.
                 tmp = Atmosphere(H=geo_alt_to_pot(kwargs['h_geometric']))
+                # noinspection PyUnresolvedReferences
                 self._T, self._P = tmp._T, tmp._P
                 return
 
@@ -161,7 +162,7 @@ class Atmosphere:
             if kwargs.keys() == {'T', 'P'}:
                 # Set arbitrary atmosphere via temperature and pressure.
                 self._T, self._P = kwargs['T'], kwargs['P']
-                self._T = make_total_temp(self._T)  # -> total & check
+                self._T = to_absolute_temp(self._T)  # -> total & check
 
                 if self._P.value <= 0 or self._T.value <= 0:
                     raise ValueError("Invalid T or P.")
@@ -171,7 +172,7 @@ class Atmosphere:
                 # Set an arbitrary atmosphere based on pressure altitude and
                 # given temperature.
                 H_press, self._T = kwargs['H_press'], kwargs['T']
-                self._T = make_total_temp(self._T)  # -> total & check
+                self._T = to_absolute_temp(self._T)  # -> total & check
 
                 # Find the bracketing layer based on ISA pressure.  Get the
                 # standard pressure.
@@ -187,7 +188,7 @@ class Atmosphere:
                 # Set an arbitrary atmosphere based on pressure altitude and
                 # temperature offset from ISA.
                 H_press, T_offset = kwargs['H_press'], kwargs['T_offset']
-                if T_offset.units in [Units('°C'), Units('°F')]:
+                if not T_offset.is_temp_change():
                     raise ValueError(f"ISA offset temperature must be in "
                                      f"total or Δ units.")
 
@@ -207,7 +208,7 @@ class Atmosphere:
 
     # Class Constants / Defaults  --------------------------------------------
 
-    R = Dim(287.05287, 'J/K/kg')  # Gas constant for air.
+    R = dim(287.05287, 'J/K/kg')  # Gas constant for air.
     unitdef_alt = 'ft'
     unitdef_dens = 'slug/ft^3'
     unitdef_kine = 'ft²/s'
@@ -263,12 +264,12 @@ class Atmosphere:
         H_lhs, H_rhs = H_lhs.value, H_rhs.value
 
         def density_err(H_try: float) -> float:
-            return Atmosphere(H=Dim(H_try, H_units)).density.convert(
+            return Atmosphere(H=dim(H_try, H_units)).density.convert(
                 dens_reqd.units).value - dens_reqd.value
 
         H_d = bisect_root(density_err, H_lhs, H_rhs, maxits=50, ftol=1e-6)
 
-        return Dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
+        return dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
 
     @property
     def dynamic_viscosity(self) -> Dim:
@@ -278,8 +279,8 @@ class Atmosphere:
         conditions at altitudes above 90 km."""
 
         # Constants s, beta_s from  ISO 2533-1975 Table 1.
-        s = Dim(110.4, 'K')
-        beta_s = Dim(1.458E-06, 'kg/m/s/K^0.5')
+        s = dim(110.4, 'K')
+        beta_s = dim(1.458E-06, 'kg/m/s/K^0.5')
         return (beta_s * self._T ** 1.5 / (self._T + s)).convert(
             Atmosphere.unitdef_visc)
 
@@ -356,8 +357,8 @@ class Atmosphere:
 
 # Related constants.
 
-G_N = Dim(9.80665, 'm/s^2')  # Gravitational acceleration
-R_EARTH = Dim(6356.766, 'km')  # Earth radius (nom) from ISO 2533-1975 §2.3
+G_N = dim(9.80665, 'm/s^2')  # Gravitational acceleration
+R_EARTH = dim(6356.766, 'km')  # Earth radius (nom) from ISO 2533-1975 §2.3
 _GAMMA_PERF = 1.4
 # γ = Ratio of specific heats c_p/c_v.  Valid for normal and cold air
 # temperatures.
@@ -391,7 +392,8 @@ def _alt_in_layer(P, P_b, H_b, T_b, beta):
         return H_b - log(P / P_b) * (Atmosphere.R * T_b / G_N)
 
 
-_ISA_HTPrho_b, _ISA_beta = None, None
+_ISA_HTPrho_b: Optional[List] = None
+_ISA_beta: Optional[List] = None
 
 
 # noinspection PyPep8Naming
@@ -407,18 +409,18 @@ def _set_ISA_levels():
     # - rho_b: Density computed from T, P. Only needed for density altitude
     # method.
     #
-    # Note: These values are subscript _b meaning they apply at the base of the
-    # next range of constant lapse rate.
+    # Note: These values are subscript _b meaning they apply at the base of
+    # the next range of constant lapse rate.
 
-    _ISA_HTPrho_b = [[Dim(-2.00, 'km'), Dim(301.15, 'K'), None],
-                     [Dim(0.00, 'km'), Dim(288.15, 'K'), Dim(101325, 'Pa')],
-                     [Dim(11.00, 'km'), Dim(216.65, 'K'), None],
-                     [Dim(20.00, 'km'), Dim(216.65, 'K'), None],
-                     [Dim(32.00, 'km'), Dim(228.65, 'K'), None],
-                     [Dim(47.00, 'km'), Dim(270.65, 'K'), None],
-                     [Dim(51.00, 'km'), Dim(270.65, 'K'), None],
-                     [Dim(71.00, 'km'), Dim(214.65, 'K'), None],
-                     [Dim(80.00, 'km'), Dim(196.65, 'K'), None]]
+    _ISA_HTPrho_b = [[dim(-2.00, 'km'), dim(301.15, 'K'), None],
+                     [dim(0.00, 'km'), dim(288.15, 'K'), dim(101325, 'Pa')],
+                     [dim(11.00, 'km'), dim(216.65, 'K'), None],
+                     [dim(20.00, 'km'), dim(216.65, 'K'), None],
+                     [dim(32.00, 'km'), dim(228.65, 'K'), None],
+                     [dim(47.00, 'km'), dim(270.65, 'K'), None],
+                     [dim(51.00, 'km'), dim(270.65, 'K'), None],
+                     [dim(71.00, 'km'), dim(214.65, 'K'), None],
+                     [dim(80.00, 'km'), dim(196.65, 'K'), None]]
 
     # Compute beta (lapse rate) from H_b-T_b levels assuming a constant lapse
     # rate, which is the same as ISO 2533-1975 Table 4.
@@ -449,13 +451,13 @@ def _set_ISA_levels():
 _set_ISA_levels()
 
 
-def geo_alt_to_pot(geo_alt):
+def geo_alt_to_pot(geo_alt: Dim) -> Dim:
     """Convert geometric altitude to geopotential h → H per ISO 2533-1975 Eqn
     8."""
     return R_EARTH * geo_alt / (R_EARTH + geo_alt)
 
 
-def pot_alt_to_geo(pot_alt):
+def pot_alt_to_geo(pot_alt: Dim) -> Dim:
     """Convert geopotential altitude to geometric H → h per ISO 2533-1975 Eqn
     9."""
     return R_EARTH * pot_alt / (R_EARTH - pot_alt)

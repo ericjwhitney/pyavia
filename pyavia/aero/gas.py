@@ -10,8 +10,8 @@ from typing import Type
 import numpy as np
 from scipy import optimize
 
-from pyavia.core.units import dim, Dim
-from pyavia.core.util import split_dict
+from pyavia.units import dim, Dim
+from pyavia.iter import split_dict
 
 
 # -----------------------------------------------------------------------------
@@ -32,8 +32,10 @@ class Gas(ABC):
         ----------
         R : Dim
             Gas constant for the gas (i.e. :math:`R = R_{univ}/n`).
+
         w : Dim
             Mass flowrate.
+
         FAR: float
             Fuel-Air Ratio :math:`FAR = w_f/w_{total}`.  Non-zero `FAR` occurs
             when gases include products of combustion.
@@ -99,6 +101,7 @@ class Gas(ABC):
 
         .. note:: The baseline is arbitrary and values from different
            formulations / classes should not be compared.
+
         """
         raise NotImplementedError
 
@@ -116,7 +119,9 @@ class Gas(ABC):
     @property
     @abstractmethod
     def M(self) -> float:
-        """Mach number :math:`M = u/a`."""
+        """
+        Mach number :math:`M = u/a`.
+        """
         raise NotImplementedError
 
     @property
@@ -166,6 +171,7 @@ class Gas(ABC):
 
         .. note:: The baseline is arbitrary and values from different
            formulations / classes should not be compared.
+
         """
         raise NotImplementedError
 
