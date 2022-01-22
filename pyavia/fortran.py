@@ -1,5 +1,5 @@
 """
-Algorithms and containers mimicking FORTRAN-style behaviour.  This allows
+Algorithms and containers mimicking Fortran-style behaviour.  This allows
 interoperability with - or straightforward implementation of - algorithms
 originally written using Fortran or MATLAB.
 
@@ -57,7 +57,7 @@ by its inverse gives the unit matrix:
 from __future__ import annotations
 import numpy as np
 
-from .containers import MultiBiDict
+from pyavia.containers import MultiBiDict
 
 __all__ = ['fortran_do', 'fortran_array', 'FortranArray']
 
@@ -131,14 +131,15 @@ _F2NP_TYPES = MultiBiDict({
 
 def fortran_array(arr, dtype=None, *, copy=True, order='F', subok=False,
                   ndmin=1, ftype=None):
-    """Return a new FortranArray object using identical arguments to np.array(),
+    """
+    Return a new FortranArray object using identical arguments to `np.array()`,
     with the following differences:
 
-        - Fortran type ``ftype`` (case insensitive) may be given instead of
-          ``dtype`` (but not both).  See ``FortranArray.__new__`` for types.
-        - Default layout is order='F'.
+        - Fortran type `ftype` (case insensitive) may be given instead of
+          `dtype` (but not both).  See `FortranArray.__new__` for types.
+        - Default layout is ``order='F'``.
         - Minimum of ``ndmin=1``  is enforced.
-        - ``like`` keyword is not provided.
+        - `like` keyword is not provided.
     """
     if ndmin < 1:
         raise ValueError("FortranArrays must be of dimension one or higher.")
@@ -163,16 +164,16 @@ class FortranArray(np.ndarray):
     supports slice-off-the-end which is valid in Fortran 90 and
     NumPy.
 
-    Behaviour matches np.ndarray except:
+    Behaviour matches `np.ndarray` except:
         - There is no element [0], [0, 0], ... as expected.
         - Negative indexing to access end elements is not allowed.
         - NumPy advanced indexing is not allowed.
-        - The additional ``FortranArray.ftype`` property returns the Fortran
+        - The additional `FortranArray.ftype` property returns the Fortran
           equivalent of theunderlying Numpy data type in use.
 
-    .. Note:: FortranArray values by default are initialised to zero,
+    .. Note:: `FortranArray` values by default are initialised to zero,
               however this can be changed by setting
-              ``FortranArray.INIT_DEFAULT``.  This is because different Fortran
+              `FortranArray.INIT_DEFAULT`.  This is because different Fortran
               compilers offer different system-wide initialisation policies
               such as zero, nothing / garbage, etc.
     """
@@ -180,17 +181,7 @@ class FortranArray(np.ndarray):
     INIT_DEFAULT = 0  # Initialisation for directly constructed FortranArray().
 
     def __new__(cls, *dims, ftype='real*8'):
-        """Creates a new FortranArray.
-
-        Examples
-        --------
-        Create a 4x4 array of 64-bit floating point values.
-
-            >>> arr = FortranArray(4, 4, ftype='REAL*8')
-            >>> print(arr.shape)
-            (4, 4)
-            >>> print(arr.dtype)
-            float64
+        """Creates a new `FortranArray`.
 
         Parameters
         ----------
@@ -203,7 +194,7 @@ class FortranArray(np.ndarray):
             converted to a corresponding Numpy type:
 
                 - 'logical*1':  `bool_`
-                - 'logical':    `bool_`       (default flogical)
+                - 'logical':    `bool_`       (default logical)
                 - 'complex*32': `complex64`
                 - 'complex*64': `complex128`
                 - 'complex':    `complex128`  (default complex)
@@ -219,7 +210,7 @@ class FortranArray(np.ndarray):
         Returns
         -------
         result : FortranArray
-            Subclass of np.ndarray of type `ftype`, using Fortran ordering,
+            Subclass of `np.ndarray` of type `ftype`, using Fortran ordering,
             with all values initialised to `INIT_DEFAULT`.
 
         Raises
@@ -228,6 +219,16 @@ class FortranArray(np.ndarray):
             If `*dims` are not provided.
         ValueError
             If `ftype` is invalid.
+
+        Examples
+        --------
+        Create a 4x4 array of 64-bit floating point values.
+
+            >>> arr = FortranArray(4, 4, ftype='REAL*8')
+            >>> print(arr.shape)
+            (4, 4)
+            >>> print(arr.dtype)
+            float64
         """
         if not dims:
             raise AttributeError("At least one array dimension must be "
@@ -241,12 +242,16 @@ class FortranArray(np.ndarray):
                        dtype=np.dtype(np_type), order='F').view(cls)
 
     def __getitem__(self, key):
-        """Get array element using Fortran-style indexing."""
+        """
+        Get array element using Fortran-style indexing.
+        """
         return np.ndarray.__getitem__(self, self._f2py_idx(key)).view(
             FortranArray)
 
     def __setitem__(self, key, value):
-        """Set array element using Fortran-style indexing to `value`."""
+        """
+        Set array element using Fortran-style indexing to `value`.
+        """
         self.view(np.ndarray)[self._f2py_idx(key)] = np.asarray(value)
 
     def __repr__(self):
@@ -261,15 +266,19 @@ class FortranArray(np.ndarray):
 
     @property
     def ftype(self):
-        """Returns a string giving the first Fortran type matching the
-        internal Numpy dtype used."""
+        """
+        Returns a string giving the first Fortran type matching the internal
+        Numpy dtype used.
+        """
         return _F2NP_TYPES.inverse[str(self.dtype)][0]
 
     # -- Private Methods ------------------------------------------------------
 
     def _f2py_idx(self, fort_idx):
-        """Convert Fortran-style array slices (index-1) or individual indices
-        into Python / C equivalent (index-0)."""
+        """
+        Convert Fortran-style array slices (index-1) or individual indices
+        into Python / C equivalent (index-0).
+        """
         if not isinstance(fort_idx, tuple):
             fort_idx = fort_idx,  # Handle 0-D requests.
         if len(fort_idx) != self.ndim:

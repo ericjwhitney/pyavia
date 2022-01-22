@@ -2,7 +2,7 @@
 **PyAvia** is a collection of modules useful for common tasks in aerospace
 engineering or engineering in general.  Some things to note:
 
-- In all code snippets, it is assumed that PyAvia has been imported as follows:
+- In code snippets, it may be assumed that PyAvia has been imported as follows:
 
     >>> import pyavia as pa
 
@@ -17,30 +17,15 @@ engineering or engineering in general.  Some things to note:
 
 Version
 -------
-The current version is **0.0.3**.  **PyAvia** is designed for Python >= 3.7
+The current version is **0.0.3**.  **PyAvia** is designed for Python >= 3.9
 and is platform agnostic.
 
-.. note::
-    At this stage PyAvia is extremely preliminary, alpha, pre-release,
+.. note:: At this stage PyAvia is extremely preliminary, alpha, pre-release,
     etc.  Structural changes may be made to the code at any time that will
     almost definitely break third party code.  Please don't get cross.
-
-Coming Soon
------------
-- Modular jet engine performance model.
 """
-
-__version__ = '0.0.3'
-
-# Import core functions into pyavia.* namespace.  Note that all sub-packages
-# define __all__.
-from .core import *
-
-# Sub-modules / sub-packages.
-from . import aero
-from . import struct
-
 
 import sys
 
-assert sys.version_info >= (3, 7)
+assert sys.version_info >= (3, 9)
+

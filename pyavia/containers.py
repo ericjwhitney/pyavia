@@ -6,16 +6,12 @@ Adds useful, less common containers not available in the standard library.
 import collections
 from functools import reduce
 from operator import is_
-from typing import (Dict, Any, Iterable, Sequence, Callable, Hashable,
-                    Optional, List)
+from typing import (Dict, Any, Iterable, Callable, Hashable, Optional, List)
 
-__all__ = ['AttrDict', 'MultiBiDict', 'ValueRange',
-           'WtDirgraph', 'g_link', 'flatten', 'flatten_list']
+from pyavia.iter import flatten_list, count_op
+
 
 # -----------------------------------------------------------------------------
-# noinspection PyProtectedMember
-
-from pyavia.core.util import count_op
 
 
 class AttrDict(dict):
@@ -72,12 +68,9 @@ class MultiBiDict(dict):
       of key such that bidict_multi[key] == value.
     - Multiple keys can have the same value.
 
-    ..
-        >>> import pyavia as pa
-
     Examples
     --------
-    >>> bd = pa.MultiBiDict({'a': 1, 'b': 2})
+    >>> bd = MultiBiDict({'a': 1, 'b': 2})
     >>> print(bd)
     {'a': 1, 'b': 2}
     >>> print(bd.inverse)
@@ -185,16 +178,17 @@ class ValueRange:
 
 # -----------------------------------------------------------------------------
 
-#: g_link is a defined as an alias of the builtin slice function.  This is
-#: used to generate a graph link when square bracket syntax is not
-#: available.
-g_link = slice
+
+wdg_edge = slice
+"""`wdg_edge` is a defined as an alias of the builtin slice function.  This is 
+used to indicate a graph edge when square bracket syntax is not available.
+"""
 
 
 # Note: At this stage, methods that change internal state simply clear the
 # cache in lieu of a more sophisticated algorithm.
 
-class WtDirgraph:
+class WtDirGraph:
     # noinspection PyUnresolvedReferences
     """
     A weighted directed graph where a value / weight can be assigned to any
@@ -211,9 +205,9 @@ class WtDirgraph:
     ``wdg['a']`` returns a dict of all link / edge values starting at `a`
     i.e. ``{'b': 'somevalue', 'c': 'anotherval'}``.
 
-    .. note:: Where slice / square bracket syntax cannot be used, module
-       function g_link(a, b) is defined as an alias of the builtin slice
-       function. This is the equivalent of a graph link.  e.g.: ``if g_link(a,
+    .. note:: Where slice / square bracket syntax cannot be used, alias
+       wdg_edge(a, b) is defined as an alias of the builtin slice function.
+       This is used to define a graph edge.  e.g.: ``if wdg_edge(a,
        b) in wdg:``.
 
     ..
@@ -221,7 +215,7 @@ class WtDirgraph:
 
     Examples
     --------
-    >>> wdg = pa.WtDirgraph()
+    >>> wdg = pa.WtDirGraph()
     >>> wdg['a':'b'] = 'Here'
     >>> print(wdg)
     WtDirgraph({'a': {'b': 'Here'}, 'b': {}})
@@ -247,9 +241,6 @@ class WtDirgraph:
         """
         Construct a weighted directional graph.
 
-        ..
-            >>> import pyavia as pa
-
         Parameters
         ----------
         links :
@@ -257,7 +248,7 @@ class WtDirgraph:
             links.  Each key corresponds to a dict holding other keys and
             the link value.  Example:
 
-            >>> wdg = pa.WtDirgraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
+            >>> wdg = WtDirGraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
             >>> print(wdg['c':'a'])
             4
 
@@ -355,7 +346,7 @@ class WtDirgraph:
         Returns True if a link value x → y exists (slice arg), or True if
         key exists (single arg).  Because standalone slice notation is  not
         available on the LHS, use the following syntax:
-        ``g_link(x, y) in wdg``.
+        ``wdg_edge(x, y) in wdg``.
 
         Parameters
         ----------
@@ -364,14 +355,19 @@ class WtDirgraph:
 
         Returns
         -------
-        bool :
-
+        result : bool
             - Slice arg: True if a link value `x` → `y` exists, else False.
             - Key arg: True if key exists (single arg), else False.
         """
         if isinstance(arg, slice):
             _check_slice_arg(arg)
-            return arg.stop in self._links[arg.start]
+
+            try:
+                start_conns = self._links[arg.start]
+                return arg.stop in start_conns
+            except KeyError:
+                return False  # Starting point not present.
+
         else:
             return arg in self._links
 
@@ -480,57 +476,6 @@ def _check_slice_arg(arg: slice):
     if (not isinstance(arg, slice) or (arg.start == arg.stop) or
             (arg.start is None) or (arg.stop is None) or
             (arg.step is not None)):
-        raise KeyError(f"Expected [from:to] or link(from, to).")
-
+        raise KeyError(f"Expected [from:to] or wdg_edge(from, to).")
 
 # -----------------------------------------------------------------------------
-
-def flatten(seq):
-    """
-    Generator returning entries from a flattened representation of any
-    sequence container (except strings).  Taken from
-    https://stackoverflow.com/a/2158532
-
-    Examples
-    --------
-    >>> for x in flatten((2, (3, (4, 5), 6), 7)):
-    ...     print(x, end='')
-    234567
-
-    Parameters
-    ----------
-    seq : list_like
-        Sequence container
-
-    Yields
-    ------
-    :
-        Each entry in turn.
-    """
-    for elem in seq:
-        if isinstance(elem, Sequence) and not isinstance(elem, (str, bytes)):
-            yield from flatten(elem)
-        else:
-            yield elem
-
-
-def flatten_list(li):
-    """
-    Generator similar to ``flatten``, however only flattens lists until a
-    non-list element is found.  Note that non-lsits may contain sub-lists
-    and these are not flattened.
-
-    Parameters
-    ----------
-    li : List
-        List to flatten.
-    Yields
-    ------
-    :
-        Each non-list entry in turn.
-    """
-    for elem in li:
-        if isinstance(elem, list):
-            yield from flatten_list(elem)
-        else:
-            yield elem

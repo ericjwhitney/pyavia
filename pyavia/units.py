@@ -1,6 +1,6 @@
 """
-Implementation of main units object Dim, factory function dim() and other
-associated functions.
+Units-aware calculations, including commonly used factory function ``dim()``
+and other associated functions.
 
 Examples
 --------
@@ -63,6 +63,7 @@ represent different quantities:
 
 What the different temperature units can represent can be summarised as
 follows:
+
     +------------------+----------+--------+-------+--------+
     |                  |     Total Scale   | Can Represent  |
     | Temperature Unit +-------------------+----------------+
@@ -138,16 +139,16 @@ import warnings
 
 import numpy as np
 
-from pyavia.core.containers import MultiBiDict, WtDirgraph
-from pyavia.core.util import coax_type, force_type, kind_div
+from pyavia.containers import MultiBiDict, WtDirGraph, wdg_edge
+from pyavia.math import kind_div
+from pyavia.types import coax_type, force_type
 
 __all__ = ['OUTPUT_UCODE_PWR', 'STD_UNIT_SYSTEM', 'CACHE_COMPUTED_CONVS',
            'CONV_PATH_LENGTH_WARNING', 'Dim', 'RealScalar', 'RealArray',
            'DimScalar', 'DimArray', 'add_base_unit', 'add_unit', 'convert',
-           'dim', 'is_dimarray', 'set_conversion', 'similar_to',
-           'split_dim', 'to_absolute_temp']
+           'dim', 'is_dimarray', 'set_conversion', 'to_absolute_temp']
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 CACHE_COMPUTED_CONVS = True
@@ -169,13 +170,13 @@ OUTPUT_UCODE_PWR = True
 """Generate unicode chars for power values in strings."""
 
 STD_UNIT_SYSTEM = 'kg.m.s.K.mol.A.cd.rad.sr'
-"""This module variable represents a standard system used as the default 
-value for any calls to Dim.to_system().  Some unit types may be omitted with 
-default values assumed - refer to the documentation for ``Dim.to_system()`` 
-for details. """
+"""This variable represents a standard system used as the default value for 
+any calls to Dim.to_system().  Some unit types may be omitted with default 
+values assumed - refer to the documentation for ``Dim.to_real_sys()`` for 
+details. """
 
 
-# -- Type Definitions -------------------------------------------------------
+# -- Type Definitions ---------------------------------------------------------
 
 class Dim(namedtuple('Dim', ['value', 'units'])):
     """
@@ -193,7 +194,7 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
        Refer to factory function ``dim()`` for normal construction methods.
     """
 
-    # -- Unary Operators ----------------------------------------------------
+    # -- Unary Operators ------------------------------------------------------
 
     def __abs__(self):
         return Dim(abs(self.value), self.units)
@@ -220,94 +221,169 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
     def __round__(self, n=None):
         return Dim(round(self.value, n), self.units)
 
-    # -- Binary Operators ---------------------------------------------------
+    # -- Binary Operators -----------------------------------------------------
 
     def __add__(self, rhs: DimArray) -> DimArray:
-        """
+        r"""
         Add two dimensioned values.  If `rhs` is an ordinary value,
-        it is promoted to ``Units`` before addition.  This allows for the
+        it is promoted to ``Dim`` before addition.  This allows for the
         case of a dimensionless intermediate product in expressions.
-        Addition of offset temperatures is limited to Δ values only.
+
+
+        Addition of isolated temperatures is only permitted in some cases
+        and the result depends on the combination of units involved.  Total
+        temperatures (e.g. K, °C) and temperature changes (e.g. ΔK, Δ°C) are
+        handled differently the result will be as follows:
+
+            +-----------------+---------------+-----------------+
+            |                 |             (+) RHS             |
+            +       LHS       +---------------+-----------------+
+            |                 | Total (K/°C)  | Change (ΔK/Δ°C) |
+            +=================+===============+=================+
+            |   Total (K/°C)  | Not Permitted |      Total      |
+            +-----------------+---------------+-----------------+
+            | Change (ΔK/Δ°C) |     Total     |     Change      |
+            +-----------------+---------------+-----------------+
         """
         if not isinstance(rhs, Dim):
             # Promote to Dim. Addition to a dimless value would only be
             # valid if we were dimless ourselves anyway.
             rhs = Dim(rhs, '')
 
-        l_basis = _Units(self.units)
-        r_basis = _Units(rhs.units)
-        new_r_basis = l_basis
+        err_str = f"Addition '{self.units}' + '{rhs.units}' is not allowed."
 
-        # Offset temperatures are a special case.
-        if l_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
-            assert _base_unit(l_basis)
+        # Handle special cases of temperature addition.
+        if self.is_total_temp():
+            if rhs.is_temp_change():
+                # Case: Total + Δ -> Total
+                # Units are adopted from the LHS.
+                if self.is_absolute_temp():
+                    rhs = rhs.convert(self.units)
+                else:
+                    rhs = rhs.convert('Δ' + self.units)
 
-            # Disallowed:  LHS (°C, °F) + RHS (°C, °F)
-            if r_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
-                raise ValueError(f"Cannot add offset temperatures: "
-                                 f"{l_basis.θ[0]} + {r_basis.θ[0]}")
+                return Dim(self.value + rhs.value, self.units)
 
-            # For LHS (°C, °F) change conversion target to (Δ°C, Δ°F)
-            # noinspection PyProtectedMember
-            new_r_basis = new_r_basis._replace(
-                **{'θ': ('Δ' + l_basis.θ[0], 1)})
+            else:
+                raise ValueError(err_str)
 
-        res_value = self.value + _convert(rhs.value, r_basis, new_r_basis)
+        if self.is_temp_change():
+            if rhs.is_total_temp():
+                # Case: Δ + Total -> Total
+                # Units are adopted from the total version of the LHS, which
+                # is what the RHS is converted into prior to addition.
+                rhs = rhs.convert(self.units[1:])  # By dropping Δ from LHS.
+                return Dim(self.value + rhs.value, rhs.units)
 
+            elif rhs.is_temp_change():
+                # Case: Δ + Δ -> Δ
+                rhs = rhs.convert(self.units)
+                return Dim(self.value + rhs.value, self.units)
+
+            else:
+                raise ValueError(err_str)
+
+        # Remaining cases can be handled by normal conversion machinery.
+        rhs = rhs.convert(self.units)
+        res_value = self.value + rhs.value
         res_value = coax_type(res_value, type(self.value + rhs.value),
                               default=res_value)
 
-        if not l_basis.is_dimless():
-            return Dim(res_value, self.units)
+        res = Dim(res_value, self.units)
+        if not res.is_dimless():
+            return res
         else:
-            return res_value  # Units disappeared.
+            return res.value  # Units fell off.
 
     def __sub__(self, rhs: DimArray) -> DimArray:
-        """
+        r"""
         Subtract two dimensioned values.  Follows the same rules as
-        __add__, with some minor differences. Subtraction of offset
-        temperatures is permitted and will result in a Δ value.
+        __add__, with differences noted below.
+
+            +-----------------+---------------+-----------------+
+            |                 |           \- RHS                |
+            +       LHS       +---------------+-----------------+
+            |                 | Total (K/°C)  | Change (K/Δ°C)  |
+            +=================+===============+=================+
+            |   Total (K/°C)  |  Change (\*)  |     Total       |
+            +-----------------+---------------+-----------------+
+            |  Change (K/Δ°C) | Not Permitted |     Change      |
+            +-----------------+---------------+-----------------+
+
+            (*) For this case both temperatures are required to already be on
+            the same scale.  Because absolute temperatures can also represent
+            temperature changes, not requiring this results in an ambiguous
+            conversion target.  Offset scale temperatures are converted to an
+            absolute scale prior to subtraction to give correct results.
+
+        Subtraction of isolated temperatures is only permitted in some cases
+        and the result depends on the combination of units involved.  Total
+        temperatures (e.g. K, °C) and temperature changes (e.g. ΔK, Δ°C) are
+        handled differently the result will be as follows:
+
+        Notice that the result of subtracting temperature type units is
+        unsymmetric / not commutative.
         """
         if not isinstance(rhs, Dim):
             # Promote to Dim. Subtracting a dimless value would only be
             # valid if we were dimless ourselves anyway.
             rhs = Dim(rhs, '')
 
-        # LHS offset temperatures are a special case.
-        l_basis = _Units(self.units)
-        r_basis = _Units(rhs.units)
-        new_r_basis = l_basis
-        res_basis = l_basis
+        # Handle special cases of temperature subtraction.
+        if self.is_total_temp():
+            if rhs.is_total_temp():
+                # Case: Total - Total -> Δ
+                # This case requires the temperatures to already be on the
+                # same scale.
+                if self.units != rhs.units:
+                    raise ValueError(f"Total temperatures must be on the same "
+                                     f"scale for subtraction, got: "
+                                     f"'{self.units}' - '{rhs.units}'")
 
-        if l_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
-            assert _base_unit(l_basis)
+                if self.is_absolute_temp():
+                    # Simple case of K, °R.
+                    return Dim(self.value - rhs.value, self.units)
 
-            # Two possible cases exist.
-            if r_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
-                # Case 1: LHS (°C, °F) - RHS (°C, °F) -> Result (Δ°C, Δ°F):
-                # -> Direct conversion of RHS -> LHS and subtract.  Return Δ
-                #    result.
-                res_basis = _Units('Δ' + l_basis.θ[0])
-            else:
-                # Case 2: LHS (°C, °F) - RHS (All others Δ) -> Result (°C, °F)
-                # -> Convert to corresponding (Δ°C, Δ°F) then subtract.
-                #    Return offset result.
-                new_r_basis = _Units('Δ' + l_basis.θ[0])
-        else:
-            # Isolated RHS offset temperatures are not allowed.
-            if r_basis.θ[0] in _OFF_SCALE_TOTAL_TEMPS:
-                raise TypeError(
-                    f"Cannot subtract offset from total temperatures: "
-                    f"{str(l_basis)} - {str(r_basis)}")
+                # Offset case requires temperatures to be converted to absolute
+                # scales prior to subtraction.
+                lhs = to_absolute_temp(self)  # Do subtraction in matching ...
+                rhs = rhs.convert(lhs.units)  # ... absolute units.
+                res = Dim(lhs.value - rhs.value, lhs.units)
 
-        res_value = self.value - _convert(rhs.value, r_basis, new_r_basis)
-        res_value = coax_type(res_value, type(self.value + rhs.value),
+                # Return to the original type of unit on Δ scale.
+                return res.convert('Δ' + self.units)
+
+            elif rhs.is_temp_change():
+                # Case: Total - Δ -> Total
+                # Match scales.
+                if self.is_absolute_temp():
+                    rhs = rhs.convert(self.units)
+                else:
+                    rhs = rhs.convert('Δ' + self.units)
+
+                return Dim(self.value - rhs.value, self.units)
+
+            # Other units will fall through to give a conversion error.
+
+        if self.is_temp_change():
+            if rhs.is_temp_change():
+                # Case: Δ - Δ -> Δ
+                rhs = rhs.convert(self.units)  # Match scales.
+                return Dim(self.value - rhs.value, self.units)
+
+            # Other units will fall through to give a conversion error.
+
+        # Remaining cases can be handled by normal conversion machinery.
+        rhs = rhs.convert(self.units)
+        res_value = self.value - rhs.value
+        res_value = coax_type(res_value, type(self.value - rhs.value),
                               default=res_value)
 
-        if not res_basis.is_dimless():
-            return Dim(res_value, str(res_basis))
+        res = Dim(res_value, self.units)
+        if not res.is_dimless():
+            return res
         else:
-            return res_value  # Units disappeared.
+            return res.value  # Units fell off.
 
     def __mul__(self, rhs: DimArray) -> DimArray:
         """
@@ -328,9 +404,9 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
               multiplication of two dimensioned values.
 
         .. note:: If either argument is an offset temperature base unit
-           (°C, °F), this is allowed however it is first converted to a
-           total temperature before multiplying.  Offset temperatures can't
-           be part of derived units as there is no way to multiply them out.
+           (°C, °F), this is allowed however it is first converted to an
+           absolute scale before multiplying.  Offset temperatures can't be
+           part of derived units as there is no way to multiply them out.
 
         General multiplication procedure:  The general principle is that
         when any units are different between the two arguments, the LHS
@@ -340,45 +416,6 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
         ``rhs`` units have a k-factor, this is multiplied out and becomes
         part of `self.value` leaving `k` = 1 for both ``self`` and ``rhs``.
         """
-        # if not isinstance(rhs, Dim):
-        #     if self.units:
-        #         # Return using existing units.
-        #         return Dim(self.value * rhs, self.units)
-        #     else:
-        #         # Drop dimensions.
-        #         return self.value * rhs
-        #
-        # # Offset-scale temperatures are allowed as multiplication arguments
-        # # as a special case provided they are isolated.
-        # lhs = self
-        # lhs_units, rhs_units = _Units(lhs.units), _Units(rhs.units)
-        # if lhs_units.is_base_temp():
-        #     lhs = to_absolute_temp(lhs)
-        #     lhs_units = _Units(lhs.units)
-        # if rhs_units.is_base_temp():
-        #     rhs = to_absolute_temp(rhs)
-        #     rhs_units = _Units(rhs.units)
-        #
-        # # Build final basis and factor out 'k' into result.
-        # res_basis = lhs_units * rhs_units
-        # res_value = lhs.value * rhs.value * res_basis.k
-        # # noinspection PyProtectedMember
-        # res_basis = res_basis._replace(k=1)
-        #
-        # # Check if multiplication resulted in radians, which can be of any
-        # # power (as they are dimensionless).
-        # if res_basis.A[0] == 'rad':
-        #     # noinspection PyProtectedMember
-        #     res_basis = res_basis._replace(A=('', 0))
-        #
-        # if res_basis.Ω[0] == 'sr':
-        #     # noinspection PyProtectedMember
-        #     res_basis = res_basis._replace(Ω=('', 0))
-        #
-        # if not res_basis.is_dimless():
-        #     return Dim(res_value, str(res_basis))
-        # else:
-        #     return res_value  # Units disappeared.
         return _dim_mul_generic(self, rhs, operator.mul)
 
     def __truediv__(self, rhs: DimArray) -> DimArray:
@@ -388,15 +425,7 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
         if not isinstance(rhs, Dim):
             return Dim(self.value / rhs, self.units)
 
-        # Offset-scale temperatures are allowed as a special case provided
-        # they are isolated.
-        lhs = self
-        if _Units(lhs.units).is_base_temp():
-            lhs = to_absolute_temp(lhs)
-        if _Units(rhs.units).is_base_temp():
-            rhs = to_absolute_temp(rhs)
-
-        return lhs * (rhs ** -1)
+        return self * (rhs ** -1)
 
     def __matmul__(self, rhs: DimArray) -> DimArray:
         """
@@ -412,6 +441,9 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
         multiplied out and becomes part of `result.value`, i.e. the
         resulting units have `k` = 1.
         """
+
+        # TODO Special case -1 for convenience / speed?
+
         pwr_basis = _Units(self.units) ** pwr
         res_value = pwr_basis.k * (self.value ** pwr)
         res_value = coax_type(res_value, type(self.value), default=res_value)
@@ -438,7 +470,7 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
         """See ``__truediv__`` for division rules."""
         return Dim(lhs, '') / self
     
-    # -- Comparison Operators -----------------------------------------------
+    # -- Comparison Operators -------------------------------------------------
 
     def __lt__(self, rhs):
         return _common_cmp(self, rhs, operator.lt)
@@ -472,14 +504,25 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
     # -- Normal Methods -----------------------------------------------------
 
     def convert(self, to_units: str) -> DimArray:
-        """Generate new ``Dim`` object converted to requested units."""
+        """
+        Generate new ``Dim`` object converted to requested units.
+        """
         return Dim(convert(self.value, from_units=self.units,
                            to_units=to_units), to_units)
 
+    def is_absolute_temp(self) -> bool:
+        """
+        Returns ``True`` if this is a basic temperature and is a temperature
+        on an absolute scale (i.e. K, °R, not on an offset scale such as °C,
+        °F).  Otherwise returns ``False``.
+        """
+        return _Units(self.units).is_absolute_temp()
+
     def is_base_temp(self) -> bool:
         """
-        Returns ``True`` if the only field in the units signature is θ¹
-        (of any type), otherwise returns ``False``.
+        Returns ``True`` if this is a 'standalone' temperature, i.e. the only
+        field in the units signature is θ¹ (temperature can be of any type) and
+        multiplier `k` = 1.  Otherwise returns ``False``.
         """
         return _Units(self.units).is_base_temp()
 
@@ -487,80 +530,49 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
         """Return True if the value has no effective dimensions."""
         return _Units(self.units).is_dimless()
 
-    # # TODO re-evaluate this ... move outside Dim() ?
-    # @classmethod
-    # def from_str(cls, txt: str, val_type=float) -> Dim:
+    # TODO Remove?
+    # def is_equiv(self, rhs) -> bool:
     #     """
-    #     Convert a string ``txt`` of the format 'X.XXX <units>' into a Dim
-    #     object.  String conversion rules for values and units apply (see
-    #     __init__). TODO Amend  If no units part is provided, returns a
-    #     dimensionless Dim object i.e. Dim(value).
+    #     Returns ``True`` if ``self`` and ``rhs`` have equivalent unit bases
+    #     (e.g. both are pressures, currents, speeds, etc), otherwise
+    #     returns ``False``.
     #
-    #     Parameters
-    #     ----------
-    #     txt : str
-    #         String containing value and units for conversion.
-    #     val_type : Callable (optional)
-    #         Default type / function called with the leading part of ``txt``
-    #         to do the numeric conversion.  Default is ``float``.
-    #
-    #     Returns
-    #     -------
-    #     result : Dim
-    #         Dim(value, units) object.
-    #
-    #     Raises
-    #     ------
-    #     ValueError if an error occured during numeric conversion.
+    #     - If ``rhs`` is not a ``Dim`` object then we return ``True`` only if
+    #       ``self.is_dimless() == True``, otherwise we return ``False``.
+    #     - If ``rhs`` has unknown units then we return ``False``.
+    #     - The actual compatibility test used is:
+    #         ``result = Dim(1, self.units) / Dim(1, rhs.units)``
+    #       If the result of this division has no units then we return ``True``.
+    #       This allows for cancellation of units (and radians, etc).
     #     """
-    #     tokens = txt.split()
-    #     if len(tokens) == 2:
-    #         return Dim(val_type(tokens[0]), tokens[1])
-    #     elif len(tokens) == 1:
-    #         return Dim(val_type(tokens[0]), '')
-    #     else:
-    #         raise ValueError(f"Dim.from_str: Can't convert string to Dim ->"
-    #                          f" {txt}")
-
-    def is_equiv(self, rhs) -> bool:
-        """
-        Returns ``True`` if ``self`` and ``rhs`` have equivalent unit bases
-        (e.g. both are pressures, currents, speeds, etc), otherwise
-        returns ``False``.
-
-        - If ``rhs`` is not a ``Dim`` object then we return ``True`` only if
-          ``self.is_dimless() == True``, otherwise we return ``False``.
-        - If ``rhs`` has unknown units then we return ``False``.
-        - The actual compatibility test used is:
-            ``result = Dim(1, self.units) / Dim(1, rhs.units)``
-          If the result of this division has no units then we return
-          ``True``.  This allows for cancellation of units (and radians,
-          etc).
-        """
-        if not isinstance(rhs, Dim):
-            if self.is_dimless():
-                return True
-            else:
-                return False
-
-        try:
-            if not isinstance(Dim(1, self.units) / Dim(1, rhs.units), Dim):
-                return True
-        except ValueError:
-            return False
+    #     if not isinstance(rhs, Dim):
+    #         if self.is_dimless():
+    #             return True
+    #         else:
+    #             return False
+    #
+    #     try:
+    #         if not isinstance(Dim(1, self.units) / Dim(1, rhs.units), Dim):
+    #             return True
+    #     except ValueError:
+    #         return False
 
     def is_temp_change(self) -> bool:
         """
-        Returns ``True`` if this is a base temperature and can represent
+        Returns ``True`` if this is a basic temperature and can represent
         a temperature change, e.g. K, °R, Δ°C, Δ°F.  Otherwise returns False.
+
+        .. note:: This is *not* the opposite of `is_total_temp()`.  For
+           example ``dim(300, 'K').is_temp_change() == True`` as well as
+           ``dim(300, 'K').is_total_temp() == True``.
         """
         return _Units(self.units).is_temp_change()
 
     def is_total_temp(self) -> bool:
         """
-        Returns ``True`` if this is a base temperature as well as a
-        recognised total temperature (on either absolute or offset scales).
-        Otherwise returns ``False``.
+        Returns ``True`` if this is a basic temperature as well as a
+        total temperature (on either absolute or offset scales), i.e. K, °R,
+        °C, °F.  Otherwise returns ``False``.
         """
         return _Units(self.units).is_total_temp()
 
@@ -568,11 +580,10 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
         """
         Remove dimensions and return a plain real number type.  The target
         units and number type can be optionally specified.  This is a
-        convenience method equivalent to:
-            ``self.convert(to_units).value``
+        convenience method equivalent to ``self.convert(to_units).value``
 
         .. note:: Unit information is lost. See operators ``__int__``,
-        ``__float__``, etc.
+           ``__float__``, etc.
 
         Parameters
         ----------
@@ -609,6 +620,7 @@ class Dim(namedtuple('Dim', ['value', 'units'])):
             Unit types for mass (M), length (L), time (T) and temperature (θ)
             must always be provided.  Other types may be omitted for brevity
             and will have the following default values assigned:
+
                 - Amount of substance (N): mol
                 - Electric current (I): A
                 - Luminous intensity (J): cd
@@ -643,7 +655,7 @@ DimScalar = Union[Dim, RealScalar]
 ``Union[Dim, RealScalar]`` and represents a value that is expected to be 
 either a general numeric scalar or dimensioned equivalent. """
 
-DimArray = Union[Dim, np.ndarray, RealScalar]
+DimArray = Union[Dim, RealArray]
 """A `DimArray` is a shorthand defined for type checking porpoises as 
 ``Union[Dim, RealArray]`` and is used where an argument is expected to be 
 either an array or an array-like real value that can be coaxed into an array, 
@@ -694,8 +706,8 @@ def add_unit(unit: str, basis: str):
 
 def convert(value: RealArray, from_units: str, to_units: str) -> RealArray:
     """
-    Convert ``value`` in ``from_units`` to requested ``to_units``.  This is
-    used for doing conversions without using ``Dim`` objects.
+    Convert ``value`` currently in ``from_units`` to requested ``to_units``.
+    This is used for doing conversions without using ``Dim`` objects.
 
     Examples
     --------
@@ -744,14 +756,13 @@ def dim(value: Union[DimArray, str] = 1, units: str = None) -> Dim:
 
     The `units` string has the following format:
 
-        - Base unit strings can include characters from the alphabet, °, _,
-          Δ, °, μ.
+        - Base unit strings can include characters from the alphabet,
+          ``_ Δ ° μ``.
         - Individual base units can be separated by common operators such as
-          `. * × /`.  The division symbol is not used as it looks too
+          ``. * × /``.  The division symbol is not used as it looks too
           similar to addition on screens.
-        - A numerical leading constant may be optionally included,
-          along with an operator if this is required e.g. `1000m³`,
-          `12.0E-02.ft²'.
+        - A numerical leading constant may be optionally included, along with
+          an operator if this is required e.g. `1000m³`, `12.0E-02.ft²`.
         - Unit power can be indicated using `^` or unicode
           superscript characters, e.g. `m³` or `m^3`.
         - Dividing units can be indicated by using the division operator
@@ -761,6 +772,7 @@ def dim(value: Union[DimArray, str] = 1, units: str = None) -> Dim:
     ----------
     value : Number
         Non-dimensional value.
+
     units : str (Optional)
         String representing the combination of base units associated
         with this value.
@@ -822,18 +834,6 @@ def is_dimarray(x: DimArray) -> bool:
         return False
 
 
-# TODO May no longer be required?
-# def join_dim(value: Number, units: Optional[str]) -> DimScalar:
-#     """
-#     Helper function to construct a ``Dim`` object if ``units`` is not
-#     ``None``, otherwise return the value unchanged.
-#     """
-#     if units is not None:
-#         return Dim(value, units)
-#     else:
-#         return value
-
-
 def set_conversion(from_label: str, to_label: str, *, fwd: Number,
                    rev: Union[Number, str, None] = 'auto'):
     """
@@ -865,6 +865,10 @@ def set_conversion(from_label: str, to_label: str, *, fwd: Number,
     to_unit = _KNOWN_UNITS[to_label]
 
     # Record the forward conversion.
+    if wdg_edge(from_unit, to_unit) in _CONVERSIONS:
+        raise ValueError(f"Conversion '{from_unit}' -> '{to_unit}' already "
+                         f"defined.")
+
     _CONVERSIONS[from_unit:to_unit] = fwd  # Keys are namedtuples.
 
     # Handle the reverse conversion as requested.
@@ -892,45 +896,13 @@ def set_conversion(from_label: str, to_label: str, *, fwd: Number,
         _CONVERSIONS[to_label:from_label] = rev
 
 
-def similar_to(example: Union[Dim, str]) -> set[str]:
-    """
-    Returns a set of all known units (as strings) with the same dimensions
-    as the example given.
-    """
-    if isinstance(example, Dim):
-        example = _Units(example.units)
-    else:
-        example = _Units(example)
-
-    matching = set()
-    for label, units in _KNOWN_UNITS.items():
-        if all(True if kn_p == ex_p else False
-               for (_, kn_p), (_, ex_p) in zip(units[1:], example[1:])):
-            matching.add(label)
-    return matching
-
-
-# TODO May no longer be required as we are now a namedtuple with
-#  constructor functin dim() that accepts Dim objects.  So this would be
-#  equivalent to:
-#    value, units = dim(x)
-def split_dim(x: DimArray) -> (RealArray, Optional[str]):
-    """
-    Helper function to extract value and units from either a ``Dim()``
-    object or a regular value.
-    """
-    if isinstance(x, Dim):
-        return x.value, x.units
-    else:
-        return x, None
-
-
 def to_absolute_temp(x: Dim) -> Dim:
     """
-    Function to convert a total temperature on an offset scale to the
-    equivalent on an absolute scale (°C → K or °F → °R).  If `x` is already
-    on an absolute scale, returns `x` directly.  Raises exception for other
-    unit types or temperature changes (Δ°C or Δ°F).
+    Function to convert an isolated total temperature to an absolute scale.
+
+        - If `x` is on an offset scale the equivalent on an absolute scale is
+          used (°C → K or °F → °R).
+        - If `x` is already on an absolute scale it is returned directly.
 
     Parameters
     ----------
@@ -939,41 +911,37 @@ def to_absolute_temp(x: Dim) -> Dim:
 
     Returns
     -------
-    Dim :
-        Dim object converted as required.
+    result : Dim
+        `x` converted as required.
 
     Raises
     ------
     ValueError
-        If x is not a base total temperature, i.e. is mixed units or is a
+        If `x` is not a total temperature, i.e. is mixed units or is a
         temperature change / Δ.
     """
-    unit_obj = _Units(x.units)
+    if x.is_absolute_temp():
+        return x
 
-    if unit_obj.is_total_temp():  # Check for recognised base temperature.
-        if unit_obj.θ[0] in _ABS_SCALE_TOTAL_TEMPS:
-            # Case x = absolute: No conversion required.
-            return x
+    if not x.is_total_temp():
+        raise ValueError(f"'{x.units}' is not a total temperature.")
 
-        else:
-            # Case x = offset: Convert to absolute.
-            try:
-                target_ustr = _OFF_ABS_TEMP_CONV[unit_obj.θ[0]]
-                return x.convert(target_ustr)
-            except KeyError:
-                raise ValueError(f"No absolute temperature conversion "
-                                 f"target set for unit '{unit_obj.θ[0]}'.")
+    # Determine offset -> absolute mapping to use.
+    try:
+        abs_units = _OFF_ABS_MAP[x.units]
+    except KeyError:
+        raise ValueError(f"No absolute temperature mapping for '{x.units}'.")
 
-    else:
-        raise ValueError(f"Not a total temperature, got: {unit_obj}")
+    return x.convert(abs_units)
 
 
 # == Private Attributes & Functions ===========================================
 
-_KNOWN_UNITS = MultiBiDict()  # All Units(), base and derived.
+_BLOCKED_CONVS: set[_Units] = set()  # Will be rejected by _convert().
+_COMP_CONV_CACHE: {(_Units, _Units): Number} = {}  # Cached computed convs.
+_CONVERSIONS = WtDirGraph()  # Conversions between Units().
 _KNOWN_BASE_UNITS: set[_Units] = set()  # Single entry ^1 Units().
-_CONVERSIONS = WtDirgraph()  # Conversions between Units().
-_COMP_CONV_CACHE = {}  # {(Units, Units): Factor, ...}
+_KNOWN_UNITS = MultiBiDict()  # All Units(), base and derived.
 
 # Precompiled parser.
 
@@ -996,14 +964,16 @@ _unitparse_rx = re.compile(fr'''
 # The following are setup to hold temperature units so that special rules
 # can be applied.
 
-# _OFFSET_TEMPS = {'°C', '°F'}
-_OFF_SCALE_TOTAL_TEMPS = set()  # Offset scale temps {str, ...}
-_ABS_SCALE_TOTAL_TEMPS = set()  # Absolute scale temps {str, ...}
-_OFF_ABS_TEMP_CONV = {}  # Preferred conv. {from_str: to_str, ...}
-_DELTA_TEMPS = set()  # Can represent temperature change Δ {str, ...}
+_ABS_SCALE_TEMPS = ('K', '°R')
+_OFF_SCALE_TEMPS = ('°C', '°F')
+_OFF_ABS_MAP = {'°C': 'K',  # From -> To.
+                '°F': '°R'}
+_TOTAL_TEMPS = _ABS_SCALE_TEMPS + _OFF_SCALE_TEMPS
+_DELTA_TEMPS = ('K', '°R', 'Δ°C', 'Δ°F')
+_ALL_TEMPS = _TOTAL_TEMPS + _DELTA_TEMPS
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 class _Units(namedtuple('_Units',
@@ -1044,7 +1014,7 @@ class _Units(namedtuple('_Units',
           power == 1.
    """
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> _Units:
         """
         ``_Units`` objects can either be created by passing a single string
         argument to be parsed, or otherwise by directly initialising as
@@ -1155,7 +1125,6 @@ class _Units(namedtuple('_Units',
         """
         Raises unit basis to a given power, including leading factor 'k'.
         """
-
         # Build resulting units. Most units have integer powers; try to
         # preserve int-ness.
         res_basis = [coax_type(self.k ** pwr, type(self.k),
@@ -1202,12 +1171,21 @@ class _Units(namedtuple('_Units',
 
     # -- Public Methods -----------------------------------------------------
 
+    def is_absolute_temp(self) -> bool:
+        """
+        Refer to Dim() for documentation.
+        """
+        if self.is_base_temp() and self.θ[0] in _ABS_SCALE_TEMPS:
+            return True
+        else:
+            return False
+
     def is_base_temp(self) -> bool:
         """
         Refer to Dim() for documentation.
         """
-        if self.θ[1] == 1 and self.θ[0]:
-            # θ¹ present.  Check all other powers are zero.
+        if self.θ[0] in _ALL_TEMPS and self.θ[1] == 1 and self.k == 1:
+            # θ¹ present, k == 1.  Check all other powers are zero.
             if all(p == 0 for i, (_, p) in enumerate(self[1:], start=1)
                    if self._fields[i] != 'θ'):
                 return True
@@ -1237,8 +1215,7 @@ class _Units(namedtuple('_Units',
         """
         Refer to Dim() for documentation.
         """
-        if self.is_base_temp() and self.θ[0] in (
-                _ABS_SCALE_TOTAL_TEMPS | _OFF_SCALE_TOTAL_TEMPS):
+        if self.is_base_temp() and self.θ[0] in _TOTAL_TEMPS:
             return True
         else:
             return False
@@ -1248,7 +1225,9 @@ class _Units(namedtuple('_Units',
 
 
 def _add_unit(unit: str, basis: _Units):
-    """Private function for registering a new ``_Units`` entry. """
+    """
+    Private function for registering a new ``_Units`` entry.
+    """
 
     # Check string.
     allowed_chars = {'_', '°', 'Δ'}
@@ -1286,8 +1265,8 @@ def _base_unit(unit: _Units) -> Optional[str]:
 
     Returns
     -------
-    str or None :
-        If ``basis`` is a base unit - i.e. ``k = 1`` and only one linear base
+    result : str or None
+        If `basis` is a base unit - i.e. `k` = 1 and only one linear base
         unit is used - that string label is returned, otherwise returns None.
     """
     bases_used, last_u, last_p = 0, None, 0
@@ -1303,11 +1282,11 @@ def _base_unit(unit: _Units) -> Optional[str]:
 
 def _basis_factor(from_units: _Units, to_basis: _Units) -> RealScalar:
     """
-    Similar to _conversion_factor, however this is for changing
-    `from_units` to a completely different consistent basis, so all fields
-    are included.  If `to_basis` is only partial, default values are
-    inserted.  The required multiplier is returned along with a
-    representative string of the final applicable units.
+    Similar to _conversion_factor, however this is for changing `from_units`
+    to a completely different and consistent basis, so all fields are
+    included.  If `to_basis` is only partial, default values are inserted.
+    The required multiplier is returned along with a representative string of
+    the final applicable units.
     """
 
     # Check provided system.
@@ -1344,10 +1323,22 @@ def _basis_factor(from_units: _Units, to_basis: _Units) -> RealScalar:
     return (final_sys * from_units).k
 
 
+def _block_conversion(from_label: str):
+    """
+    Enters ``None`` as a target unit against `from_label`.  This used when
+    automatic conversion is to be prohibited (e.g. offset temperatures °C,
+    °F, etc).  It is a backup measure to ensure that such a conversion isn't
+    accidentally added by a user.
+    """
+    from_unit = _KNOWN_UNITS[from_label]
+    _CONVERSIONS[from_unit:None] = None
+
+
 def _conversion_factor(from_basis: _Units,
                        to_basis: _Units) -> Optional[Number]:
     """
-    Compute the factor for converting between two units.
+    Compute the factor for converting between two units.  This is not used
+    for total temperatures which are handled separately.
     """
     # Conversion to lhs gives unity.
     if from_basis == to_basis:
@@ -1392,10 +1383,9 @@ def _conversion_factor(from_basis: _Units,
 
         # Check each part has the same indicies.
         if from_pwr != to_pwr:
-            raise ValueError(
-                f"Inconsistent indices converting '{from_basis}' -> "
-                f"'{to_basis}': '{from_ustr}^{from_pwr}' and "
-                f"'{to_ustr}^{to_pwr}'")
+            raise ValueError(f"Inconsistent indices converting '{from_basis}' "
+                             f"-> '{to_basis}': '{from_ustr}^{from_pwr}' and "
+                             f"'{to_ustr}^{to_pwr}'")
         new_basis += [(to_ustr, 0)]
 
     new_basis = _Units(1 / to_basis.k, *new_basis)
@@ -1413,25 +1403,26 @@ def _convert(value: RealArray, from_units: _Units,
     """
     Convert ``value`` given ``_Units`` bases.
     """
+    if from_units.is_total_temp() and to_units.is_total_temp():
+        # Conversion between total temperatures are a special case due to
+        # possible offset of scales.
+        from_θ, to_θ = from_units.θ[0], to_units.θ[0]
+        return _convert_total_temp(value, from_θ, to_θ)
 
-    # Conversion to °C and °F base units are special cased due to
-    # offset of scales.
-    from_θ, to_θ = from_units.θ[0], to_units.θ[0]
-    if from_θ in _OFF_SCALE_TOTAL_TEMPS or to_θ in _OFF_SCALE_TOTAL_TEMPS:
-        if not _base_unit(from_units) or not _base_unit(to_units):
-            raise TypeError(f"Cannot convert offset temperatures in derived "
-                            f"units: {from_units} -> {to_units}")
-        conv_value = _convert_total_temp(value, from_θ, to_θ)
+    if from_units in _BLOCKED_CONVS:
+        raise ValueError(f"Automatic conversion from unit '{str(from_units)}' "
+                         f"is prevented.")
+    if to_units in _BLOCKED_CONVS:
+        raise ValueError(f"Automatic conversion to unit '{str(to_units)}' is "
+                         f"prevented.")
 
-    else:
-        # All other unit types.
-        factor = _conversion_factor(from_units, to_units)
-        if factor is None:
-            raise ValueError(f"No conversion found: {from_units} -> "
-                             f"{to_units}")
-        conv_value = value * factor
-        conv_value = coax_type(conv_value, type(value), default=conv_value)
+    # All other unit types.
+    factor = _conversion_factor(from_units, to_units)
+    if factor is None:
+        raise ValueError(f"No conversion found: '{from_units}' -> '{to_units}'")
 
+    conv_value = value * factor
+    conv_value = coax_type(conv_value, type(value), default=conv_value)
     return conv_value
 
 
@@ -1447,10 +1438,11 @@ def _check_units(unit: _Units):
     if unit.k == 0:
         raise ValueError(f"k must be non-zero.")
 
-    # Offset temperatures must be standalone.
-    if unit.θ[0] in _OFF_SCALE_TOTAL_TEMPS and not _base_unit(unit):
-        raise ValueError("Offset temperature units are only permitted to "
-                         "be base units.")
+    # Offset temperatures must be standalone.  Note that some units (K,°R)
+    # can represent absolute temperature as well as changes.
+    if unit.θ[0] in _OFF_SCALE_TEMPS and not unit.is_base_temp():
+        raise ValueError(f"Offset temperatures are only permitted as "
+                         f"base units, got: {str(unit)}")
 
 
 def _convert_total_temp(x: RealArray, from_unit: str,
@@ -1484,8 +1476,8 @@ def _convert_total_temp(x: RealArray, from_unit: str,
     elif from_unit == '°R':
         x = x * 5 / 9
     else:
-        raise TypeError(f"Cannot convert total temperature: {from_unit} -> "
-                        f"{to_unit}")
+        raise ValueError(f"Cannot convert total temperature: {from_unit} -> "
+                         f"{to_unit}")
 
     # Convert Kelvin -> 'to'.
     if to_unit == '°C':
@@ -1519,12 +1511,12 @@ def _common_cmp(lhs: Dim, rhs, op: Callable[..., bool]):
 
 
 # Default entries when doing conversion between consistent bases.  Types M, L,
-# T, θ are not used here, they must always be provided.
+# T, θ are not given here, they must always be provided.
 _DEFAULT_UNIT_SYS = _Units(N=('mol', 0), I=('A', 0), J=('cd', 0), A=('rad', 0),
                            Ω=('sr', 0))
 
 
-def _dim_mul_generic(lhs: Dim, rhs: DimArray, multop: Callable) -> DimArray:
+def _dim_mul_generic(lhs: Dim, rhs: DimArray, mult_op: Callable) -> DimArray:
     """
     Multiply two dimensioned values using multuiplication operator ``op``.
     This is the generic version used by Dim.__mul__, Dim.__matmul__,
@@ -1534,25 +1526,21 @@ def _dim_mul_generic(lhs: Dim, rhs: DimArray, multop: Callable) -> DimArray:
     if not isinstance(rhs, Dim):
         if lhs.units:
             # Return using existing units.
-            return Dim(multop(lhs.value, rhs), lhs.units)
+            return Dim(mult_op(lhs.value, rhs), lhs.units)
         else:
             # Drop dimensions.
-            return multop(lhs.value, rhs)
+            return mult_op(lhs.value, rhs)
 
-    # Offset-scale temperatures are allowed as multiplication arguments 
-    # as a special case provided they are isolated.
-    lhs = lhs
-    lhs_units, rhs_units = _Units(lhs.units), _Units(rhs.units)
-    if lhs_units.is_base_temp():
+    # Total temperatures are allowed as multiplication arguments however
+    # they are converted to absolute scales before used.
+    if lhs.is_total_temp():
         lhs = to_absolute_temp(lhs)
-        lhs_units = _Units(lhs.units)
-    if rhs_units.is_base_temp():
+    if rhs.is_total_temp():
         rhs = to_absolute_temp(rhs)
-        rhs_units = _Units(rhs.units)
 
     # Build final basis and factor out 'k' into result.
-    res_basis = lhs_units * rhs_units
-    res_value = multop(lhs.value, rhs.value)
+    res_basis = _Units(lhs.units) * _Units(rhs.units)
+    res_value = mult_op(lhs.value, rhs.value)
     res_value *= res_basis.k  # Scalar multiply for factor.
 
     # noinspection PyProtectedMember
@@ -1571,11 +1559,10 @@ def _dim_mul_generic(lhs: Dim, rhs: DimArray, multop: Callable) -> DimArray:
     if not res_basis.is_dimless():
         return Dim(res_value, str(res_basis))
     else:
-        return res_value  # Units disappeared.
+        return res_value  # Units fell off.
 
 
-# ----------------------------------------------------------------------------
-# Functions for unicode indices.
+# -- Unicode Functions --------------------------------------------------------
 
 def _from_ucode_super(ss: str) -> str:
     """
@@ -1675,13 +1662,10 @@ set_conversion('s', 'ms', fwd=1000)
 # -- Temperature ------------------------------------------------------------
 
 #  Signatures.
-add_base_unit(['°C', 'Δ°C', 'K'], 'θ')
-add_base_unit(['°F', 'Δ°F', '°R'], 'θ')
+add_base_unit(['°C', 'Δ°C', 'K', 'ΔK'], 'θ')
+add_base_unit(['°F', 'Δ°F', '°R', 'Δ°R'], 'θ')
 
-_ABS_SCALE_TOTAL_TEMPS |= {'K', '°R'}
-_OFF_SCALE_TOTAL_TEMPS |= {'°C', '°F'}
-_OFF_ABS_TEMP_CONV |= {'°C': 'K', '°F': '°R'}  # From -> to.
-_DELTA_TEMPS |= {'K', '°R', 'Δ°C', 'Δ°F'}
+_BLOCKED_CONVS.update([_Units('°C'), _Units('°F')])
 
 # Conversions.  Note: Only conversions for temperature changes are given
 # here.  Absolute scale temperatures are handled by a special function
