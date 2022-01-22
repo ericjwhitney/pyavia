@@ -11,7 +11,7 @@ Bending, and Pin Loading", NASA Technical Paper NASA-TP-3192, June 1992."""
 
 import numpy as np
 
-__all__ = ['kt_hole3d']
+# =============================================================================
 
 
 def kt_hole3d(rt: float, bt: float, zt: float, rw: float,
@@ -101,18 +101,7 @@ def kt_hole3d(rt: float, bt: float, zt: float, rw: float,
         return scf1 + (scf2 - scf1) / 0.25 * (bt - z_lwr)
 
 
-def _nzt(bt, zt, bt1, bt2):
-    """Evaluate appropriate z-location for countersunk hole."""
-    if (bt - 0.5) < zt <= 0.5:
-        zt1 = bt1 - 0.5 + (zt - bt + 0.5) * (1.0 - bt1) / (1.0 - bt)
-        zt2 = bt2 - 0.5 + (zt - bt + 0.5) * (1.0 - bt2) / (1.0 - bt)
-    else:
-        zt1 = bt1 - 0.5 + (zt - bt + 0.5) * bt1 / bt
-        zt2 = bt2 - 0.5 + (zt - bt + 0.5) * bt2 / bt
-    return zt1, zt2
-
-
-# ----------------------------------------------------------------------------
+# =============================================================================
 # Straight shank constants and function.
 
 _SS_ALP = np.reshape([
@@ -165,7 +154,7 @@ def _kt_hole_straight(rt, zt, lcase):
     return scf
 
 
-# ----------------------------------------------------------------------------
+# =============================================================================
 # Countersunk constants and function.
 
 _CS_ALP = np.reshape([
@@ -259,3 +248,16 @@ def _kt_hole_csunk(rt, k, zt, lcase):
                 for j in range(5):
                     scf += _CS_BET[i, j, k, l_idx] * rt ** i * z ** j
     return scf
+
+
+# -----------------------------------------------------------------------------
+
+def _nzt(bt, zt, bt1, bt2):
+    """Evaluate appropriate z-location for countersunk hole."""
+    if (bt - 0.5) < zt <= 0.5:
+        zt1 = bt1 - 0.5 + (zt - bt + 0.5) * (1.0 - bt1) / (1.0 - bt)
+        zt2 = bt2 - 0.5 + (zt - bt + 0.5) * (1.0 - bt2) / (1.0 - bt)
+    else:
+        zt1 = bt1 - 0.5 + (zt - bt + 0.5) * bt1 / bt
+        zt2 = bt2 - 0.5 + (zt - bt + 0.5) * bt2 / bt
+    return zt1, zt2

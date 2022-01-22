@@ -1,22 +1,18 @@
-"""
-Functions for working with fatigue life data /  S-N values.
-"""
-
-__all__ = ['sn_raithby']
-
 from math import log10
 
-from pyavia.core.units import Dim
-from pyavia.core.containers import ValueRange
+from pyavia.units import Dim
+from pyavia.containers import ValueRange
 
+
+# =============================================================================
 
 def sn_raithby(s_range: ValueRange):
-    r"""S-N data for complete wings and tailplanes by Raithby (RAeS), using
-    best fit equations of Sewell and Douglas as given in Appendix I of
-    R_air. Hangartner, 'Correlation of Fatigue Data for Aluminium Aircraft Wing
-    and Tail Structures', National Research Council Canada, Ottawa,
-    Aeronautical Report LR-582, Dec. 1974.  These are straight lines on a
-    log-log plot.
+    r"""
+    S-N data for complete wings and tailplanes by Raithby (RAeS), using best
+    fit equations of Sewell and Douglas as given in Appendix I of R_air.
+    Hangartner, 'Correlation of Fatigue Data for Aluminium Aircraft Wing and
+    Tail Structures', National Research Council Canada, Ottawa, Aeronautical
+    Report LR-582, Dec. 1974.  These are straight lines on a log-log plot.
 
     ..Note:: The equation in Hangartner Appendix I has a typo, the **B** term
     should be subtracted.
@@ -62,5 +58,4 @@ def sn_raithby(s_range: ValueRange):
 
     return 10 ** (a - b * log10(s_a))
 
-
-
+# -----------------------------------------------------------------------------
