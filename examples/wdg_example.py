@@ -3,9 +3,9 @@
 # Examples of WtDirgraph functions.
 # Written by: Eric J. Whitney  Last updated: 8 January 2020
 
-from pyavia import WtDirgraph
+from pyavia.containers import WtDirGraph
 
-wdg = WtDirgraph()
+wdg = WtDirGraph()
 wdg['a':'b'] = '*** a -> b Connector ***'
 print(wdg)  # WtDirgraph({'a': {'b': 'Here'}, 'b': {}})
 print(f"'a' -> 'b' Connection?  {wdg['a':'b']}")

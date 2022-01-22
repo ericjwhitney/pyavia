@@ -4,7 +4,7 @@
 # Written by: Eric J. Whitney  Last updated: 15 January 2022.
 
 from pyavia.aero import PerfectGas, ImperfectGas
-from pyavia import Dim
+from pyavia.units import Dim
 
 T, T_step = Dim(200, 'K'), Dim(100, 'K')
 P = Dim(1.0, 'atm')

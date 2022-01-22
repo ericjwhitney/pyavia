@@ -10,7 +10,7 @@
 import time
 import matplotlib.pyplot as plt
 from pyavia.aero.imperfect_gas import ImperfectGas
-from pyavia import Dim
+from pyavia.units import Dim
 
 chamber = ImperfectGas(T=Dim(700, 'K'), P=Dim(25.0, 'atm'), M=0.1,
                        w=Dim(10, 'kg/s'), gas='air', FAR=0)

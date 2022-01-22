@@ -5,14 +5,14 @@
 
 from math import isclose
 from pyavia.aero import PerfectGas, ImperfectGas
-from pyavia import Dim
+from pyavia.units import dim
 
 M, M_stop, M_step = 0.00, 2.50, 0.05
 use_gas = 'real_ssl_air'
 
-P_ref = Dim(1.0, 'atm')  # SSL reference conditions with unit massflow.
-T_ref = Dim(288.15, 'K')
-w_ref = Dim(1.0, 'kg/s')
+P_ref = dim(1.0, 'atm')  # SSL reference conditions with unit massflow.
+T_ref = dim(288.15, 'K')
+w_ref = dim(1.0, 'kg/s')
 
 gas_models = {
     'perfect_cold_air': {
