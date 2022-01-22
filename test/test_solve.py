@@ -3,7 +3,7 @@ from unittest import TestCase
 
 class TestBisectRoot(TestCase):
     def test_bisect_root(self):
-        from pyavia.core.solve import bisect_root
+        from pyavia.solve.bisect_root import bisect_root
 
         def f(g):
             return g ** 2 - g - 1

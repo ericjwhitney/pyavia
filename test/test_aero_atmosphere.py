@@ -5,7 +5,7 @@ class TestAtmosphere(TestCase):
     # noinspection PyUnresolvedReferences
     def test__init__(self):
         from pyavia.aero import Atmosphere
-        from pyavia import Dim
+        from pyavia.units import Dim
 
         # Check invalid constructions.
         with self.assertRaises(TypeError):
@@ -13,7 +13,7 @@ class TestAtmosphere(TestCase):
             Atmosphere(3)  # Invalid postional arg.
             Atmosphere(h=Dim(1000, 'ft'))  # Invalid combination.
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             Atmosphere(H=0)  # Arg needs dimensions.
 
         # Test for correct results from some standard altitude values.
@@ -86,7 +86,7 @@ class TestAtmosphere(TestCase):
     # noinspection PyTypeChecker
     def test_methods(self):
         from pyavia.aero import Atmosphere
-        from pyavia import Dim
+        from pyavia.units import Dim
 
         Atmosphere.set_default_style('SI')  # K, kPa, m, etc.
 

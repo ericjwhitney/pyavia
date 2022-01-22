@@ -4,7 +4,7 @@ from unittest import TestCase
 # noinspection PyUnusedLocal
 class TestDim(TestCase):
     def test___init__(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Test no arguments:  Value = 1, no units.
         x = dim()
@@ -37,7 +37,7 @@ class TestDim(TestCase):
 
     def test___add__(self):
         # Also tests __radd__
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Test addition of like units, preserving character.
         x, y = dim('ft'), dim(12, 'in')
@@ -66,7 +66,7 @@ class TestDim(TestCase):
 
     def test___sub__(self):
         # Also tests __rsub__
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Test subtraction of imcompatible units disallowed.
         with self.assertRaises(ValueError):
@@ -80,16 +80,28 @@ class TestDim(TestCase):
         self.assertEqual(x.units, '°C')
         self.assertEqual(x.value, 20)
 
-        x = dim(32, '°F') - dim(40, 'K')
-        self.assertAlmostEqual(x.value, -40)
-        self.assertEqual(x.units, '°F')
+        with self.assertRaises(ValueError):
+            # Not permitted, RHS ambiguous... K or ΔK?
+            x = dim(32, '°F') - dim(40, 'K')
 
-        x = dim(32, '°F') - dim(0, '°C')
+        x = dim(32, '°F') - dim(40, 'K').convert('Δ°F')  # OK - Δ clear.
+        self.assertAlmostEqual(x.value, -40)
+        self.assertEqual(x.units, '°F')  # Absolute result.
+
+        x = dim(32, '°F') - dim(273.15, 'K').convert('°F')  # OK - abs clear.
         self.assertAlmostEqual(x.value, 0)
-        self.assertEqual(x.units, 'Δ°F')
+        self.assertEqual(x.units, 'Δ°F')  # Δ result.
+
+        with self.assertRaises(ValueError):
+            # Not permitted, potential confusion.
+            x = dim(32, '°F') - dim(0, '°C')
+
+        x = dim(32, '°F') - dim(0, '°C').convert('°F')  # OK - abs clear.
+        self.assertAlmostEqual(x.value, 0)
+        self.assertEqual(x.units, 'Δ°F')  # Δ result.
 
     def test___mul__(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Check multiply by plain units gives Dim result.
         x = 7.5 * dim('km')
@@ -152,7 +164,7 @@ class TestDim(TestCase):
         self.assertEqual(x, 12)
 
     def test___truediv__(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Check value type follows division rules.
         x = dim(4, 'm') / 2
@@ -166,7 +178,7 @@ class TestDim(TestCase):
         self.assertEqual(x.units, 'kg')
 
     def test___matmul__(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
         import numpy as np
 
         # Test multiplication of Dim objects holding arrays.
@@ -178,8 +190,8 @@ class TestDim(TestCase):
         self.assertEqual(x.units, 'J')
 
     def test_change_basis(self):
-        from pyavia.core.units import dim
-        import pyavia.core.units as pa_units
+        from pyavia.units import dim
+        import pyavia.units as pa_units
 
         pa_units.STD_UNIT_SYSTEM = 'kg.m.s.K'  # Abbrev. to check defaults.
         x = dim(1000, 'psi')
@@ -187,7 +199,7 @@ class TestDim(TestCase):
         self.assertAlmostEqual(y, 6894757.2932, places=3)
 
     def test_convert_operations(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Test conversion to lhs does nothing.
         x = dim(3, 'kg').convert('kg')
@@ -217,7 +229,7 @@ class TestDim(TestCase):
         self.assertEqual(x.value, 231)
 
     def test_convert_fundamental(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Test current.
         x = dim(1, 'A').convert('mA')
@@ -229,7 +241,7 @@ class TestDim(TestCase):
         self.assertAlmostEqual(x.value, 286.47889, places=4)
 
     def test_convert_derived(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Test acceleration.
         x = (9.80665 * dim('m.s⁻²')).convert('ft/s/s')
@@ -275,7 +287,7 @@ class TestDim(TestCase):
                                places=6)
 
     def test_convert_temperature(self):
-        from pyavia.core.units import dim
+        from pyavia.units import dim
 
         # Temperatures °C, °F, require thorough checks.
         x = dim(32, '°F').convert('°C')

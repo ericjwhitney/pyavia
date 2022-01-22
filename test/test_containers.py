@@ -3,8 +3,8 @@ from unittest import TestCase
 
 class TestWeightedDirGraph(TestCase):
     def test___init__(self):
-        from pyavia import WtDirgraph, g_link
-        wdg = WtDirgraph()
+        from pyavia.containers import WtDirGraph, wdg_edge
+        wdg = WtDirGraph()
 
         # Test basic functions.
         wdg['a':'b'] = 'somevalue'
@@ -28,8 +28,8 @@ class TestWeightedDirGraph(TestCase):
 
         # Test key deletion and contains.
         del wdg['a':'b']  # Specific x -> y
-        self.assertNotIn(g_link('a', 'b'), wdg)
-        self.assertIn(g_link('b', 'a'), wdg)  # Reverse should not be deleted.
+        self.assertNotIn(wdg_edge('a', 'b'), wdg)
+        self.assertIn(wdg_edge('b', 'a'), wdg)  # Reverse should not be deleted.
         del wdg[456]  # Entire x-key.
         with self.assertRaises(KeyError):
             del wdg[3.14159, 'a']  # Reverse should not exist.
@@ -40,14 +40,14 @@ class TestWeightedDirGraph(TestCase):
             wdg['a':'a'] = 666
 
         # Test construction with forwards dict.
-        wdg = WtDirgraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
+        wdg = WtDirGraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
         self.assertEqual(wdg['c':'a'], 4)
         with self.assertRaises(KeyError):
             print(wdg['b':'a'])
 
     def test_trace(self):
-        from pyavia import WtDirgraph
-        wdg = WtDirgraph()
+        from pyavia.containers import WtDirGraph
+        wdg = WtDirGraph()
         wdg[1:2] = 0.5
         wdg[1:3] = 0.2
         wdg[1:4] = 5
