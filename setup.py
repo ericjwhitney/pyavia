@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyavia",
-    version="0.0.2",
+    version="0.0.3",
     author="Eric J. Whitney",
     author_email="eric.j.whitney@optusnet.removethispart.com.au",
     description="Useful functions commonly used in aerospace engineering.",
     include_package_data=True,  # <<< Note!
     install_requires=[
-        'numpy',
+        'numpy', 'pexpect'
     ],
     keywords='aerospace engineering tools',
     long_description=long_description,
@@ -26,7 +26,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering"
     ]
 )
