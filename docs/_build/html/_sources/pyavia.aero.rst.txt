@@ -1,11 +1,13 @@
 .. _pyavia.aero:
 
-===========
-pyavia.aero
-===========
+====================
+Aerodynamics Modules
+====================
 
 Contents
 --------
+
+**Atmosphere**
 
 .. autosummary::
     :nosignatures:
@@ -14,10 +16,31 @@ Contents
     pyavia.aero.geo_alt_to_pot
     pyavia.aero.pot_alt_to_geo
 
-    pyavia.aero.GasError
-    pyavia.aero.GasFlow
-    pyavia.aero.PerfectGasFlow
-    pyavia.aero.GasFlowWF
+**General Gases**
+
+.. autosummary::
+    :nosignatures:
+
+    pyavia.aero.Gas
+
+**Perfect Gases**
+
+.. autosummary::
+    :nosignatures:
+
+    pyavia.aero.PerfectGas
+    pyavia.aero.perfect_gas.enthalpy
+    pyavia.aero.perfect_gas.stag_press_ratio
+    pyavia.aero.perfect_gas.stag_temp_ratio
+    pyavia.aero.perfect_gas.temp_from_enthalpy
+
+**Imperfect Gases**
+
+.. autosummary::
+    :nosignatures:
+
+    pyavia.aero.ImperfectGas
+
 
 Members
 -------
@@ -25,5 +48,20 @@ Members
 .. automodule:: pyavia.aero
     :members:
     :imported-members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: pyavia.aero.atmosphere
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: pyavia.aero.gas
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: pyavia.aero.perfect_gas
+    :members:
     :undoc-members:
     :show-inheritance:

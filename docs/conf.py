@@ -14,16 +14,17 @@ import os
 import sys
 
 # Designed to be run from docs/
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'PyAvia'
-copyright = '2020, Eric J. Whitney'
+copyright = '2022, Eric J. Whitney'
 author = 'Eric J. Whitney'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.0.3'
 
 # -- General configuration ---------------------------------------------------
 
@@ -38,9 +39,9 @@ extensions = ['sphinx.ext.autodoc',
 
 # Napoleon settings (NumPy and Google docstring formats).
 napoleon_numpy_docstring = True
-napoleon_google_docstring = True  # << XXx? Make False?
-napoleon_include_init_with_doc = True  # <<< REVIEW
-napoleon_include_special_with_doc = True  # <<< REVIEW
+napoleon_google_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_special_with_doc = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

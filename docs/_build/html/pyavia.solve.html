@@ -4,22 +4,22 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pyavia.solve &#8212; PyAvia 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Solver Modules &#8212; PyAvia 0.0.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="pyavia.struct" href="pyavia.struct.html" />
-    <link rel="prev" title="pyavia.aero" href="pyavia.aero.html" /> 
+    <link rel="next" title="Structures Modules" href="pyavia.struct.html" />
+    <link rel="prev" title="Propulsion Modules" href="pyavia.prop.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -31,13 +31,13 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="pyavia.struct.html" title="pyavia.struct"
+          <a href="pyavia.struct.html" title="Structures Modules"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="pyavia.aero.html" title="pyavia.aero"
+          <a href="pyavia.prop.html" title="Propulsion Modules"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">pyavia.solve</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Solver Modules</a></li> 
       </ul>
     </div>  
 
@@ -46,24 +46,50 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="pyavia-solve">
-<span id="id1"></span><h1>pyavia.solve<a class="headerlink" href="#pyavia-solve" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-pyavia.solve"></span><p><strong>pyavia.solve</strong> provides functions for finding solutions to various types of
-equations. These are included when not covered by NumPy or different variant
-is required.</p>
+  <section id="solver-modules">
+<span id="pyavia-core-solve"></span><h1>Solver Modules<a class="headerlink" href="#solver-modules" title="Permalink to this headline">¶</a></h1>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.solve.bisect_root" title="pyavia.solve.bisect_root"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.solve.bisect_root</span></code></a></p></td>
+<td><p>Approximate solution of <span class="math notranslate nohighlight">\(f(x) = 0\)</span> on interval <span class="math notranslate nohighlight">\(x \in [x_a, x_b]\)</span> by the bisection method.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.solve.fixed_point" title="pyavia.solve.fixed_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.solve.fixed_point</span></code></a></p></td>
+<td><p>Find the fixed point of a function <span class="math notranslate nohighlight">\(x = f(x)\)</span> by iterating a damped second-order ODE.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.solve.newton_bounded" title="pyavia.solve.newton_bounded"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.solve.newton_bounded</span></code></a></p></td>
+<td><p>Find a zero of a real or complex function using the Newton-Raphson (or secant or Halley's) method, with the additional requirement that all trial points are generated to lie within the given bounded interval.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyavia.solve.solve_dqnm" title="pyavia.solve.solve_dqnm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.solve.solve_dqnm</span></code></a></p></td>
+<td><p>Solve nonlinear system of equations using the diagonal quasi-Newton method of <a class="footnote-reference brackets" href="#id6" id="id1">1</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyavia.solve.y_to_x" title="pyavia.solve.y_to_x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pyavia.solve.y_to_x</span></code></a></p></td>
+<td><p>Given a single-valued scalar function <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">fn(x)</span></code>, find the <cite>x</cite> value that would result in the <cite>y</cite> value provided.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-pyavia.solve">
+<span id="members"></span><h2>Members<a class="headerlink" href="#module-pyavia.solve" title="Permalink to this headline">¶</a></h2>
+<p>Functions for solving systems of equations and minimisation.</p>
 <dl class="py function">
-<dt id="pyavia.solve.bisect_root">
-<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">bisect_root</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">x_a</span></em>, <em class="sig-param"><span class="n">x_b</span></em>, <em class="sig-param"><span class="n">maxits</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">50</span></em>, <em class="sig-param"><span class="n">ftol</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.bisect_root" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyavia.solve.bisect_root">
+<span class="sig-prename descclassname"><span class="pre">pyavia.solve.</span></span><span class="sig-name descname"><span class="pre">bisect_root</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.bisect_root" title="Permalink to this definition">¶</a></dt>
 <dd><p>Approximate solution of <span class="math notranslate nohighlight">\(f(x) = 0\)</span> on interval <span class="math notranslate nohighlight">\(x \in [x_a,
 x_b]\)</span> by the bisection method. For bisection to work <span class="math notranslate nohighlight">\(f(x)\)</span> must
 change sign across the interval, i.e. <code class="docutils literal notranslate"><span class="pre">func(x_a)</span></code> and <code class="docutils literal notranslate"><span class="pre">func(x_b)</span></code> must
 return values of opposite sign.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span> <span class="o">-</span> <span class="mi">1</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">solve</span><span class="o">.</span><span class="n">bisect_root</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>  <span class="c1"># This will take 17 iterations.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bisect_root</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>  <span class="c1"># This will take 17 iterations.</span>
 <span class="go">1.6180343627929688</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="mi">3</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">pa</span><span class="o">.</span><span class="n">solve</span><span class="o">.</span><span class="n">bisect_root</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># Only 1 it. (soln was in centre).</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bisect_root</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># Only 1 it. (soln was in centre).</span>
 <span class="go">0.5</span>
 </pre></div>
 </div>
@@ -91,8 +117,8 @@ return values of opposite sign.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt id="pyavia.solve.fixed_point">
-<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">fixed_point</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">xtol</span></em>, <em class="sig-param"><span class="n">h</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">maxits</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">15</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.fixed_point" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyavia.solve.fixed_point">
+<span class="sig-prename descclassname"><span class="pre">pyavia.solve.</span></span><span class="sig-name descname"><span class="pre">fixed_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.fixed_point" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the fixed point of a function <span class="math notranslate nohighlight">\(x = f(x)\)</span> by iterating a
 damped second-order ODE.  The ODE is solved as two equations using the
 forward Euler method:</p>
@@ -121,16 +147,16 @@ We take <span class="math notranslate nohighlight">\(\zeta = 1\)</span> because 
 shortest path to convergence.</p>
 <p class="rubric">Examples</p>
 <p>A fixed-point iteration of a scalar function:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.25</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x_scalar</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">solve</span><span class="o">.</span><span class="n">fixed_point</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x0</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">xtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x_</span><span class="p">):</span> <span class="k">return</span> <span class="p">(</span><span class="n">x_</span> <span class="o">+</span> <span class="mi">10</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.25</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x_scalar</span> <span class="o">=</span> <span class="n">fixed_point</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x0</span><span class="o">=-</span><span class="mi">3</span><span class="p">,</span> <span class="n">xtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="go">Second-Order Damped Fixed Point Iteration:</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">1</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>   <span class="o">-</span><span class="mf">3.0000</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">2</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.6266</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">3</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8466</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">4</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8552</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">5</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8556</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">6</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8556</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">7</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8556</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">1</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="o">-</span><span class="mf">3.000000</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">2</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span>  <span class="mf">1.626577</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">3</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span>  <span class="mf">1.846558</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">4</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span>  <span class="mf">1.855231</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">5</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span>  <span class="mf">1.855571</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">6</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span>  <span class="mf">1.855584</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">7</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span>  <span class="mf">1.855585</span>
 <span class="gp">... </span><span class="n">Converged</span><span class="o">.</span>
 </pre></div>
 </div>
@@ -138,41 +164,41 @@ shortest path to convergence.</p>
 that this works because internally everything is converted to NumPy
 arrays, provided component-wise operations are valid and <cite>func(x)</cite> can
 also return a list:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_vector</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">solve</span><span class="o">.</span><span class="n">fixed_point</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">],</span> <span class="n">xtol</span><span class="o">=</span><span class="p">[</span><span class="mf">1e-6</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_vector</span> <span class="o">=</span> <span class="n">fixed_point</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">],</span> <span class="n">xtol</span><span class="o">=</span><span class="p">[</span><span class="mf">1e-6</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span>
 <span class="gp">... </span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="go">Second-Order Damped Fixed Point Iteration:</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">1</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>   <span class="o">-</span><span class="mf">3.0000</span>    <span class="o">-</span><span class="mf">4.0000</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">2</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.6266</span>     <span class="mf">1.5651</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">3</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8466</span>     <span class="mf">1.8441</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">4</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8552</span>     <span class="mf">1.8551</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">5</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8556</span>     <span class="mf">1.8556</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">6</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8556</span>     <span class="mf">1.8556</span><span class="p">]</span>
-<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">7</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span>    <span class="mf">1.8556</span>     <span class="mf">1.8556</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">1</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">3.000000</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.000000</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">2</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">1.626577</span><span class="p">,</span>  <span class="mf">1.565085</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">3</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">1.846558</span><span class="p">,</span>  <span class="mf">1.844112</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">4</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">1.855231</span><span class="p">,</span>  <span class="mf">1.855135</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">5</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">1.855571</span><span class="p">,</span>  <span class="mf">1.855567</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">6</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">1.855584</span><span class="p">,</span>  <span class="mf">1.855584</span><span class="p">]</span>
+<span class="gp">... </span><span class="n">Iteration</span> <span class="mi">7</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span> <span class="mf">1.855585</span><span class="p">,</span>  <span class="mf">1.855585</span><span class="p">]</span>
 <span class="gp">... </span><span class="n">Converged</span><span class="o">.</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>func</strong> (<em>Callable</em><em>[</em><em>scalar</em><em> or </em><em>list_like</em><em>]</em>) – Function that returns a better estimate of <cite>x</cite>.</p></li>
-<li><p><strong>x0</strong> (<em>scalar</em><em> or </em><em>list_like</em>) – Starting value for <cite>x</cite>. Any numeric type including user types may be
+<li><p><strong>func</strong> (<em>Callable</em><em>[</em><em>array-like</em><em>]</em>) – Function that returns a better estimate of <cite>x</cite>.</p></li>
+<li><p><strong>x0</strong> (<em>array-like</em>) – Starting value for <cite>x</cite>. Any numeric type including user types may be
 used, provided they support component-wise mathematical operations.
 Individual elements need not be the same type.  Internally they are
 converted to NumPy arrays.</p></li>
-<li><p><strong>xtol</strong> (<em>scalar</em><em> or </em><em>list_like</em>) – Stop when <code class="docutils literal notranslate"><span class="pre">abs(x'</span> <span class="pre">-</span> <span class="pre">x)</span> <span class="pre">&lt;</span> <span class="pre">xtol</span></code>.  The type/s or element/s of <cite>xtol</cite>
-should correspond to <cite>x</cite>.</p></li>
-<li><p><strong>h</strong> (<em>float</em>) – Step size (time-like) to advance <cite>x</cite> to next estimate.  The default
+<li><p><strong>xtol</strong> (<em>array-like</em>) – Stop when <code class="docutils literal notranslate"><span class="pre">abs(x'</span> <span class="pre">-</span> <span class="pre">x)</span> <span class="pre">&lt;</span> <span class="pre">xtol</span></code>.  The type/s or element/s of <cite>xtol</cite>
+should be broadcastable to <cite>x</cite>.</p></li>
+<li><p><strong>h</strong> (<em>float</em><em>, </em><em>optional</em>) – Step size (time-like) to advance <cite>x</cite> to next estimate.  The default
 value of 1.0 should be acceptable in most cases.  Reduce if
 instability is suspected (e.g. 0.5, 0.25, etc).</p></li>
-<li><p><strong>maxits</strong> (<em>int</em>) – Iteration limit.</p></li>
-<li><p><strong>verbose</strong> (<em>bool</em>) – If True, print iterations.</p></li>
+<li><p><strong>maxits</strong> (<em>int</em><em>, </em><em>optional</em>) – Iteration limit (default = 15).</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, print iterations (default = False).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Converged x value.</p>
+<dd class="field-even"><p><strong>result</strong> – Converged <cite>x</cite> value.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>scalar or list_like</p>
+<dd class="field-odd"><p>array-like</p>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><p><strong>RuntimeError</strong> – If maxits is exceeded.</p>
@@ -181,8 +207,77 @@ instability is suspected (e.g. 0.5, 0.25, etc).</p></li>
 </dd></dl>
 
 <dl class="py function">
-<dt id="pyavia.solve.solve_dqnm">
-<code class="sig-prename descclassname">pyavia.solve.</code><code class="sig-name descname">solve_dqnm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">func</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">xtol</span><span class="o">=</span><span class="default_value">1e-06</span></em>, <em class="sig-param"><span class="n">ftol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">bounds</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">maxits</span><span class="o">=</span><span class="default_value">25</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">jacob_diag</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.solve_dqnm" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="pyavia.solve.newton_bounded">
+<span class="sig-prename descclassname"><span class="pre">pyavia.solve.</span></span><span class="sig-name descname"><span class="pre">newton_bounded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pyavia.solve.newton_bounded._SclOrVec</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fprime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.48e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fprime2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pyavia.solve.newton_bounded._SclOrVec</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_SclOrVec</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_SclOrVec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.newton_bounded" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find a zero of a real or complex function using the Newton-Raphson (or
+secant or Halley’s) method, with the additional requirement that all
+trial points are generated to lie within the given bounded interval.
+This may help in the situation where the given function is not well
+defined outside the given interval.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x1</strong> (<em>float</em><em>, </em><em>optional</em>) – <p>Another estimate of the zero that should be somewhere near the
+actual zero, this is used if <cite>fprime</cite> is not provided.  If <cite>x1</cite> is
+also not provided, its position is computed by placing it nearer to
+the middle of the bounding interval than <cite>x0</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For vector-valued functions, <cite>x1</cite> is not provided and is
+always computed automatically.</p>
+</div>
+</p></li>
+<li><p><strong>bounds</strong> (<em>(</em><em>array-like</em><em>, </em><em>array-like</em><em>)</em>) – if n &gt; 1 vectors are tkaen to form opposite corners of a bounding
+hypercube.  Order is not important, bounds are always rearranged into
+min -&gt; max order.  Bounds cannot contain infinity when the secant
+method is used, because they are used to determine a starting point.</p></li>
+<li><p><strong>func</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>x0</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>fprime</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>args</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>tol</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>maxiter</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>fprime2</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>rtol</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>full_output</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+<li><p><strong>disp</strong> – Only parameters with different behaviour from SciPy <cite>newton()</cite> and
+<cite>root_scalar()</cite> are covered here.  For other parameters, refer to
+SciPy documentation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>root</strong> (<em>float, sequence, or ndarray</em>) – Estimated location where function is zero.</p></li>
+<li><p><em>r, converged, zero_der</em> – Additional information depending on the argument <cite>full_output</cite> and
+whether <cite>x0</cite> is a scalar or array.  See SciPy <cite>newton()</cite> for more
+details.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyavia.solve.solve_dqnm">
+<span class="sig-prename descclassname"><span class="pre">pyavia.solve.</span></span><span class="sig-name descname"><span class="pre">solve_dqnm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ftol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jacob_diag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyavia.solve.solve_dqnm" title="Permalink to this definition">¶</a></dt>
 <dd><p>Solve nonlinear system of equations using the diagonal quasi-Newton method
 of <a class="footnote-reference brackets" href="#id6" id="id2">1</a>.</p>
 <p class="rubric">Notes</p>
@@ -239,7 +334,7 @@ bounds are not required these can be individually set to +/-inf.</p></li>
 </dl>
 <p class="rubric">References</p>
 <dl class="footnote brackets">
-<dt class="label" id="id6"><span class="brackets">1</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id3">2</a>,<a href="#id4">3</a>,<a href="#id5">4</a>)</span></dt>
+<dt class="label" id="id6"><span class="brackets">1</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>,<a href="#id3">3</a>,<a href="#id4">4</a>,<a href="#id5">5</a>)</span></dt>
 <dd><p>Waziri, M. Y. and Aisha, H. A., “A Diagonal Quasi-Newton Method
 For Systems Of Nonlinear Equations”, Applied Mathematical and
 Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
@@ -247,7 +342,36 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
 </dl>
 </dd></dl>
 
-</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyavia.solve.y_to_x">
+<span class="sig-prename descclassname"><span class="pre">pyavia.solve.</span></span><span class="sig-name descname"><span class="pre">y_to_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2e-12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rtol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">8.881784197001252e-16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#pyavia.solve.y_to_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a single-valued scalar function <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">fn(x)</span></code>, find the <cite>x</cite> value
+that would result in the <cite>y</cite> value provided.  This is a simple method
+used when the inverse of a function is not available.  Internally,
+the <cite>brentq</cite> method of SciPy is used to find the value of <cite>x</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn</strong> (<em>Callable</em><em>[</em><em>[</em><em>Scalar</em><em>]</em><em>, </em><em>Scalar</em><em>]</em>) – Function <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">fn(x)</span></code> to invert / solve for <cite>x</cite>.</p></li>
+<li><p><strong>y</strong> (<em>Scalar</em>) – Objective value.</p></li>
+<li><p><strong>x_range</strong> (<em>[</em><em>Scalar</em><em>, </em><em>Scalar</em><em>]</em>) – Bracket in which to search for <cite>x</cite>.</p></li>
+<li><p><strong>xtol</strong> (<em>Scalar</em>) – Convergence parameters - Refer to SciPy <cite>brentq</cite> for more information.</p></li>
+<li><p><strong>rtol</strong> (<em>Scalar</em>) – Convergence parameters - Refer to SciPy <cite>brentq</cite> for more information.</p></li>
+<li><p><strong>maxiter</strong> (<em>int</em>) – Maximum number of iterations permitted - Refer to SciPy <cite>brentq</cite> for
+more information.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>x</strong> – The value giving the <cite>y</cite> value provided via <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">fn(x)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Scalar</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
 
 
             <div class="clearer"></div>
@@ -256,12 +380,27 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="pyavia.aero.html"
-                        title="previous chapter">pyavia.aero</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="pyavia.struct.html"
-                        title="next chapter">pyavia.struct</a></p>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Solver Modules</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#module-pyavia.solve">Members</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="pyavia.prop.html"
+                          title="previous chapter">Propulsion Modules</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="pyavia.struct.html"
+                          title="next chapter">Structures Modules</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -273,7 +412,7 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -293,18 +432,18 @@ Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="pyavia.struct.html" title="pyavia.struct"
+          <a href="pyavia.struct.html" title="Structures Modules"
              >next</a> |</li>
         <li class="right" >
-          <a href="pyavia.aero.html" title="pyavia.aero"
+          <a href="pyavia.prop.html" title="Propulsion Modules"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.1 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">pyavia.solve</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">PyAvia 0.0.3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Solver Modules</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2020, Eric J. Whitney.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+        &#169; Copyright 2022, Eric J. Whitney.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
     </div>
   </body>
 </html>

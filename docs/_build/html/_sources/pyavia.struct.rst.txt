@@ -1,8 +1,8 @@
 .. _pyavia.struct:
 
-=============
-pyavia.struct
-=============
+==================
+Structures Modules
+==================
 
 Contents
 --------
@@ -10,6 +10,7 @@ Contents
 .. autosummary::
     :nosignatures:
 
+    pyavia.struct.kt_hole3d
     pyavia.struct.mohr2d
     pyavia.struct.sn_raithby
 
