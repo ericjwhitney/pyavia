@@ -19,7 +19,7 @@ setuptools.setup(
     setup_requires=["numpy"],
     url="https://github.com/ericjwhitney/pyavia",
     packages=setuptools.find_packages(include=['pyavia', 'pyavia.*']),
-    python_requires='>=3.7',
+    python_requires='>=3.9',
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Science/Research",
