@@ -5,18 +5,18 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyavia",
-    version="0.0.3",
+    version="0.0.4",
     author="Eric J. Whitney",
     author_email="eric.j.whitney@optusnet.removethispart.com.au",
     description="Useful functions commonly used in aerospace engineering.",
     include_package_data=True,  # <<< Note!
-    install_requires=[
-        'numpy', 'pexpect'
-    ],
+
+    install_requires=['numpy'],  # <<< Note!
+    setup_requires=["numpy"],
+
     keywords='aerospace engineering tools',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    setup_requires=["numpy"],
     url="https://github.com/ericjwhitney/pyavia",
     packages=setuptools.find_packages(include=['pyavia', 'pyavia.*']),
     python_requires='>=3.9',

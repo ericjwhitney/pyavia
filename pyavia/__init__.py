@@ -17,7 +17,7 @@ engineering or engineering in general.  Some things to note:
 
 Version
 -------
-The current version is **0.0.3**.  **PyAvia** is designed for Python >= 3.9
+The current version is **0.0.4**.  **PyAvia** is designed for Python >= 3.9
 and is platform agnostic.
 
 .. note:: At this stage PyAvia is extremely preliminary, alpha, pre-release,
