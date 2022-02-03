@@ -2,11 +2,13 @@
 Data filtering algorithms.
 """
 
-# Last updated: 16 March 2021 by Eric J. Whitney.
+# Last updated: 3 February 2022 by Eric J. Whitney.
+from collections import deque
+from typing import Sequence
 
 import numpy as np
 
-__all__ = ['J211_2pole', 'J211_4pole']
+__all__ = ['J211_2pole', 'J211_4pole', 'MovingAverage']
 
 
 # -----------------------------------------------------------------------------
@@ -124,5 +126,84 @@ def J211_4pole(X, T: float, CFC: int, axis: int = 0):
     Y_pass1 = J211_2pole(X, T, CFC, axis=axis, fwd_pass=True)
     Y_pass2 = J211_2pole(Y_pass1, T, CFC, axis=axis, fwd_pass=False)
     return Y_pass2
+
+
+# =============================================================================
+
+class MovingAverage:
+    """
+    This is a simple on-line moving average filter with a given fixed length.
+    Each time a new data point is added, the oldest is dropped and the
+    current output value is updated.  The output value is the equal
+    (unweighted) average of the stored data points.
+
+    Examples
+    --------
+    Setup a filter of length 3 using some initial values:
+    >>> my_filter = MovingAverage([1, 2, 3, 4, 5], length=3)
+    >>> my_filter.value
+    4.0
+
+    Note the filter value is 4.0 because only the last three values are stored.
+    Add a new data point:
+    >>> my_filter.add(7)
+    5.333333333333333
+
+    ``add()`` also returns the updated moving average, in this case
+    ``(4 + 5 + 7) / 3 = 5.333...``.
+    """
+
+    def __init__(self, init_vals: Sequence, length: int = None):
+        """
+        Parameters
+        ----------
+        init_vals : list or array-like
+            Values used to initialise the filter.
+        length : int (optional)
+            Set the filter length (default = None).  It is required that
+            ``length <= len(init_vals)``.  If `length` is not given,
+            the filter length will be equal to the length of `init_vals`.
+        """
+        if len(init_vals) <= 1:
+            raise ValueError("Initial values required to start the filter.")
+
+        length = length if length is not None else len(init_vals)
+        if length > len(init_vals) or length < 1:
+            raise ValueError("Invalid filter length.  Must be >= 1 and <= "
+                             "length of initial values.")
+
+        self._pts = deque(maxlen=length)  # Stores values pre-multiplied.
+        for x in init_vals:
+            self._pts.appendleft(x)
+
+        self._current_sum = sum(self._pts)
+
+    def add(self, x):
+        """
+        Adds a new data point to the filter, discards the oldest and updates
+        the current moving average.
+
+        Parameters
+        ----------
+        x : number-like
+            New data point to add to the filter.
+
+        Returns
+        -------
+        average : number-like
+            The new moving average value of the filter.
+
+        """
+        self._current_sum -= self._pts.pop()  # Subtract oldest.
+        self._current_sum += x  # Add newest.
+        self._pts.appendleft(x)
+        return self.value
+
+    @property
+    def value(self):
+        """
+        Returns the current value of the moving average.
+        """
+        return self._current_sum / len(self._pts)
 
 # -----------------------------------------------------------------------------
