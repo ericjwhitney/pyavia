@@ -133,8 +133,10 @@ from fractions import Fraction
 import math
 import operator
 import re
+from functools import wraps
+from inspect import signature
 from numbers import Number
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, Sequence
 import warnings
 
 import numpy as np
@@ -146,7 +148,8 @@ from pyavia.types import coax_type, force_type
 __all__ = ['OUTPUT_UCODE_PWR', 'STD_UNIT_SYSTEM', 'CACHE_COMPUTED_CONVS',
            'CONV_PATH_LENGTH_WARNING', 'Dim', 'RealScalar', 'RealArray',
            'DimScalar', 'DimArray', 'add_base_unit', 'add_unit', 'convert',
-           'dim', 'is_dimarray', 'set_conversion', 'to_absolute_temp']
+           'dim', 'is_dimarray', 'set_conversion', 'to_absolute_temp',
+           'units_aware']
 
 # -----------------------------------------------------------------------------
 
@@ -933,6 +936,121 @@ def to_absolute_temp(x: Dim) -> Dim:
         raise ValueError(f"No absolute temperature mapping for '{x.units}'.")
 
     return x.convert(abs_units)
+
+
+# == Units-Aware Function Decorator ===========================================
+
+def units_aware(input_units: {str, Union[str, None]}=None,
+                output_units: [Union[str, None]] = None):
+    """
+    Decorator to make a function "units aware".  Input arguments are
+    converted to scalars with the units given in `input_units` which are then
+    passed to the decorated function.  In this way the function does not need
+    to be specifically written to accomodate units.
+
+    .. Note:: The undecorated original function can still be accessed using
+       the ``__wrapped__`` property, e.g. ``func_nodims = func.__wrapped__``.
+
+    Parameters
+    ----------
+    input_units: {str: Union[str, None], ...}
+        A dict of input argument names with associated strings representing
+        valid units for that input argument.  The units must follow the
+        conventions of ``dim(...)``.  ``None`` can be used if a
+        specific argument has no units.  As a safety policy, all arguments
+        (including default arguments) must have units defined (or ``None``)
+        otherwise an exception is raised.
+
+    output_units: str or [Union[str, None], ...]
+        A unit string or sequence of strings to use when converting the
+        function output to `dim()` values.  If ``None`` then the output is
+        returned directly (no conversion via ``dim()``).  If only a single
+        unit string is given then the output is treated as a single value
+        and a tuple is not created.
+
+    Returns
+    -------
+    result : Any
+        The output as a `dim()` object where required (see `output_units`
+        above).
+
+    Raises
+    ------
+    ValueError :
+        If some arguments have inconsistent or missing units whether others
+        have been provided (or required in the case of ``units_reqd = True``.
+    """
+    if input_units is None:
+        input_units = {}
+
+    def decorator(func):
+        func_sig = signature(func)
+
+        @wraps(func)
+        def wrapped_func(*args, **kwargs):
+            # Get all input arguments bound to their names.
+            bound_args = func_sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            if bound_args.arguments.keys() != input_units.keys():
+                raise ValueError(
+                    f"@units_aware: Input arguments "
+                    f"[{', '.join(input_units.keys())}] do not match wrapped "
+                    f"function [{', '.join(bound_args.arguments.keys())}].")
+
+            # Convert arguments where required.
+            for k, v in bound_args.arguments.items():
+                to_units = input_units[k]
+
+                if not isinstance(v, Dim):
+                    # Case: Plain argument supplied.  No conversion required
+                    # provided target units were 'None'.
+
+                    if to_units is not None:
+                        raise ValueError(f"@units_aware: Required Dim value "
+                                         f"not supplied for argument '{k}'.")
+
+                else:
+                    # Case: Dim() supplied.
+                    if to_units is None:
+                        raise ValueError(f"@units_aware: Dim value supplied "
+                                         f"for argument '{k}' but no "
+                                         f"conversion given.")
+
+                    # Do conversion.
+                    bound_args.arguments[k] = v.to_real(to_units)
+
+            # Run function by passing in plain arguments.
+            res = func(*bound_args.args, **bound_args.kwargs)
+            if output_units is None:
+                # Case: No dimensioned result required.  Return directly.
+                return res
+
+            elif isinstance(output_units, str):
+                # Case: Single conversion applied to result.
+                return dim(res, output_units)
+
+            else:
+                # Case: Convert each element of result.
+                if not isinstance(res, Sequence):
+                    raise ValueError(f"@units_aware: Expected multiple return "
+                                     f"values from function for conversion.")
+
+                if len(res) != len(output_units):
+                    raise ValueError(f"@units_aware: Number of returned "
+                                     f"values doesn't match number of "
+                                     f"conversions requested.")
+
+                # Give outputs dimensions in place.
+                for i in range(len(res)):
+                    if output_units[i] is not None:
+                        # noinspection PyUnresolvedReferences
+                        res[i] = dim(res[i], output_units[i])
+
+                return tuple(res) if len(res) > 1 else res[0]
+
+        return wrapped_func
+
+    return decorator
 
 
 # == Private Attributes & Functions ===========================================

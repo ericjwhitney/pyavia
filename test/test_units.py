@@ -345,3 +345,47 @@ class TestDim(TestCase):
         a_ssl_c = (1.4 * air_const_metric * dim(15.0, '°C')) ** 0.5
         self.assertEqual(a_ssl_c.units, 'm.s⁻¹')
         self.assertAlmostEqual(a_ssl_c.to_real('m/s'), 340.29399, places=3)
+
+    def test_units_aware(self):
+        from pyavia.units import dim, units_aware
+
+        # Define units-aware test function.
+        @units_aware({'force': 'N', 'area': 'mm^2', 'mult': None},
+                     output_units='MPa')
+        def pressure(force, *, area, mult=1.0):
+            # Should always receive plain values during these tests.
+            self.assertIsInstance(force, (float, int))
+            self.assertIsInstance(area, (float, int))
+            self.assertIsInstance(mult, (float, int))
+            return force / area * mult
+
+        # Normal case should result in 10,000 psi -> returned as 68.95 MPa.
+        f = dim(5000, 'lbf')
+        a = dim(0.5, 'in^2')
+        p = pressure(f, area=a)
+        self.assertEqual(p.units, 'MPa')
+        self.assertAlmostEqual(p.value, 68.94757, places=4)
+
+        # Multiplier should operate without conversion.
+        p = pressure(f, area=a, mult=2)
+        self.assertAlmostEqual(p.to_real('psi'), 20000, places=4)
+
+        # Inconsistent units.
+        with self.assertRaises(ValueError):
+            f_wrong = dim(5000, 'lbf^2')
+            p = pressure(f_wrong, area=a)
+
+        # Units omitted.
+        with self.assertRaises(ValueError):
+            p = pressure(5000, area=0.5)
+            self.assertIsInstance(p, float)
+
+        # Check that if no output units are provided, raw values are returned.
+        @units_aware(input_units={'x': 'kph', 'y': 'mph'})
+        def swapper(x, y):
+            return y, x
+
+        res_x, res_y = swapper(dim(55, 'mph'), dim(35, 'mph'))
+        self.assertAlmostEqual(res_x, 35)  # No units.
+        self.assertAlmostEqual(res_y, 88.514097, places=4)
+        # -> 55 mph converted to kmh as a plain value.
