@@ -23,7 +23,7 @@ class TestStress(TestCase):
         prin_str[0:3] = [x.convert('psi').value for x in prin_str[0:3]]
         check_stress_state(prin_str, [6099, -4099, 0.0, -50.66 * pi / 180])
 
-        # Test prescribed angles.
+        # test prescribed angles.
         prin_str = mohr2d(1000, 2000, 3000, dim(60, '°'))
         check_stress_state(prin_str, [4348.1, -1348.1, -1067.0,
                                       dim(+60 * pi / 180, 'rad')])

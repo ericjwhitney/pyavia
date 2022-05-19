@@ -1,16 +1,15 @@
 
-from typing import Any
 import numpy as np
 
 from pyavia.math import kind_atan2
-from pyavia.units import dim, DimScalar, Dim, convert
+from pyavia.units import dim, Dim, convert, DimOpType
 
 
 # =============================================================================
 
 
-def mohr2d(s_xx: DimScalar, s_yy: DimScalar, t_xy: DimScalar,
-           rot_ang: DimScalar = None) -> (DimScalar, DimScalar, DimScalar, Dim):
+def mohr2d(s_xx: DimOpType, s_yy: DimOpType, t_xy: DimOpType,
+           rot_ang: DimOpType = None) -> (DimOpType, DimOpType, DimOpType, Dim):
     r"""
     Mohr's circle transformation of stresses in any orientation to principle
     axes or another nominated angle.  If values are ``Dim`` objects,
@@ -52,8 +51,8 @@ def mohr2d(s_xx: DimScalar, s_yy: DimScalar, t_xy: DimScalar,
 
     # Normalise stresses, convert to float.
     σ_xx, σ_units = dim(s_xx)
-    σ_yy = dim(s_yy).to_real(σ_units)
-    τ_xy = dim(t_xy).to_real(σ_units)
+    σ_yy = dim(s_yy).to_value(σ_units)
+    τ_xy = dim(t_xy).to_value(σ_units)
 
     cos_θ, sin_θ = np.cos(θ), np.sin(θ)
     cos_2θ, sin_2θ = np.cos(2 * θ), np.sin(2 * θ)

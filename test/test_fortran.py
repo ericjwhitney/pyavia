@@ -8,7 +8,7 @@ class TestFortranArray(TestCase):
         from pyavia.fortran import FortranArray, fortran_array
         import numpy as np
 
-        # Test direct initialisation.
+        # test direct initialisation.
         a_mat = FortranArray(4, 4, ftype='real*8')
         self.assertEqual(a_mat.dtype, np.float64)
         self.assertEqual(a_mat.ftype, 'real*8')
@@ -19,7 +19,7 @@ class TestFortranArray(TestCase):
         self.assertEqual(b_vec.ftype, 'integer*4')
         self.assertEqual(b_vec.shape, (4,))
 
-        # Test initialisation from given data.
+        # test initialisation from given data.
         c_mat = fortran_array([[3, 6], [-5, -9]], ftype='REAL*8')
         self.assertEqual(c_mat.dtype, np.float64)
         self.assertEqual(c_mat.shape, (2, 2))
@@ -38,7 +38,7 @@ class TestFortranArray(TestCase):
         from pyavia.fortran import fortran_array
         import numpy as np
 
-        # Test Fortran individual indexing.
+        # test Fortran individual indexing.
         row_mat = fortran_array([1.0, 2.0, 3.0, 4.0])  # Row vector, float64.
         col_mat = fortran_array([[1], [2], [3], [4]])  # Column vector, int.
         full_mat = fortran_array([[3, 6], [-5, -9]], dtype=np.float64)
@@ -73,7 +73,7 @@ class TestFortranArray(TestCase):
         with self.assertRaises(IndexError):
             print(f"Nonexistant item = {full_mat[2, 3]}")
 
-        # Test Fortran slicing.
+        # test Fortran slicing.
         self.assertTrue(all(row_mat[2:3] == [2.0, 3.0]))
         self.assertTrue(all(row_mat[1:8:3] == [1.0, 4.0]))  # Legal in F90.
         self.assertTrue(all(col_mat[4:3:-1, 1] == [4.0, 3.0]))
@@ -84,7 +84,7 @@ class TestFortranArray(TestCase):
         from pyavia.fortran import FortranArray, fortran_array
         import numpy as np
 
-        # Test basic indices.
+        # test basic indices.
         a_vec = FortranArray(7)  # Default type is REAL.
         a_vec[1] = 4.0
         a_vec[7] = 4.5
@@ -93,7 +93,7 @@ class TestFortranArray(TestCase):
         with self.assertRaises(IndexError):
             a_vec[8] = 5.0
 
-        # Test slice indexing.
+        # test slice indexing.
         r_vec = fortran_array(np.zeros(6), ftype='real')
         r_vec[:] = [1, 2, 3, 4, 5, 6]
         self.assertIs(type(r_vec), FortranArray)
@@ -142,7 +142,7 @@ class TestFortranArray(TestCase):
         from pyavia.fortran import FortranArray, fortran_array
         import numpy as np
 
-        # Test inversion, multiplication.
+        # test inversion, multiplication.
         a_mat = fortran_array([[1, 2, 3], [0, 1, 4], [5, 6, 0]],
                               ftype='real')
         a_inv = np.linalg.inv(a_mat)

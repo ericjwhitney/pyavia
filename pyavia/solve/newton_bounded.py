@@ -21,28 +21,37 @@ import warnings
 from collections import namedtuple
 from collections.abc import Sequence
 from numbers import Number
-from typing import Union, Callable, TypeVar
+from typing import Union, Callable, Tuple
 
-# noinspection PyProtectedMember
-from scipy.optimize.zeros import (_results_select, _ECONVERGED, _ECONVERR)
 import numpy as np
+from numpy.typing import ArrayLike
 
+# Importing internal SciPy components required; sometimes these change
+# location.
 
-_SclOrVec = TypeVar('_SclOrVec', Number, Sequence[Number])
-
-
+try:
+    # noinspection PyProtectedMember,PyUnresolvedReferences
+    from scipy.optimize.zeros import (_results_select, _ECONVERGED, _ECONVERR,
+                                      RootResults)
+except ImportError:
+    # noinspection PyProtectedMember,PyUnresolvedReferences
+    from scipy.optimize._zeros_py import (_results_select, _ECONVERR,
+                                          _ECONVERGED)
 # ---------------------------------------------------------------------------
 
-# TODO:  The rule about bounds not containing infinity can be relaxed if we
-#  offer a starting point option.  Also see _array_newton_bounded.
+_result_types = Union[
+    ArrayLike,  # Full_output = False.
+    Tuple[float, RootResults],  # Scalar, full_output = True.
+    Tuple[ArrayLike, ArrayLike, ArrayLike]]  # Vector, full_output = True.
 
-def newton_bounded(func: Callable, x0: _SclOrVec, *,
+
+def newton_bounded(func: Callable, x0: ArrayLike, *,
                    fprime: Union[bool, Callable] = None,
-                   args=(), tol: float = 1.48e-8,
-                   maxiter: int = 50, fprime2: Union[bool, Callable] = None,
-                   x1: _SclOrVec = None, rtol: float = 0.0,
+                   args=(), tol: float = 1.48e-8, maxiter: int = 50,
+                   fprime2: Union[bool, Callable] = None,
+                   x1: ArrayLike = None, rtol: float = 0.0,
                    full_output: bool = False, disp: bool = True,
-                   bounds: (_SclOrVec, _SclOrVec)):
+                   bounds: (ArrayLike, ArrayLike)) -> _result_types:
     """
     Find a zero of a real or complex function using the Newton-Raphson (or
     secant or Halley's) method, with the additional requirement that all
@@ -62,10 +71,10 @@ def newton_bounded(func: Callable, x0: _SclOrVec, *,
            always computed automatically.
 
     bounds : (array-like, array-like)
-        if n > 1 vectors are tkaen to form opposite corners of a bounding
+        if n > 1 vectors are taken to form opposite corners of a bounding
         hypercube.  Order is not important, bounds are always rearranged into
-        min -> max order.  Bounds cannot contain infinity when the secant
-        method is used, because they are used to determine a starting point.
+        min -> max order.  If no bound is desired on either side, use +/-
+        np.inf as required.
 
     func, x0, fprime, args, tol, maxiter, fprime2, rtol, full_output, disp :
         Only parameters with different behaviour from SciPy `newton()` and
@@ -74,12 +83,15 @@ def newton_bounded(func: Callable, x0: _SclOrVec, *,
 
     Returns
     -------
-    root : float, sequence, or ndarray
-        Estimated location where function is zero.
-    r, converged, zero_der :
-        Additional information depending on the argument `full_output` and
-        whether `x0` is a scalar or array.  See SciPy `newton()` for more
-        details.
+    results :
+        Results can be as follows:
+            - ArrayLike: Root only (scalar or vector) when
+              ``full_output == False``.
+            - float, RootResults:  Root and convergence information
+              for scalar functions when ``full_output == True``.
+            - ArrayLike, ArrayLike, ArrayLike:  Root, converged axes and
+              zero-derivative axes for vector functions when
+              ``full_output == True``.
     """
     # Note:  Sections that are modified from the refence SciPy
     # implementation are marked **.
@@ -103,8 +115,8 @@ def newton_bounded(func: Callable, x0: _SclOrVec, *,
     funcalls = 0
 
     # ** Check initial point.
-    if not (p_min < p0 < p_max):
-        raise ValueError("Starting point cannot be on or outside boundary.")
+    if not (p_min <= p0 <= p_max):
+        raise ValueError("Starting point cannot outside boundary.")
 
     if fprime is not None:
         # Newton-Raphson method.
@@ -157,12 +169,12 @@ def newton_bounded(func: Callable, x0: _SclOrVec, *,
 
             # ** Enforce boundaries (both Newton and Halley's method).
             p_clip = np.clip(p, p_min, p_max)
-            hit_boundary = (p_clip - p).any()
+            hit_bounds = bool(p_clip - p)
             p = p_clip
 
             # ** Only check for convergence if the last step was not
             # clipped to a boundary.
-            if np.isclose(p, p0, rtol=rtol, atol=tol) and not hit_boundary:
+            if np.isclose(p, p0, rtol=rtol, atol=tol) and not hit_bounds:
                 return _results_select(
                     full_output, (p, funcalls, itr + 1, _ECONVERGED))
             p0 = p
@@ -175,13 +187,49 @@ def newton_bounded(func: Callable, x0: _SclOrVec, *,
             p1 = x1
 
         else:
-            # ** Determine in which direction to place p1; move towards the
-            # centre of the bounds.  Also make the offset a fraction of the
-            # problem size.
-            p_mid = 0.5 * (p_max + p_min)
-            p_scl = p_max - p_mid
-            dirn = -1 if p0 > p_mid else +1
-            p1 = p0 + 1e-2 * dirn * p_scl
+            # ** x1 was not provided.  We try to guess a useful position based
+            # on the information available.
+            inf_bounds = np.isinf((p_min, p_max))
+            eps = 2 * np.finfo(float).eps
+            offset = 1.0e-3  # Multiplier for characteristic scale.
+
+            if not np.any(inf_bounds):
+                # If both boundaries are defined, p1 is generated as an
+                # offset from p0 towards the midpoint of the problem.
+                p_mid = 0.5 * (p_max + p_min)
+                p_scl = p_max - p_min  # Characteristic scale.
+                dirn = np.sign(p_mid - p0)
+
+            elif np.all(inf_bounds):
+                # If no bounds are defined then p1 is generated using a
+                # offset of 1e-3 in the direction away from zero,
+                # similar to the original SciPy implementation.
+                dirn = np.sign(p0)
+
+                # Use |p0| as the characteristic scale.
+                p_scl = np.abs(p0)
+                if p_scl < eps:
+                    # If |p0| == 0, use a scale of unity.
+                    p_scl = 1.0
+
+            else:
+                # One finite bound was defined.  Generate p1 as an offset of
+                # p0 towards the known boundary.
+                finite_bound = p_min if np.isinf(p_max) else p_max
+                dirn = np.sign(finite_bound - p0)
+
+                # Initially set the scale as the distance between the point
+                # and the boundary.
+                p_scl = np.abs(finite_bound - p0)
+                if p_scl < eps:
+                    # If the point is on the boundary, try p0 as the problem
+                    # scale.
+                    p_scl = np.abs(p0)
+                    if p_scl < eps:
+                        # Failing all else, use a problem scale of unity.
+                        p_scl = 1.0
+
+            p1 = p0 + dirn * p_scl * offset
 
         q0 = func(p0, *args)
         funcalls += 1
@@ -217,19 +265,19 @@ def newton_bounded(func: Callable, x0: _SclOrVec, *,
 
             # ** Enforce boundaries.
             p_clip = np.clip(p, p_min, p_max)
-            hit_boundary = (p_clip - p).any()
+            hit_bounds = bool(p_clip - p)
             p = p_clip
 
             # ** Only check for convergence if the last step was not
             # clipped to a boundary.
-            if np.isclose(p, p1, rtol=rtol, atol=tol) and not hit_boundary:
+            if np.isclose(p, p1, rtol=rtol, atol=tol) and not hit_bounds:
                 return _results_select(
                     full_output, (p, funcalls, itr + 1, _ECONVERGED))
 
             # ** Update working points and continue.  For secant method,
             # do not replace the old point if the current step took us to a
             # boundary (re-use that data).
-            if not hit_boundary:
+            if not hit_bounds:
                 p0, q0 = p1, q1
 
             p1 = p
@@ -272,13 +320,12 @@ def _array_newton_bounded(func: Callable, x0: Sequence[Number], *,
         raise ValueError("Bounds lengths must match x0.")
 
     # ** Rearrange bounds to min -> max.
-    p_min, p_max = np.empty_like(p), np.empty_like(p)
-    for i, (p_b1, p_b2) in enumerate(zip(*bounds)):
-        p_min[i], p_max[i] = (p_b1, p_b2) if p_b1 < p_b2 else (p_b2, p_b1)
+    p_min = np.minimum(bounds[0], bounds[1])
+    p_max = np.maximum(bounds[0], bounds[1])
 
     # ** Check initial point.
-    if not ((p_min < p) & (p < p_max)).all():
-        raise ValueError("Starting point cannot be on or outside boundary.")
+    if np.any((p < p_min) | (p > p_max)):
+        raise ValueError("Starting point cannot be outside boundary.")
 
     failures = np.ones_like(p, dtype=bool)
     nz_der = np.ones_like(failures)
@@ -361,19 +408,24 @@ def _array_newton_bounded(func: Callable, x0: Sequence[Number], *,
             p[nz_der] = p1[nz_der] - dp
 
             # ** Enforce boundaries.
-            p = np.clip(p, p_min, p_max)
+            p_clip = np.clip(p, p_min, p_max)
+            hit_bounds = (p_clip - p) > 0
+            p = p_clip
 
             active_zero_der = ~nz_der & active
             p[active_zero_der] = (p1 + p)[active_zero_der] / 2.0
             active &= nz_der  # Don't assign zero derivatives again.
             failures[nz_der] = np.abs(dp) >= tol  # Not yet converged.
 
-            # Stop iterating if there aren't any failures, not including zero
-            # derivatives.
-            if not failures[nz_der].any():
+            # ** Stop iterating if there aren't any failures, not including
+            # zero derivatives, and only if the last step was not clipped to
+            # a boundary.
+            if not failures[nz_der].any() and not hit_bounds.any():
                 break
-            p1, p = p, p1
-            q0 = q1
+
+            # ** Only update components that didn't exceed a boundary.
+            p1[~hit_bounds], p[~hit_bounds] = p[~hit_bounds], p1[~hit_bounds]
+            q0[~hit_bounds] = q1[~hit_bounds]
             q1 = np.asarray(func(p1, *args))
 
     zero_der = ~nz_der & failures  # Don't include converged with zero-derivs.
@@ -411,24 +463,3 @@ def _array_newton_bounded(func: Callable, x0: Sequence[Number], *,
         p = result(p, ~failures, zero_der)
 
     return p
-
-
-# ---------------------------------------------------------------------------
-
-# Short test function - to be moved.
-if __name__ == '__main__':
-    def f(x):
-        return [3 * x[0] ** 2 + x[0] - 2, x[1]]
-
-    def f_der(x):
-        return [6 * x[0] + 1, 1]
-
-    # noinspection PyUnusedLocal
-    def f_der2(x):
-        return [6, 0]
-
-    sol = newton_bounded(f, [-.999, 0], bounds=[[-1, +15], [-1, +1.5]],
-                         fprime=f_der, fprime2=f_der2,
-                         disp=True, full_output=True)
-
-    print()

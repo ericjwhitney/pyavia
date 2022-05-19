@@ -6,24 +6,24 @@ class TestDim(TestCase):
     def test___init__(self):
         from pyavia.units import dim
 
-        # Test no arguments:  Value = 1, no units.
+        # test no arguments:  Value = 1, no units.
         x = dim()
         self.assertEqual(x.value, 1)
         self.assertIsInstance(x.value, int)
 
-        # Test one positional argument: Dimensionless.
+        # test one positional argument: Dimensionless.
         x = dim(3)
         self.assertEqual(x.value, 3)
         self.assertIsInstance(x.value, int)
         self.assertEqual(x.units, '')
 
-        # Test one positional argument: Units only.
+        # test one positional argument: Units only.
         x = dim('ft')
         self.assertEqual(x.value, 1)
         self.assertIsInstance(x.value, int)
         self.assertEqual(x.units, 'ft')
 
-        # Test two positional arguments: Value and units given.
+        # test two positional arguments: Value and units given.
         x, y = dim(3, 'ft'), dim(5 + 6j, 's')
         self.assertEqual(x.value, 3)
         self.assertIsInstance(x.value, int)
@@ -31,7 +31,7 @@ class TestDim(TestCase):
         self.assertEqual(y.value, 5 + 6j)
         self.assertIsInstance(y.value, complex)
 
-        # Test cannot use derived units with offset temperature.
+        # test cannot use derived units with offset temperature.
         with self.assertRaises(ValueError):
             x = dim(1, '°C/day')
 
@@ -39,7 +39,7 @@ class TestDim(TestCase):
         # Also tests __radd__
         from pyavia.units import dim
 
-        # Test addition of like units, preserving character.
+        # test addition of like units, preserving character.
         x, y = dim('ft'), dim(12, 'in')
         x_p_y = x + y
         self.assertEqual(x_p_y.value, 2)
@@ -50,14 +50,14 @@ class TestDim(TestCase):
         self.assertIsInstance(x, int)
         self.assertEqual(x, 6)
 
-        # Test addition of imcompatible units disallowed.
+        # test addition of imcompatible units disallowed.
         with self.assertRaises(ValueError):
             x = dim(10, 'kg') + dim(5, 'm')
 
         with self.assertRaises(ValueError):
             x = 2 + dim(2, 'kg')  # __radd__ check.
 
-        # Test total temperature addition (special case).
+        # test total temperature addition (special case).
         x = dim(25, '°C') + dim(5, 'Δ°C')
         self.assertEqual(x.units, '°C')
         self.assertEqual(x.value, 30)
@@ -68,14 +68,14 @@ class TestDim(TestCase):
         # Also tests __rsub__
         from pyavia.units import dim
 
-        # Test subtraction of imcompatible units disallowed.
+        # test subtraction of imcompatible units disallowed.
         with self.assertRaises(ValueError):
             x = (1 * dim('mol')) - (2 * dim('kg'))
 
         with self.assertRaises(ValueError):
             x = 3 - dim(2, 'mmol')  # __rsub__ check
 
-        # Test offset temperature subtration.
+        # test offset temperature subtration.
         x = dim(25, '°C') - dim(5, 'Δ°C')
         self.assertEqual(x.units, '°C')
         self.assertEqual(x.value, 20)
@@ -181,7 +181,7 @@ class TestDim(TestCase):
         from pyavia.units import dim
         import numpy as np
 
-        # Test multiplication of Dim objects holding arrays.
+        # test multiplication of Dim objects holding arrays.
         a = dim(np.array([[1, -1, 2], [0, -3, 1]]), 'J/K')
         # b = dim(np.array(
         b = dim(np.array([-271.15, -272.15, -273.15]), '°C')  # 2 K, 1 K, 0 K.
@@ -195,59 +195,59 @@ class TestDim(TestCase):
 
         pa_units.STD_UNIT_SYSTEM = 'kg.m.s.K'  # Abbrev. to check defaults.
         x = dim(1000, 'psi')
-        y = x.to_real_sys()  # Result should be in Pa.
+        y = x.to_value_sys()  # Result should be in Pa.
         self.assertAlmostEqual(y, 6894757.2932, places=3)
 
     def test_convert_operations(self):
         from pyavia.units import dim
 
-        # Test conversion to lhs does nothing.
+        # test conversion to lhs does nothing.
         x = dim(3, 'kg').convert('kg')
         self.assertEqual(x.value, 3)
         self.assertEqual(x.units, 'kg')
 
-        # Test integer conserved during whole-number conversion.
+        # test integer conserved during whole-number conversion.
         x = dim(144, 'in^2').convert('ft^2')
         self.assertEqual(x.value, 1)
         self.assertIsInstance(x.value, int)
 
-        # Test float conserved when integer is possible.
+        # test float conserved when integer is possible.
         x = dim(1.0, 'mol').convert('mmol')
         self.assertIsInstance(x.value, float)
 
-        # Test type promotion for non-whole-number conversion of int.
+        # test type promotion for non-whole-number conversion of int.
         x = dim(1, 'in').convert('mm')
         self.assertEqual(x.value, 25.4)
         self.assertIsInstance(x.value, float)
 
-        # Test multi-step conversion with large jump avoids warning message
+        # test multi-step conversion with large jump avoids warning message
         # (requires shortcut definitions to be in units.py).
         x = dim(1, 'nmol').convert('Gmol')  # Should give no warning.
 
-        # Test unit multipliers are carried correctly.
+        # test unit multipliers are carried correctly.
         x = dim(1, 'US_gal').convert('in^3')
         self.assertEqual(x.value, 231)
 
     def test_convert_fundamental(self):
         from pyavia.units import dim
 
-        # Test current.
+        # test current.
         x = dim(1, 'A').convert('mA')
         self.assertEqual(x.value, 1000)
         self.assertEqual(x.units, 'mA')
 
-        # Test angle units.
+        # test angle units.
         x = (5 * dim('m/°')).convert('m/rad')
         self.assertAlmostEqual(x.value, 286.47889, places=4)
 
     def test_convert_derived(self):
         from pyavia.units import dim
 
-        # Test acceleration.
+        # test acceleration.
         x = (9.80665 * dim('m.s⁻²')).convert('ft/s/s')
         self.assertAlmostEqual(x.value, 32.17404856, places=8)
 
-        # Test pressures (a common derived unit with many forms).
+        # test pressures (a common derived unit with many forms).
         x = dim(1, 'atm')
         mm_hg = x.convert('mmHg').value
         kpa = x.convert('kPa').value
@@ -262,7 +262,7 @@ class TestDim(TestCase):
         self.assertAlmostEqual(psi, 14.696, places=3)
         self.assertAlmostEqual(psf, 2116.22, places=2)
 
-        # Test speed.
+        # test speed.
         rpm = dim(2500, 'RPM')  # Rotational speed.
         omega = rpm.convert('rad/s')
         self.assertAlmostEqual(omega.value, 261.799388, places=5)
@@ -272,12 +272,12 @@ class TestDim(TestCase):
         self.assertAlmostEqual(v_t.value, 785.398163, places=5)
         self.assertEqual(v_t.units, 'fps')
 
-        # Test power.
+        # test power.
         x = dim(100, 'hp')
         x = x.convert('kW')
         self.assertAlmostEqual(x.value, 74.56999, places=3)
 
-        # Test some unusual units.
+        # test some unusual units.
         k_ic_metric = dim(51.3, 'MPa.m⁰ᐧ⁵')  # Fract. toughness 7039-T6351.
         k_ic_imp = k_ic_metric.convert('ksi.in^0.5')
         self.assertAlmostEqual(k_ic_imp.value, 46.7, places=1)
@@ -317,13 +317,13 @@ class TestDim(TestCase):
         with self.assertRaises(ValueError):
             x = dim(65, '°F').convert('Δ°F')
 
-        # Test temperature differences.
+        # test temperature differences.
         x, y = dim(1, 'Δ°C'), dim(1, 'K')
         self.assertEqual(x.value, y.value)
         x, y = dim(1, 'Δ°F'), dim(1, '°F')
         self.assertEqual(x.value, y.value)
 
-        # Test temperature components convert, including denominator.
+        # test temperature components convert, including denominator.
         air_const_metric = dim(287.05287, 'J/kg/K')
         air_const_imp_slug = air_const_metric.convert('ft.lbf/slug/°R')
         self.assertAlmostEqual(air_const_imp_slug.value, 1716.56188,
@@ -336,15 +336,15 @@ class TestDim(TestCase):
         self.assertAlmostEqual(air_const_metric.value, check_delta.value,
                                places=5)
 
-        # Test absolute temperatures cancel (K / K).
+        # test absolute temperatures cancel (K / K).
         a_ssl_k = (1.4 * air_const_metric * dim(288.15, 'K')) ** 0.5
         self.assertEqual(a_ssl_k.units, 'm.s⁻¹')
-        self.assertAlmostEqual(a_ssl_k.to_real('m/s'), 340.29399, places=3)
+        self.assertAlmostEqual(a_ssl_k.to_value('m/s'), 340.29399, places=3)
 
-        # Test total offset temperatures cancel (°C / K).
+        # test total offset temperatures cancel (°C / K).
         a_ssl_c = (1.4 * air_const_metric * dim(15.0, '°C')) ** 0.5
         self.assertEqual(a_ssl_c.units, 'm.s⁻¹')
-        self.assertAlmostEqual(a_ssl_c.to_real('m/s'), 340.29399, places=3)
+        self.assertAlmostEqual(a_ssl_c.to_value('m/s'), 340.29399, places=3)
 
     def test_units_aware(self):
         from pyavia.units import dim, units_aware
@@ -368,7 +368,7 @@ class TestDim(TestCase):
 
         # Multiplier should operate without conversion.
         p = pressure(f, area=a, mult=2)
-        self.assertAlmostEqual(p.to_real('psi'), 20000, places=4)
+        self.assertAlmostEqual(p.to_value('psi'), 20000, places=4)
 
         # Inconsistent units.
         with self.assertRaises(ValueError):

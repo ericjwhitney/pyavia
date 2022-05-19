@@ -6,7 +6,7 @@ class TestWeightedDirGraph(TestCase):
         from pyavia.containers import WtDirGraph, wdg_edge
         wdg = WtDirGraph()
 
-        # Test basic functions.
+        # test basic functions.
         wdg['a':'b'] = 'somevalue'
         self.assertIn('a', wdg)  # Both keys created by link assignment.
         self.assertIn('b', wdg)
@@ -14,19 +14,19 @@ class TestWeightedDirGraph(TestCase):
         with self.assertRaises(KeyError):
             print(wdg['b':'a'])  # Reverse should not exist.
 
-        # Test reverse link.
+        # test reverse link.
         wdg['b':'a'] = 1.23
         self.assertEqual(wdg['b':'a'], 1.23)
         self.assertNotEqual(wdg['a':'b'], wdg['b':'a'])
 
-        # Test heterogeneous and multiple keys.
+        # test heterogeneous and multiple keys.
         wdg['a':3.14159] = (22, 7)
         wdg[456:True] = 'Yes'
         with self.assertRaises(KeyError):
             wdg[1:2:3] = 4  # Invalid kind of slice index.
         self.assertNotEqual(wdg['a':'b'], wdg['a':3.14159])
 
-        # Test key deletion and contains.
+        # test key deletion and contains.
         del wdg['a':'b']  # Specific x -> y
         self.assertNotIn(wdg_edge('a', 'b'), wdg)
         self.assertIn(wdg_edge('b', 'a'), wdg)  # Reverse should not be deleted.
@@ -39,7 +39,7 @@ class TestWeightedDirGraph(TestCase):
         with self.assertRaises(KeyError):
             wdg['a':'a'] = 666
 
-        # Test construction with forwards dict.
+        # test construction with forwards dict.
         wdg = WtDirGraph({'a': {'b': 2, 'c': 5}, 'c': {'a': 4}})
         self.assertEqual(wdg['c':'a'], 4)
         with self.assertRaises(KeyError):

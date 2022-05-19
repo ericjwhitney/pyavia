@@ -7,17 +7,17 @@ class TestImperfectGas(TestCase):
         from pyavia.units import dim
 
         def stp_checks(test_gas):
-            self.assertAlmostEqual(test_gas.R.to_real('J/kg/K'), 287.05287,
+            self.assertAlmostEqual(test_gas.R.to_value('J/kg/K'), 287.05287,
                                    places=5)
-            self.assertAlmostEqual(test_gas.c_p.to_real('J/kg/K'), 1003.33,
+            self.assertAlmostEqual(test_gas.c_p.to_value('J/kg/K'), 1003.33,
                                    places=2)
-            self.assertAlmostEqual(test_gas.c_v.to_real('J/kg/K'), 716.28,
+            self.assertAlmostEqual(test_gas.c_v.to_value('J/kg/K'), 716.28,
                                    places=2)
             self.assertAlmostEqual(test_gas.gamma, 1.40, places=2)
-            self.assertAlmostEqual(test_gas.a.to_real('m/s'), 340.4,
+            self.assertAlmostEqual(test_gas.a.to_value('m/s'), 340.4,
                                    places=1)
             # Check US units.
-            self.assertAlmostEqual(test_gas.c_p.to_real('Btu/lbm/°R'),
+            self.assertAlmostEqual(test_gas.c_p.to_value('Btu/lbm/°R'),
                                    0.240, places=3)
 
         # Check standard temp. properties (Ps = 1 bar i.e. not relevant to
@@ -111,16 +111,16 @@ class TestPerfectGas(TestCase):
 
         def stp_checks(test_gas):
             self.assertAlmostEqual(test_gas.gamma, 1.400, places=3)
-            self.assertAlmostEqual(test_gas.R.to_real('J/kg/K'), 287.05287,
+            self.assertAlmostEqual(test_gas.R.to_value('J/kg/K'), 287.05287,
                                    places=5)
-            self.assertAlmostEqual(test_gas.c_p.to_real('J/kg/K'), 1004.685,
+            self.assertAlmostEqual(test_gas.c_p.to_value('J/kg/K'), 1004.685,
                                    places=2)
-            self.assertAlmostEqual(test_gas.c_v.to_real('J/kg/K'), 717.632,
+            self.assertAlmostEqual(test_gas.c_v.to_value('J/kg/K'), 717.632,
                                    places=2)
             self.assertAlmostEqual(test_gas.gamma, 1.40, places=2)
             self.assertAlmostEqual(test_gas.a.value, 340.3, places=1)
             # Check US units.
-            self.assertAlmostEqual(test_gas.c_p.to_real('Btu/lbm/°R'),
+            self.assertAlmostEqual(test_gas.c_p.to_value('Btu/lbm/°R'),
                                    0.240, places=3)
 
         # Check standard temp. properties (Ps = 1 bar) i.e. not relevant to
@@ -128,13 +128,13 @@ class TestPerfectGas(TestCase):
         gas = PerfectGas(P=dim(1, 'bar'), T=dim(15, '°C'), M=0.0)
         stp_checks(gas)
 
-        # Test entropy in = entropy out.
+        # test entropy in = entropy out.
         gas = PerfectGas(P=dim(20, 'bar'), T=dim(800, 'K'), M=0.0)
         P, s = gas.P, gas.s
         newgas = PerfectGas(P=P, s=s, M=0.0)
         # noinspection PyTypeChecker
-        self.assertAlmostEqual(gas.P.to_real('kPa'), newgas.P.to_real('kPa'),
+        self.assertAlmostEqual(gas.P.to_value('kPa'), newgas.P.to_value('kPa'),
                                places=3)
         # noinspection PyTypeChecker
-        self.assertAlmostEqual(gas.T.to_real('K'), newgas.T.to_real('K'),
+        self.assertAlmostEqual(gas.T.to_value('K'), newgas.T.to_value('K'),
                                places=3)

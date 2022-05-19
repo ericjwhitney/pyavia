@@ -16,7 +16,7 @@ class TestAtmosphere(TestCase):
         with self.assertRaises(ValueError):
             Atmosphere(H=0)  # Arg needs dimensions.
 
-        # Test for correct results from some standard altitude values.
+        # test for correct results from some standard altitude values.
         Atmosphere.set_default_style('SI')  # K, kPa, m, etc.
 
         atm = Atmosphere(H='SSL')  # Sea level - thorough test.
@@ -43,11 +43,11 @@ class TestAtmosphere(TestCase):
         self.assertAlmostEqual(atm.P.value, 0.104123, places=5)
         self.assertAlmostEqual(atm.μ.value, 1.7037e-5, places=9)
 
-        # Test arbitrary non-standard atmospheres.
+        # test arbitrary non-standard atmospheres.
         atm = Atmosphere(P=Dim(90, 'kPa'), T=Dim(-15, '°C'))
         self.assertAlmostEqual(atm.ρ.value, 1.21453067, places=8)
 
-        # Test pressure altitude construction.
+        # test pressure altitude construction.
         atm = Atmosphere(H_press=Dim(48000, 'ft'), T=Dim(-52, '°C'))
         self.assertAlmostEqual(atm.pressure.convert('psi').value, 1.85176,
                                places=4)
@@ -56,7 +56,7 @@ class TestAtmosphere(TestCase):
         self.assertAlmostEqual(atm.density_altitude.convert('ft').value,
                                48427.68, places=2)
 
-        # Test pressure altitude construction with offset.
+        # test pressure altitude construction with offset.
         atm = Atmosphere(H_press=Dim(34000, 'ft'), T_offset=Dim(+15, 'Δ°C'))
         self.assertAlmostEqual(atm.P.value, 25.00, places=2)
         self.assertAlmostEqual(atm.T.convert('°C').value, -37.36, places=2)
@@ -70,12 +70,12 @@ class TestAtmosphere(TestCase):
         self.assertAlmostEqual(atm.density_altitude.convert('ft').value,
                                7586.4166, places=2)
 
-        # Test geometric altitude.
+        # test geometric altitude.
         atm = Atmosphere(h_geometric=Dim(50120.16, 'ft'))
         self.assertAlmostEqual(atm.pressure_altitude.convert('ft').value,
                                50000, places=2)
 
-        # Test hot gases.
+        # test hot gases.
         # atm = Atmosphere(P=(10, 'kPa'), T=(1500, 'K'))
         # self.assertAlmostEqual(atm.c_p.value, 1216, places=-1)
         # self.assertAlmostEqual(atm.c_v.value, 929, places=-1)
@@ -90,16 +90,16 @@ class TestAtmosphere(TestCase):
 
         Atmosphere.set_default_style('SI')  # K, kPa, m, etc.
 
-        # Test pressure altitude result (arbitrary temp).
+        # test pressure altitude result (arbitrary temp).
         atm = Atmosphere(P=Dim(300, 'hPa'), T=Dim(5, 'K'))
         self.assertAlmostEqual(atm.pressure_altitude.value, 9164, places=1)
 
-        # Test density altitude result.
+        # test density altitude result.
         atm = Atmosphere(P=Dim(308.0113, 'psf'), T=Dim(-69.7, '°F'))
         h_d = atm.density_altitude.convert('ft')
         self.assertAlmostEqual(h_d.value, 45000, places=0)
 
-        # Test ratios.
+        # test ratios.
         atm = Atmosphere(H_press=Dim(40000, 'ft'), T_offset=Dim(-10, 'Δ°C'))
         self.assertAlmostEqual(atm.δ, 0.185087, places=5)
         self.assertAlmostEqual(atm.θ, 0.717161, places=5)

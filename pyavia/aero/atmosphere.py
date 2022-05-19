@@ -307,6 +307,10 @@ class Atmosphere:
 
     @property
     def pressure_altitude(self) -> Dim:
+        """
+        Returns the altitude in an ISA atmosphere that would give an ambient
+        pressure matching this atmosphere.
+        """
         # Find the ISA level of next highest pressure.
         base_idx, _ = bracket_list(_ISA_HTPrho_b, [None, None, self._P, None],
                                    key=lambda x: x[2])
@@ -333,15 +337,32 @@ class Atmosphere:
         return self._T.convert(Atmosphere.unitdef_temp)
 
     @property
-    def theta(self) -> float:
-        r""":math:`\theta = T/T_{SSL}`.
+    def temperature_offset(self) -> Dim:
+        """
+        Returns the temperature offset (+/-) that would be needed to correct
+        the ambient temperature in an ISA atmosphere at an equivalent
+        pressure altitude.  In other words, taking ``equiv_atm =
+        Atmosphere(H_press=self.pressure_altitude,
+        T_offset=self.temperature_offset)`` then ``equiv_atm`` and ``self``
+        will be the same atmosphere.
+        """
+        # Units driven by LHS ())i.e. self).
+        return self.T - Atmosphere(H_press=self.H_press,
+                                   T_offset=dim(0.0, 'K')).T
 
+    @property
+    def theta(self) -> float:
+        r"""
+        :math:`\theta = T/T_{SSL}`.
         """
         return self._T / Atmosphere(H='SSL').T
 
     # Method Aliases ---------------------------------------------------------
+
+    H_press: Dim = pressure_altitude
     P: Dim = pressure
     T: Dim = temperature
+    T_offset: Dim = temperature_offset
     a: Dim = speed_of_sound
 
     δ: float = delta
@@ -385,11 +406,16 @@ def _alt_in_layer(P, P_b, H_b, T_b, beta):
     """Returns the altitude computed within layer of constant lapse rate
     given pressure and base layer values of (_b) of pressure,
     altitude, temperature and lapse rate."""
-    if not isclose(beta, 0, abs_tol=1e-6):
-        return H_b + ((P / P_b) ** (-beta * Atmosphere.R / G_N) - 1) * (
-                T_b / beta)
+    if not isclose(float(beta), 0, abs_tol=1e-6):
+        # Note: (T_b / beta) is on the LHS to trigger Dim.__mult__, because
+        # the (P / Pb) * ... expression can resolve to a NumPy scalar which
+        # can be confused by the RHS Dim term.
+        return (H_b + (T_b / beta) *
+                ((P / P_b) ** (-beta * Atmosphere.R / G_N) - 1))
     else:
-        return H_b - log(P / P_b) * (Atmosphere.R * T_b / G_N)
+        # Note: (Atmosphere.R * T_b / G_N) is on the LHS for the same
+        # reasons as above.
+        return H_b - (Atmosphere.R * T_b / G_N) * log(P / P_b)
 
 
 _ISA_HTPrho_b: Optional[List] = None
