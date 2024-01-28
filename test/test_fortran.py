@@ -2,6 +2,8 @@
 from unittest.case import TestCase
 
 
+# ======================================================================
+
 class TestFortranArray(TestCase):
     # noinspection PyTypeChecker,PyUnusedLocal
     def test__init__(self):
@@ -26,7 +28,8 @@ class TestFortranArray(TestCase):
 
         # Check invalid constructions.
         with self.assertRaises(AttributeError):
-            dbl_types = fortran_array([3, 4], dtype=np.float64, ftype='real*8')
+            dbl_types = fortran_array([3, 4], dtype=np.float64,
+                                      ftype='real*8')
         with self.assertRaises(AttributeError):
             zero_mat = FortranArray(ftype='real')
         with self.assertRaises(ValueError):
@@ -34,13 +37,15 @@ class TestFortranArray(TestCase):
         with self.assertRaises(TypeError):
             odd_args = FortranArray((2,))
 
+    # ------------------------------------------------------------------
+
     def test__getitem__(self):
         from pyavia.fortran import fortran_array
         import numpy as np
 
         # test Fortran individual indexing.
-        row_mat = fortran_array([1.0, 2.0, 3.0, 4.0])  # Row vector, float64.
-        col_mat = fortran_array([[1], [2], [3], [4]])  # Column vector, int.
+        row_mat = fortran_array([1.0, 2.0, 3.0, 4.0])  # Row vec. f64
+        col_mat = fortran_array([[1], [2], [3], [4]])  # Col. vec. int
         full_mat = fortran_array([[3, 6], [-5, -9]], dtype=np.float64)
 
         self.assertEqual(row_mat[2], 2.0)
@@ -75,10 +80,14 @@ class TestFortranArray(TestCase):
 
         # test Fortran slicing.
         self.assertTrue(all(row_mat[2:3] == [2.0, 3.0]))
-        self.assertTrue(all(row_mat[1:8:3] == [1.0, 4.0]))  # Legal in F90.
+        self.assertTrue(all(row_mat[1:8:3] == [1.0, 4.0]))  # Legal F90.
         self.assertTrue(all(col_mat[4:3:-1, 1] == [4.0, 3.0]))
-        self.assertTrue(np.all(col_mat[2::-1, :] == np.array([[2.0], [1.0]])))
-        self.assertTrue(np.all(full_mat[::-1, ::-1] == np.flip(full_mat)))
+        self.assertTrue(np.all(col_mat[2::-1, :] ==
+                               np.array([[2.0], [1.0]])))
+        self.assertTrue(np.all(full_mat[::-1, ::-1] ==
+                               np.flip(full_mat)))
+
+    # ------------------------------------------------------------------
 
     def test__setitem__(self):
         from pyavia.fortran import FortranArray, fortran_array
@@ -115,7 +124,8 @@ class TestFortranArray(TestCase):
         self.assertTrue(np.allclose(r_vec, [6, 5, 4, 3, 2, 1]))
 
         # Partial slice.
-        c_vec = fortran_array([[1], [1], [2], [3], [5], [8], [13], [21]])
+        c_vec = fortran_array(
+            [[1], [1], [2], [3], [5], [8], [13], [21]])
         self.assertEqual(c_vec.dtype, np.int32)
         c_vec[3:6, :] = c_vec[6:3:-1, :]  # Swap central values.
         self.assertTrue(np.all(c_vec.T == [1, 1, 8, 5, 3, 2, 13, 21]))
@@ -131,12 +141,14 @@ class TestFortranArray(TestCase):
         self.assertEqual(fib_mat.dtype, np.int32)
         self.assertTrue(np.all(fib_mat[1:2, 1:2] ==  # Top left.
                                np.asarray(fib_ref)[0:2, 0:2]))
-        self.assertTrue(np.all(fib_mat[1:2, 3:4] ==  # Top right (swapped).
+        self.assertTrue(np.all(fib_mat[1:2, 3:4] ==  # Top right (swap)
                                np.asarray(fib_ref)[2:4, 0:2]))
-        self.assertTrue(np.all(fib_mat[3:4, 1:2] ==  # Bottom left (swapped).
+        self.assertTrue(np.all(fib_mat[3:4, 1:2] ==  # Bot. left (swap)
                                np.asarray(fib_ref)[0:2, 2:4]))
         self.assertTrue(np.all(fib_mat[3:4, 3:4] ==  # Bottom right.
                                np.asarray(fib_ref)[2:4, 2:4]))
+
+    # ------------------------------------------------------------------
 
     def test_arithmetic(self):
         from pyavia.fortran import FortranArray, fortran_array
@@ -170,6 +182,8 @@ class TestFortranArray(TestCase):
         a_mat_neg = -a_mat
         self.assertTrue(np.allclose(a_mat + a_mat_neg, 0.0))
 
+    # ------------------------------------------------------------------
+
     def test_arrayops(self):
         from pyavia.fortran import fortran_array
         import numpy as np
@@ -181,8 +195,10 @@ class TestFortranArray(TestCase):
 
         # Sum (a typical operaiton on all elements).
         self.assertAlmostEqual(fib_mat.sum(), 2583)
-        self.assertTrue(np.allclose(fib_mat.sum(axis=0), [273, 441, 714, 1155]))
-        self.assertTrue(np.allclose(fib_mat.sum(axis=1), [7, 47, 322, 2207]))
+        self.assertTrue(np.allclose(fib_mat.sum(axis=0),
+                                    [273, 441, 714, 1155]))
+        self.assertTrue(np.allclose(fib_mat.sum(axis=1),
+                                    [7, 47, 322, 2207]))
         self.assertEqual(fib_mat.flatten().shape, (16,))
 
         # Matrix inverse.
@@ -191,8 +207,13 @@ class TestFortranArray(TestCase):
                            [2, -1,  6, -2],
                            [0,  1, -2,  4]], ftype='real*8')
         p_inv = np.linalg.inv(p)
-        self.assertTrue(np.allclose(p @ p_inv, np.eye(4, dtype=np.float64)))
-        self.assertTrue(np.allclose(p_inv @ p, np.eye(4, dtype=np.float64)))
+
+        self.assertTrue(np.allclose(p @ p_inv,
+                                    np.eye(4, dtype=np.float64)))
+        self.assertTrue(np.allclose(p_inv @ p,
+                                    np.eye(4, dtype=np.float64)))
+
+    # ------------------------------------------------------------------
 
     def test_typical_example(self):
         from pyavia.fortran import FortranArray, fortran_do

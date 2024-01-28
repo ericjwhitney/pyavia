@@ -26,6 +26,10 @@ from typing import Union, Callable, Tuple
 import numpy as np
 from numpy.typing import ArrayLike
 
+
+# TODO A limited-step *and* bound Newton method would be a good thing.
+
+
 # Importing internal SciPy components required; sometimes these change
 # location.
 
@@ -36,7 +40,7 @@ try:
 except ImportError:
     # noinspection PyProtectedMember,PyUnresolvedReferences
     from scipy.optimize._zeros_py import (_results_select, _ECONVERR,
-                                          _ECONVERGED)
+                                          _ECONVERGED, RootResults)
 # ---------------------------------------------------------------------------
 
 _result_types = Union[

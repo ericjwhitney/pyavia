@@ -1,6 +1,8 @@
 from unittest import TestCase
 
 
+# ======================================================================
+
 class TestWeightedDirGraph(TestCase):
     def test___init__(self):
         from pyavia.containers import WtDirGraph, wdg_edge
@@ -29,7 +31,7 @@ class TestWeightedDirGraph(TestCase):
         # test key deletion and contains.
         del wdg['a':'b']  # Specific x -> y
         self.assertNotIn(wdg_edge('a', 'b'), wdg)
-        self.assertIn(wdg_edge('b', 'a'), wdg)  # Reverse should not be deleted.
+        self.assertIn(wdg_edge('b', 'a'), wdg)  # Rev. should delete.
         del wdg[456]  # Entire x-key.
         with self.assertRaises(KeyError):
             del wdg[3.14159, 'a']  # Reverse should not exist.
@@ -87,12 +89,12 @@ class TestWeightedDirGraph(TestCase):
         self.assertEqual(path, [-1, 3, 1])
         self.assertEqual(path_sum, 12)
 
-        # Forward path check (#3 check side-effects of caching reverse).
+        # Forward path check (also checks side-effects rev. cache).
         path, path_sum = wdg.trace(1, -1, op=lambda x, y: x + y)
         self.assertEqual(path, [1, 2, 7, -1])
         self.assertEqual(path_sum, -0.5)
 
-        # Reverse path check (#2 check side-effects of caching and fwd path).
+        # Reverse path check (also checks side-effects fwd path cache).
         path, path_sum = wdg.trace(-1, 1, op=lambda x, y: x + y)
         self.assertEqual(path, [-1, 3, 1])
         self.assertEqual(path_sum, 12)
