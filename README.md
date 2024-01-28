@@ -22,7 +22,7 @@ who can recognise incorrect values when they see them... *which will
 happen frequently.*
 
 ## Installation
-**PyAvia** is designed for Python >= 3.9 and is platform-agnostic.
+**PyAvia** is designed for Python >= 3.10 and is platform-agnostic.
 
 NumPy may need to be installed prior to installing PyAvia (*because I may
  not have setuptools completely on my side*), 
