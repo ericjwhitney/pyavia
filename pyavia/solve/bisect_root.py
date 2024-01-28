@@ -1,11 +1,4 @@
-"""
-**pyavia.solve** provides functions for finding solutions to various types of
-equations. These are included when not covered by NumPy or different variant
-is required.
-"""
-
-
-# Last updated: 6 January 2022 by Eric J. Whitney
+# Written by Eric J. Whitney, January 2022.
 
 
 # ----------------------------------------------------------------------------

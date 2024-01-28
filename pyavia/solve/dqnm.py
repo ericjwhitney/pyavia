@@ -3,11 +3,11 @@ import numpy as np
 
 # ----------------------------------------------------------------------------
 
-def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25, order=2,
-               jacob_diag=None, verbose=False):
+def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
+               order=2, jacob_diag=None, verbose=False) -> [float]:
     r"""
-    Solve nonlinear system of equations using the diagonal quasi-Newton method
-    of [1]_.
+    Solve nonlinear system of equations using the diagonal quasi-Newton
+    method of [1]_.
 
     Notes
     -----
@@ -47,8 +47,8 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25, order=2,
     maxits : int
         Maximum number of iterations allowed.
     order : {2, 1}
-        Next `x` position determined via a linear (``order = 1``) or quadratic
-        (``order = 2``) estimate.
+        Next `x` position determined via a linear (``order = 1``) or
+        quadratic (``order = 2``) estimate.
     jacob_diag : list_like
         Initial estimate of diagonal elements of Jacobian.  If None, assumes
         :math:`D = I`.
@@ -57,7 +57,7 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25, order=2,
 
     Returns
     -------
-    list
+    x : [float]
         Converged solution.
 
     Raises
@@ -68,13 +68,11 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25, order=2,
         Maximum iterations reached before convergence.
 
     References
-    -----
-
+    ----------
     .. [1] Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton Method
        For Systems Of Nonlinear Equations", Applied Mathematical and
        Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.
     """
-
     def verbose_print(info):
         if verbose:
             print(info)
