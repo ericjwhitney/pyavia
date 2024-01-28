@@ -1,29 +1,33 @@
 from unittest import TestCase
 
 
+# ======================================================================
+
 class TestForceType(TestCase):
     def test_force_type(self):
-        from pyavia.types import force_type
+        from pyavia.type_ext import force_type
 
         x = force_type(3.5, int, float)
-        self.assertIsInstance(x, int)  # int(3.5) -> 3 (int)
+        self.assertIsInstance(x, int)  # -> 3 (int)
         self.assertEqual(x, 3)
 
         x = force_type("3.5+4j", float, complex)
-        self.assertIsInstance(x, complex)  # complex("3.5+4j") -> (3.5+4j)
+        self.assertIsInstance(x, complex)  # -> 3.5+4j (complex)
         self.assertEqual(x, 3.5 + 4j)
 
         x = force_type(3.5 + 4j, int, float, str)
         self.assertIsInstance(x, str)
-        self.assertEqual(x, '(3.5+4j)')
+        self.assertEqual(x, '(3.5+4j)')  # -> '(3.5+4j)' (str)
 
         with self.assertRaises(ValueError):
             force_type(3.5 + 4j, int, float)
 
 
+# ----------------------------------------------------------------------
+
 class TestCoaxType(TestCase):
     def test_coax_type(self):
-        from pyavia.types import coax_type
+        from pyavia.type_ext import coax_type
 
         x = coax_type(3.5, int, float)
         self.assertIsInstance(x, float)  # Because int(3.5) != 3.5
@@ -40,3 +44,5 @@ class TestCoaxType(TestCase):
         y = coax_type(x, int, float, default=x)
         self.assertIsInstance(y, complex)
         self.assertEqual(y, 3 + 2j)
+
+# ======================================================================
