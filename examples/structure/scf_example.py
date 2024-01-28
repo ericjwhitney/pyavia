@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-
-# Examples of stress concentration factor along the bore of straight or
-# countersunk holes.  Reproduces results of NASA-TP-3192 Figure 4, 7(a) and
-# 7(b)
-
-# Written by: Eric J. Whitney  Last updated: 9 April 2020
-
+"""
+Examples of stress concentration factor along the bore of straight or
+countersunk holes.  Reproduces results of NASA-TP-3192 Figure 4, 7(a)
+and 7(b)
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyavia.struct import kt_hole3d
+from pyavia.structure import kt_hole3d
 
-# ----------------------------------------------------------------------------
+# Written by Eric J. Whitney, April 2020
+
+
+# ======================================================================
 
 bt, rw = 1.0, 1 / 5
 rt, zt = [2.5, 1.5, 1.0, 0.5, 0.25], np.linspace(-0.5, +0.5, 100)
@@ -33,7 +34,7 @@ plt.title('Tension SCF Along Bore - Countersunk')
 plt.legend(labels)
 plt.grid()
 
-# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 rt, rw = 2.0, 1 / 7.5
 bt = np.linspace(0.0, 0.75, 4)
@@ -68,5 +69,3 @@ plt.title('Bending SCF Along Bore - Countersunk')
 plt.legend(labels)
 plt.grid()
 plt.show()
-
-
