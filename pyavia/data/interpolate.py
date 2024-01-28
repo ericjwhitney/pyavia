@@ -6,8 +6,8 @@ from typing import Sequence, Union
 import numpy as np
 from scipy.interpolate import interp1d
 
-from pyavia.iter import bracket_list
-from pyavia.geo import line_pt
+from pyavia.iter import find_bracket
+from pyavia.geometry import line_pt
 
 
 # =============================================================================
@@ -60,7 +60,7 @@ def linear_int_ext(data_pts, p, scale=None, allow_extrap=False):
     try:
         # Try interpolation.
         # noinspection PyTypeChecker
-        l_idx, r_idx = bracket_list(data_pts, p, key=on_axis)
+        l_idx, r_idx = find_bracket(data_pts, p, key=on_axis)
     except ValueError:
         if not allow_extrap:
             raise ValueError(f"Point not within data range.")
