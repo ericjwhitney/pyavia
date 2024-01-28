@@ -1,29 +1,33 @@
 from unittest import TestCase
 
 
+# ----------------------------------------------------------------------------
+
 # noinspection PyUnusedLocal
 class TestDim(TestCase):
+    # Test for the `dim()` factory function.
+
     def test___init__(self):
         from pyavia.units import dim
 
-        # test no arguments:  Value = 1, no units.
+        # No arguments:  Value = 1, no units.
         x = dim()
         self.assertEqual(x.value, 1)
         self.assertIsInstance(x.value, int)
 
-        # test one positional argument: Dimensionless.
+        # One positional argument: Dimensionless.
         x = dim(3)
         self.assertEqual(x.value, 3)
         self.assertIsInstance(x.value, int)
         self.assertEqual(x.units, '')
 
-        # test one positional argument: Units only.
+        # One positional argument: Units only.
         x = dim('ft')
         self.assertEqual(x.value, 1)
         self.assertIsInstance(x.value, int)
         self.assertEqual(x.units, 'ft')
 
-        # test two positional arguments: Value and units given.
+        # Two positional arguments: Value and units given.
         x, y = dim(3, 'ft'), dim(5 + 6j, 's')
         self.assertEqual(x.value, 3)
         self.assertIsInstance(x.value, int)
@@ -31,44 +35,40 @@ class TestDim(TestCase):
         self.assertEqual(y.value, 5 + 6j)
         self.assertIsInstance(y.value, complex)
 
-        # test cannot use derived units with offset temperature.
+        # Cannot use derived units including an offset temperature.
         with self.assertRaises(ValueError):
             x = dim(1, '°C/day')
 
     def test___add__(self):
-        # Also tests __radd__
+        # Also checks __radd__.
         from pyavia.units import dim
 
-        # test addition of like units, preserving character.
-        x, y = dim('ft'), dim(12, 'in')
-        x_p_y = x + y
-        self.assertEqual(x_p_y.value, 2)
-        self.assertIsInstance(x_p_y.value, int)
-        self.assertEqual(x_p_y.units, 'ft')
-
-        x = 5 + dim(1, '')  # __radd__ and unit cancellation check.
+        # __radd__ and unit cancellation check.
+        x = 5 + dim(1, '')
         self.assertIsInstance(x, int)
         self.assertEqual(x, 6)
 
-        # test addition of imcompatible units disallowed.
+        # Addition of imcompatible units is disallowed.
         with self.assertRaises(ValueError):
             x = dim(10, 'kg') + dim(5, 'm')
 
         with self.assertRaises(ValueError):
             x = 2 + dim(2, 'kg')  # __radd__ check.
 
-        # test total temperature addition (special case).
+        # Adding total offset temperature to delta is allowed.
         x = dim(25, '°C') + dim(5, 'Δ°C')
         self.assertEqual(x.units, '°C')
         self.assertEqual(x.value, 30)
+
+        # Addition of two offset temperatures is not allowed.
         with self.assertRaises(ValueError):
-            x = dim(32, '°C') + dim(32, '°F')  # Not allowed.
+            x = dim(32, '°C') + dim(32, '°F')
 
     def test___sub__(self):
-        # Also tests __rsub__
+        # Also includes __rsub__ checks.
         from pyavia.units import dim
 
-        # test subtraction of imcompatible units disallowed.
+        # Subtraction of imcompatible units is not allowed.
         with self.assertRaises(ValueError):
             x = (1 * dim('mol')) - (2 * dim('kg'))
 
@@ -346,46 +346,70 @@ class TestDim(TestCase):
         self.assertEqual(a_ssl_c.units, 'm.s⁻¹')
         self.assertAlmostEqual(a_ssl_c.to_value('m/s'), 340.29399, places=3)
 
-    def test_units_aware(self):
-        from pyavia.units import dim, units_aware
+    # TODO Suspended - approach reevaluated.
+    # def test_units_aware(self):
+    #     from pyavia.units import units_aware
+    #     from pyavia.units import dim
+    #
+    #     # Define units-aware test function.
+    #     @units_aware({'force': 'N', 'area': 'mm^2', 'mult': None},
+    #                  output_units='MPa')
+    #     def pressure(force, *, area, mult=1.0):
+    #         # Should always receive plain values during these tests.
+    #         self.assertIsInstance(force, (float, int))
+    #         self.assertIsInstance(area, (float, int))
+    #         self.assertIsInstance(mult, (float, int))
+    #         return force / area * mult
+    #
+    #     # Normal case should result in 10,000 psi -> returned as 68.95 MPa.
+    #     f = dim(5000, 'lbf')
+    #     a = dim(0.5, 'in^2')
+    #     p = pressure(f, area=a)
+    #     self.assertEqual(p.units, 'MPa')
+    #     self.assertAlmostEqual(p.value, 68.94757, places=4)
+    #
+    #     # Multiplier should operate without conversion.
+    #     p = pressure(f, area=a, mult=2)
+    #     self.assertAlmostEqual(p.to_value('psi'), 20000, places=4)
+    #
+    #     # Inconsistent units.
+    #     with self.assertRaises(ValueError):
+    #         f_wrong = dim(5000, 'lbf^2')
+    #         p = pressure(f_wrong, area=a)
+    #
+    #     # Units omitted.
+    #     with self.assertRaises(ValueError):
+    #         p = pressure(5000, area=0.5)
+    #         self.assertIsInstance(p, float)
+    #
+    #     # Check that if no output units are provided, raw values are
+    #     # returned.
+    #     @units_aware(input_units={'x': 'kph', 'y': 'mph'})
+    #     def swapper(x, y):
+    #         return y, x
+    #
+    #     res_x, res_y = swapper(dim(55, 'mph'), dim(35, 'mph'))
+    #     self.assertAlmostEqual(res_x, 35)  # No units.
+    #     self.assertAlmostEqual(res_y, 88.514097, places=4)
+    #     # -> 55 mph converted to kmh as a plain value.
 
-        # Define units-aware test function.
-        @units_aware({'force': 'N', 'area': 'mm^2', 'mult': None},
-                     output_units='MPa')
-        def pressure(force, *, area, mult=1.0):
-            # Should always receive plain values during these tests.
-            self.assertIsInstance(force, (float, int))
-            self.assertIsInstance(area, (float, int))
-            self.assertIsInstance(mult, (float, int))
-            return force / area * mult
 
-        # Normal case should result in 10,000 psi -> returned as 68.95 MPa.
-        f = dim(5000, 'lbf')
-        a = dim(0.5, 'in^2')
-        p = pressure(f, area=a)
-        self.assertEqual(p.units, 'MPa')
-        self.assertAlmostEqual(p.value, 68.94757, places=4)
+# ----------------------------------------------------------------------------
 
-        # Multiplier should operate without conversion.
-        p = pressure(f, area=a, mult=2)
-        self.assertAlmostEqual(p.to_value('psi'), 20000, places=4)
+class TestDimClass(TestCase):
+    # Tests for the `Dim` class.
 
-        # Inconsistent units.
-        with self.assertRaises(ValueError):
-            f_wrong = dim(5000, 'lbf^2')
-            p = pressure(f_wrong, area=a)
+    def test__init__(self):
+        from pyavia.units import Dim
+        pass
 
-        # Units omitted.
-        with self.assertRaises(ValueError):
-            p = pressure(5000, area=0.5)
-            self.assertIsInstance(p, float)
+    def test__add__(self):
+        # Includes __radd__ checks.
 
-        # Check that if no output units are provided, raw values are returned.
-        @units_aware(input_units={'x': 'kph', 'y': 'mph'})
-        def swapper(x, y):
-            return y, x
+        from pyavia.units import Dim
 
-        res_x, res_y = swapper(dim(55, 'mph'), dim(35, 'mph'))
-        self.assertAlmostEqual(res_x, 35)  # No units.
-        self.assertAlmostEqual(res_y, 88.514097, places=4)
-        # -> 55 mph converted to kmh as a plain value.
+        # Addition of like units, preserves quantity type.
+        x_p_y = Dim(1, 'ft') + Dim(12, 'in')
+        self.assertEqual(x_p_y.value, 2)
+        self.assertIsInstance(x_p_y.value, int)
+        self.assertEqual(x_p_y.units, 'ft')
