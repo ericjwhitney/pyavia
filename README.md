@@ -8,7 +8,7 @@ The current version is **0.0.4** (development).
 *Important points*:
 - Development is intended to be organic.
 - Modules presently included were either previously developed during my day-to-day 
- work as an engineer, or otherwise just out of curiosity.  If something
+  work as an engineer, or otherwise just out of curiosity.  If something
   seems like it might be useful to other people, I will try to include it.
 - I don't intend on including anything that is particularly arcane, buggy,
   hard to use or not for the public domain.
@@ -22,6 +22,7 @@ who can recognise incorrect values when they see them... *which will
 happen frequently.*
 
 ## Installation
+**PyAvia** is designed for Python >= 3.9 and is platform-agnostic.
 
 NumPy may need to be installed prior to installing PyAvia (*because I may
  not have setuptools completely on my side*), 
@@ -56,6 +57,5 @@ PyAvia is provided free of charge for use under the conditions of the
 See the 
 **[license file](https://github.com/ericjwhitney/pyavia/blob/master/LICENSE)**
 for more details.
-
 
 **Copyright 2022 © Eric J. Whitney**
