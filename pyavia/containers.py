@@ -1,19 +1,20 @@
 """
 Adds useful, less common containers not available in the standard library.
 """
-# Last updated: 8 March 2021 by Eric J. Whitney
+# Last updated: 19 December 2022 by Eric J. Whitney
 
-import collections
+from collections import deque, OrderedDict
+from collections.abc import MutableMapping
 from functools import reduce
 from operator import is_
 from typing import (Dict, Any, Iterable, Callable, Hashable, Optional, List)
 
-from pyavia.iter import flatten_list, count_op
+from pyavia.iter import count_op, flatten_list
 
 
 # -----------------------------------------------------------------------------
 
-
+# TODO Remove?
 class AttrDict(dict):
     """AttrDict is a dictionary class that also allows access using attribute
     notation.
@@ -211,11 +212,10 @@ class WtDirGraph:
        b) in wdg:``.
 
     ..
-        >>> import pyavia as pa
 
     Examples
     --------
-    >>> wdg = pa.WtDirGraph()
+    >>> wdg = WtDirGraph()
     >>> wdg['a':'b'] = 'Here'
     >>> print(wdg)
     WtDirgraph({'a': {'b': 'Here'}, 'b': {}})
@@ -268,7 +268,7 @@ class WtDirGraph:
         # Add blank y-keys where reqd.
         self._add_blanks(self._links.keys())
 
-        self._cached_paths = collections.OrderedDict()
+        self._cached_paths = OrderedDict()
         self._cache_max_size_factor = 0.1  # Guess value = 10% of keys.
 
     def __getitem__(self, arg: slice):
@@ -444,7 +444,7 @@ class WtDirGraph:
 
         # Breadth first search.
         discovered = {x: [x]}
-        q = collections.deque([x])  # Search frontier.
+        q = deque([x])  # Search frontier.
         while q:
             at = q.popleft()
             for x_new in self._links[at]:
@@ -478,4 +478,46 @@ def _check_slice_arg(arg: slice):
             (arg.step is not None)):
         raise KeyError(f"Expected [from:to] or wdg_edge(from, to).")
 
+
 # -----------------------------------------------------------------------------
+
+
+class WriteOnceDict(MutableMapping, dict):
+    """
+    Dictionary subclass that prevents overwriting of values when the key is
+    already in use.  Keys are allowed to be deleted, and after delete the
+    key can be used again.
+
+    Adapted from https://stackoverflow.com/a/21601690
+
+    Examples
+    --------
+    >>> some_dict = WriteOnceDict({'a': 1, 'b' : 2})
+    >>> some_dict
+    {'a': 1, 'b': 2}
+    >>> some_dict['a'] = 3  # Raises KeyError - already in use.
+    Traceback (most recent call last):
+    ...
+    KeyError: "Overwriting key 'a' not allowed."
+    >>> del some_dict['a']
+    >>> some_dict['a'] = 3  # OK. Key was deleted beforehand.
+    >>> some_dict
+    {'b': 2, 'a': 3}
+    >>> len(some_dict)
+    2
+    >>> bool(some_dict)
+    True
+    >>> some_dict.clear()
+    >>> bool(some_dict)
+    False
+    """
+    # These dict methods override the MutableMapping versions.
+    __delitem__ = dict.__delitem__
+    __getitem__ = dict.__getitem__
+    __iter__ = dict.__iter__
+    __len__ = dict.__len__
+
+    def __setitem__(self, key, value):
+        if key in self:
+            raise KeyError(f"Overwriting key '{key}' not allowed.")
+        dict.__setitem__(self, key, value)

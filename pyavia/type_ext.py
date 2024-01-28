@@ -1,6 +1,8 @@
 """
-Functions for changing data between different / unusual types.
+- Utilities for changing data between different / unusual types.
+- Additional common types.
 """
+from __future__ import annotations
 
 import numbers
 from dataclasses import is_dataclass, fields
@@ -10,13 +12,15 @@ Scalar = TypeVar('Scalar', int, float, complex)
 # TODO This isn't really right, it should support Dim() as well... also
 #  move this to units.py?
 
+# TODO most of these can be moved out into more relateable modules.
+
 # =============================================================================
 
 
 def coax_type(x, *types, default=None):
     """
     Try converting `x` into a series of types, returning first result which
-    passes test:  next_type(`x`) - x == 0.
+    passes Test:  next_type(`x`) - x == 0.
 
     Examples
     --------
@@ -110,25 +114,33 @@ def force_type(x, *types):
 
 
 def dataclass_fromlist(dc_type: Type, init_vals: Sequence):
-    """Initialise a dataclass of type `dc_type` using a list of values
+    """
+    Initialise a dataclass of type `dc_type` using a list of values
     `init_vals` ordered to match the class fields (i.e. as returned by
     ``dataclass_names``).  The length of the `init_vals` cannot exceed the
     number of dataclass field names.  If shorter, remaining fields are
-    unassigned."""
+    unassigned.
+    """
     return dc_type(**{k: v for k, v in zip(dataclass_names(dc_type),
                                            init_vals)})
 
 
 def dataclass_names(dc) -> List[str]:
-    """When passed a type or specific instance of a dataclass, returns an
-    ordered list containing the names of the individual fields."""
+    """
+    When passed a type or specific instance of a dataclass, returns an
+    ordered list containing the names of the individual fields.
+    """
     if not is_dataclass(dc):
-        raise AttributeError("Can't give field names for non-dataclass object.")
+        raise AttributeError("Can't give field names for non-dataclass "
+                             "object.")
     if not isinstance(dc, type):
         dc = type(dc)
     return [f.name for f in fields(dc)]
 
-# TODO Check existing uses
+
+# ============================================================================
+
+
 def make_sentinel(name='_MISSING', var_name=None):
     """
     **This factory function is taken directly from ``boltons.typeutils`` and
@@ -148,8 +160,8 @@ def make_sentinel(name='_MISSING', var_name=None):
     automatically generated documentation. Sentinels also function well as
     placeholders in queues and linked lists.
 
-    .. note::By design, additional calls to ``make_sentinel`` with the same values
-       will not produce equivalent objects.
+    .. note::By design, additional calls to ``make_sentinel`` with the same
+             values will not produce equivalent objects.
 
     >>> make_sentinel('TEST') == make_sentinel('TEST')
     False
@@ -190,3 +202,6 @@ def make_sentinel(name='_MISSING', var_name=None):
         __bool__ = __nonzero__
 
     return Sentinel()
+
+
+# ===========================================================================

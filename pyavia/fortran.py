@@ -132,8 +132,8 @@ _F2NP_TYPES = MultiBiDict({
 def fortran_array(arr, dtype=None, *, copy=True, order='F', subok=False,
                   ndmin=1, ftype=None):
     """
-    Return a new FortranArray object using identical arguments to `np.array()`,
-    with the following differences:
+    Return a new FortranArray object using identical arguments to
+    `np.array()`, with the following differences:
 
         - Fortran type `ftype` (case insensitive) may be given instead of
           `dtype` (but not both).  See `FortranArray.__new__` for types.
@@ -159,9 +159,10 @@ def fortran_array(arr, dtype=None, *, copy=True, order='F', subok=False,
 # -----------------------------------------------------------------------------
 
 class FortranArray(np.ndarray):
-    """Numpy array subclass emulating a Fortran-style index-1 array that can be
-    used directly when implementing algorithms from Fortran or Matlab. Indexing
-    supports slice-off-the-end which is valid in Fortran 90 and
+    """
+    Numpy array subclass emulating a Fortran-style index-1 array that can
+    be used directly when implementing algorithms from Fortran or Matlab.
+    Indexing supports slice-off-the-end which is valid in Fortran 90 and
     NumPy.
 
     Behaviour matches `np.ndarray` except:
@@ -169,7 +170,7 @@ class FortranArray(np.ndarray):
         - Negative indexing to access end elements is not allowed.
         - NumPy advanced indexing is not allowed.
         - The additional `FortranArray.ftype` property returns the Fortran
-          equivalent of theunderlying Numpy data type in use.
+          equivalent of the underlying Numpy data type in use.
 
     .. Note:: `FortranArray` values by default are initialised to zero,
               however this can be changed by setting
@@ -178,10 +179,11 @@ class FortranArray(np.ndarray):
               such as zero, nothing / garbage, etc.
     """
 
-    INIT_DEFAULT = 0  # Initialisation for directly constructed FortranArray().
+    INIT_DEFAULT = 0  # Init. value for directly constructed FortranArray().
 
     def __new__(cls, *dims, ftype='real*8'):
-        """Creates a new `FortranArray`.
+        """
+        Creates a new `FortranArray`.
 
         Parameters
         ----------
@@ -256,13 +258,13 @@ class FortranArray(np.ndarray):
 
     def __repr__(self):
         prefix, suffix = 'fortran_array(', ')'
-        return (prefix + np.array2string(self.view(np.ndarray), separator=',',
-                                         prefix=prefix, suffix=suffix) + suffix)
+        return (prefix +
+                np.array2string(self.view(np.ndarray), separator=',',
+                                prefix=prefix, suffix=suffix) +
+                suffix)
 
     def __str__(self):
         return np.array2string(self.view(np.ndarray), separator=',')
-
-    # -- Subclass-Specific Methods --------------------------------------------
 
     @property
     def ftype(self):
@@ -272,7 +274,7 @@ class FortranArray(np.ndarray):
         """
         return _F2NP_TYPES.inverse[str(self.dtype)][0]
 
-    # -- Private Methods ------------------------------------------------------
+    # -- Private Methods ----------------------------------------------------
 
     def _f2py_idx(self, fort_idx):
         """
