@@ -9,7 +9,7 @@
 
 import time
 import matplotlib.pyplot as plt
-from pyavia.aero.imperfect_gas import ImperfectGas
+from pyavia.aerodynamics.imperfect_gas import ImperfectGas
 from pyavia.units import Dim
 
 chamber = ImperfectGas(T=Dim(700, 'K'), P=Dim(25.0, 'atm'), M=0.1,
@@ -25,7 +25,8 @@ print(f"{'M':>14s}{'P/P0':>14s}{'T/T0':>14s}{'A':>14s}")
 t_start = time.time()
 while True:
     local_gas = ImperfectGas(w=chamber.w, gas=chamber.gas, FAR=chamber.FAR,
-                             h0=chamber.h0, s=chamber.s, M=M, init_gas=last_gas)
+                             h0=chamber.h0, s=chamber.s, M=M,
+                             init_gas=last_gas)
     Mx.append(M)
     PP0x.append(local_gas.P / chamber.P0)
     TT0x.append(local_gas.T / chamber.T0)

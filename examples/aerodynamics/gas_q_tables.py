@@ -4,7 +4,7 @@
 # Written by: Eric J. Whitney  Last updated: 15 January 2022.
 
 from math import isclose
-from pyavia.aero import PerfectGas, ImperfectGas
+from pyavia.aerodynamics import PerfectGas, ImperfectGas
 from pyavia.units import dim
 
 M, M_stop, M_step = 0.00, 2.50, 0.05

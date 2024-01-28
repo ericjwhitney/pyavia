@@ -4,7 +4,7 @@
 # Written by: Eric J. Whitney  Last updated: 8 January 2020
 
 from pyavia.units import Dim
-from pyavia.aero import Atmosphere
+from pyavia.aerodynamics import Atmosphere
 
 # Set default result units US or SI.  Individual defaults can be set for
 # each unit type.

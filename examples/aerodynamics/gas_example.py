@@ -3,7 +3,7 @@
 # Comparison of gas models.
 # Written by: Eric J. Whitney  Last updated: 15 January 2022.
 
-from pyavia.aero import PerfectGas, ImperfectGas
+from pyavia.aerodynamics import PerfectGas, ImperfectGas
 from pyavia.units import Dim
 
 T, T_step = Dim(200, 'K'), Dim(100, 'K')
