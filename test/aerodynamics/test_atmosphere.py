@@ -4,7 +4,7 @@ from unittest import TestCase
 class TestAtmosphere(TestCase):
     # noinspection PyUnresolvedReferences
     def test__init__(self):
-        from pyavia.aero import Atmosphere
+        from pyavia.aerodynamics import Atmosphere
         from pyavia.units import Dim
 
         # Check invalid constructions.
@@ -85,7 +85,7 @@ class TestAtmosphere(TestCase):
 
     # noinspection PyTypeChecker
     def test_methods(self):
-        from pyavia.aero import Atmosphere
+        from pyavia.aerodynamics import Atmosphere
         from pyavia.units import Dim
 
         Atmosphere.set_default_style('SI')  # K, kPa, m, etc.
