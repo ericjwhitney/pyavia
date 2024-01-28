@@ -287,7 +287,7 @@ def _solve_TPM(flow: Type[Gas], *, init_gas: Gas = None,
             # be used to remove ambiguity.  This also does a sanity check.
             f_i = getattr(trial_flow, name_).convert(f_target.units)
             Δf_i = f_target - f_i
-            err.append(Δf_i.to_real())
+            err.append(Δf_i.to_value())
 
         return err
 

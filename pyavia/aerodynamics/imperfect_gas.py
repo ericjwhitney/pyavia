@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pyavia.aero.gas import Gas, _solve_TPM
+from pyavia.aerodynamics.gas import Gas, _solve_TPM
 from pyavia.iter import split_dict
 from pyavia.solve import fixed_point
 from pyavia.units import dim, Dim
@@ -197,7 +197,7 @@ class ImperfectGas(Gas):
         scalar].  Returns units J/kg/K. self._coeff_a and self._coeff_b must
         be set prior to call.
         """
-        Tz = T.to_real('K') / 1000  # noqa
+        Tz = T.to_value('K') / 1000  # noqa
 
         cp = sum([a_i * Tz ** i
                   for i, a_i in enumerate(self._coeff_a[0:9], 0)])
@@ -213,7 +213,7 @@ class ImperfectGas(Gas):
         correction term given T, return kJ/kg/K. self._coeff_a and
         self._coeff_b must be set prior to call.
         """
-        Tz = T.to_real('K') / 1000  # noqa
+        Tz = T.to_value('K') / 1000  # noqa
 
         EJW_A0_corr_term = self._coeff_a[0] * np.log(1000)
         cptint = ((self._coeff_a[0] * np.log(Tz)) + sum(
@@ -234,7 +234,7 @@ class ImperfectGas(Gas):
         """Compute enthalpy [MJ/kg] using W&F Eqn F3.26, given T and return
         kJ/kg/K.  self._coeff_a and self._coeff_b must be set prior to call.
         """
-        Tz = T.to_real('K') / 1000  # noqa
+        Tz = T.to_value('K') / 1000  # noqa
 
         h = self._coeff_a[9] + sum([(a_i / i) * Tz ** i for i, a_i in
                                     enumerate(self._coeff_a[0:9], 1)])
@@ -253,13 +253,13 @@ class ImperfectGas(Gas):
         # Units are K in this routine (removed for solver).
         def update_T(trial_T_K):
             ΔT_K = ((h0_target - self._h_from_T(dim(trial_T_K, 'K'))) /
-                    dim(1005, 'J/kg/K')).to_real('K')
+                    dim(1005, 'J/kg/K')).to_value('K')
 
             return trial_T_K + ΔT_K
 
         try:
             # noinspection PyTypeChecker
-            T0_K = fixed_point(update_T, x0=self.T.to_real('K'),  # Plain K.
+            T0_K = fixed_point(update_T, x0=self.T.to_value('K'),  # Plain K.
                                xtol=1e-5, maxits=20)
         except RuntimeError as e:
             raise RuntimeError(f"Failed to set stagnation conditions: h0 = "

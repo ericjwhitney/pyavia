@@ -39,7 +39,7 @@ Notes:
 from math import exp, log, isclose
 from typing import List, Optional
 
-from pyavia.iter import bracket_list
+from pyavia.iter import find_bracket
 from pyavia.units import dim, Dim, to_absolute_temp
 from pyavia.solve import bisect_root
 
@@ -74,8 +74,9 @@ class Atmosphere:
     Show density for an ISA standard altitude (note that these are
     formally geopotential altitudes):
 
-    >>> atm = Atmosphere(H=dim(10000, 'ft'))
-    >>> print(f"ρ = {atm.ρ:.3f}")
+import _development.examples.NACA658_ref_prop    >>> atm = Atmosphere(
+H=dim(10000, 'ft'))
+    >>> print(f"ρ = { _development.examples.NACA658_ref_prop.ρ :.3f}")
     ρ = 0.905 kg/m³
 
     Show the temperature ratio for a pressure altitude with a
@@ -142,7 +143,7 @@ class Atmosphere:
                 # Set an ISA atmosphere based on geopotential altitude H.
                 # Find the corresponding layer and compute properties
                 # from the base.
-                base_idx, _ = bracket_list(_ISA_HTPrho_b,
+                base_idx, _ = find_bracket(_ISA_HTPrho_b,
                                            [H, None, None, None],
                                            key=lambda x: x[0])
                 H_b, T_b, P_b, _ = _ISA_HTPrho_b[base_idx]
@@ -176,7 +177,7 @@ class Atmosphere:
 
                 # Find the bracketing layer based on ISA pressure.  Get the
                 # standard pressure.
-                base_idx, _ = bracket_list(_ISA_HTPrho_b,
+                base_idx, _ = find_bracket(_ISA_HTPrho_b,
                                            [H_press, None, None, None],
                                            key=lambda x: x[0])
                 H_b, T_b, P_b, _ = _ISA_HTPrho_b[base_idx]
@@ -195,7 +196,7 @@ class Atmosphere:
                 # Find the bracketing layers based on ISA pressure.  Get the
                 # standard pressure and temperature.  Add the offset to
                 # the standard temperature.
-                base_idx, _ = bracket_list(_ISA_HTPrho_b,
+                base_idx, _ = find_bracket(_ISA_HTPrho_b,
                                            [H_press, None, None, None],
                                            key=lambda x: x[0])
                 H_b, T_b, P_b, _ = _ISA_HTPrho_b[base_idx]
@@ -256,7 +257,7 @@ class Atmosphere:
         """After finding the correct altitude range, density altitude is
         computed using a root bisection method, as it is non-linear."""
         dens_reqd = self.density
-        l_idx, r_idx = bracket_list(_ISA_HTPrho_b,
+        l_idx, r_idx = find_bracket(_ISA_HTPrho_b,
                                     [None, None, None, dens_reqd],
                                     key=lambda x: x[3])
         H_lhs, H_rhs = _ISA_HTPrho_b[l_idx][0], _ISA_HTPrho_b[r_idx][0]
@@ -312,7 +313,7 @@ class Atmosphere:
         pressure matching this atmosphere.
         """
         # Find the ISA level of next highest pressure.
-        base_idx, _ = bracket_list(_ISA_HTPrho_b, [None, None, self._P, None],
+        base_idx, _ = find_bracket(_ISA_HTPrho_b, [None, None, self._P, None],
                                    key=lambda x: x[2])
         H_b, T_b, P_b, _ = _ISA_HTPrho_b[base_idx]
         beta = _ISA_beta[base_idx]

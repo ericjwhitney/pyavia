@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pyavia.aero.gas import Gas, _solve_TPM
+from pyavia.aerodynamics.gas import Gas, _solve_TPM
 from pyavia.units import dim, Dim
 from pyavia.iter import split_dict
 
