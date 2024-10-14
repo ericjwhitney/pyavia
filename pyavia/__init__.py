@@ -18,16 +18,31 @@ aerospace engineering or engineering in general.  Some things to note:
 
 Version
 -------
-The current version is **0.0.4**.  **PyAvia** is designed for Python >=
+The current version is **0.0.5**.  **PyAvia** is designed for Python >=
 3.10 and is platform agnostic.
 
 .. note:: At this stage PyAvia is extremely preliminary, alpha,
    pre-release, etc.  Structural changes may be made to the code at any
    time that will almost definitely break third party code.  Please
    don't get cross.
+
+Subpackages
+-----------
+Using any of these subpackages requires an explicit import. For example,
+``import pyavias.aerodynamics``.
+
+::
+
+ aerodynamics       --- Xxxxxxx
+ dynamics           --- Xxxxxxx
+
 """
+from __future__ import annotations
 
 import sys
 
-assert sys.version_info >= (3, 10)
+# Written by Eric J. Whitney, November 2019.
 
+# ======================================================================
+
+assert sys.version_info >= (3, 10)

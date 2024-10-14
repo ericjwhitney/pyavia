@@ -1,23 +1,27 @@
 """
-Adds useful, less common containers not available in the standard library.
+Adds useful, less common containers not available in the standard
+library.
 """
-# Last updated: 19 December 2022 by Eric J. Whitney
 
 from collections import deque, OrderedDict
 from collections.abc import MutableMapping
 from functools import reduce
 from operator import is_
-from typing import (Dict, Any, Iterable, Callable, Hashable, Optional, List)
+from typing import (Dict, Any, Iterable, Callable, Hashable,
+                    Optional, List)
 
-from pyavia.iter import count_op, flatten_list
+from pyavia.util.iter_ops import count_op, flatten_list  # Direct ref.
+
+# Written by Eric J. Whitney, January 2020.
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
-# TODO Remove?
+# TODO Remove? SimpleNamespace covers this?
 class AttrDict(dict):
-    """AttrDict is a dictionary class that also allows access using attribute
-    notation.
+    """
+    AttrDict is a dictionary class that also allows access using
+    attribute notation.
 
     Examples
     --------
@@ -127,7 +131,7 @@ class MultiBiDict(dict):
 
 # -----------------------------------------------------------------------------
 
-
+# TODO probably remove this
 class ValueRange:
     """Represents any range of scalar values (units agnostic)."""
 
