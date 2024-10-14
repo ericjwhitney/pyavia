@@ -9,12 +9,13 @@ from dataclasses import is_dataclass, fields
 from typing import Type, Sequence, List, TypeVar
 
 Scalar = TypeVar('Scalar', int, float, complex)
+
+
 # TODO This isn't really right, it should support Dim() as well... also
 #  move this to units.py?
 
-# TODO most of these can be moved out into more relateable modules.
 
-# =============================================================================
+# ======================================================================
 
 
 def coax_type(x, *types, default=None):
@@ -143,8 +144,8 @@ def dataclass_names(dc) -> List[str]:
 
 def make_sentinel(name='_MISSING', var_name=None):
     """
-    **This factory function is taken directly from ``boltons.typeutils`` and
-    has only cosmetic changes.**
+    **This factory function is taken directly from ``boltons.typeutils``
+    *and has only cosmetic changes.**
 
     Creates and returns a new **instance** of a new class, suitable for
     usage as a "sentinel", a kind of singleton often used to indicate
@@ -157,11 +158,11 @@ def make_sentinel(name='_MISSING', var_name=None):
 
     Sentinels can be used as default values for optional function
     arguments, partly because of its less-confusing appearance in
-    automatically generated documentation. Sentinels also function well as
-    placeholders in queues and linked lists.
+    automatically generated documentation. Sentinels also function well
+    as placeholders in queues and linked lists.
 
-    .. note::By design, additional calls to ``make_sentinel`` with the same
-             values will not produce equivalent objects.
+    .. note::By design, additional calls to ``make_sentinel`` with the
+       same values will not produce equivalent objects.
 
     >>> make_sentinel('TEST') == make_sentinel('TEST')
     False
@@ -173,8 +174,8 @@ def make_sentinel(name='_MISSING', var_name=None):
     name : str
         Name of the Sentinel.
     var_name : str (optional)
-        Set this name to the name of the variable in its respective module
-        enable pickleability.
+        Set this name to the name of the variable in its respective
+        module to enable pickleability.
     """
 
     class Sentinel(object):
