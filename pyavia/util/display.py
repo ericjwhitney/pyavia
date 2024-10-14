@@ -3,32 +3,32 @@ Small, general purpose utility functions.
 """
 from __future__ import annotations
 
-# Written by: Eric J. Whitney  Last updated: 16 May 2022.
-
-
 import uuid
-from typing import Callable
 
 
-# == I/O Functions ==========================================================
+# Written by Eric J. Whitney, May 2022.
 
+# ======================================================================
+
+
+# TODO TO bE DELETED
 class Indenter:
     """
     Indenter is used to print information from multi-level nested
-    functions.  Depending on level / function depth the output message is
-    indented or supressed.  This is done by tracking the number of
+    functions.  Depending on level / function depth the output message
+    is indented or supressed.  This is done by tracking the number of
     `Indenter` objects that exist when the print statement is called.
 
     Examples
     --------
-    First defined an 'inner' working function:
+    First define an 'inner' working function:
     >>> def inner_func(display: int = 0):
     ...     indent = Indenter(display)  # Output for this level.
     ...     # ... does some other things ...
     ...     indent("In inner_func()...")
 
-    Finally define a top-level function definition that calls the 'inner'
-    function:
+    Finally define a top-level function definition that calls the
+    'inner' function:
     >>> def top_level(display: int | bool = False):
     ...     indent = Indenter(display)  # Output for this level.
     ...     # Does some things.
@@ -39,7 +39,8 @@ class Indenter:
     ``display=False`` or ``display=0``) produces no output:
     >>> top_level()
 
-    Running `top_level` with ``display=True`` (equivalent to ``display=1``):
+    Running `top_level` with ``display=True`` (equivalent to
+    ``display=1``):
     >>> top_level(display=True)
     In top_level()...
 
@@ -55,11 +56,12 @@ class Indenter:
         Parameters
         ----------
         level : int | bool, optional
-            The display level of the function where the `Indenter` is used.
+            The display level of the function where the `Indenter` is
+            used.
 
             - `int`:  Values > 0 mean information will be printed.
-               Typically subsequent levels are given the next lower level
-               (level - 1, see `next_level` property).
+               Typically subsequent levels are given the next lower
+               level (i.e. level - 1, see `next_level`).
             - `bool`: Converted to `int`, `True` = 1 and `False` = 0.
         """
         Indenter._active += 1
@@ -68,12 +70,12 @@ class Indenter:
     def __call__(self, *args, **kwargs):
         """
         Print information, indented using tabs when required.  All
-        arguments are passed directly to the underlying Python ``print``
-        function.
+        arguments are passed directly to the underlying Python
+        ``print`` function.
         """
         if self._level > 0:
-            # Separate print for tabs to avoid extraneous whitespace caused
-            # by empty string.
+            # Separate print for tabs to avoid extraneous whitespace
+            # caused by empty string.
             if self._active > 1:
                 print('\t' * (Indenter._active - 1), end='')
 
@@ -82,7 +84,14 @@ class Indenter:
     def __del__(self):
         Indenter._active -= 1
 
-    # -- Public Methods ---------------------------------------------------
+    # -- Public Methods ------------------------------------------------
+
+    # TODO REMOVED
+    # def next_indent(self) -> Indenter:
+    #     """
+    #     Return a new `Indenter` object with the level decremented by 1.
+    #     """
+    #     return Indenter(self._level - 1)
 
     @property
     def next_level(self) -> int:
@@ -90,8 +99,10 @@ class Indenter:
         return self._level - 1
 
 
+
 # ======================================================================
 # Alternative approach to Indenter.
+# TODO Deprecated
 
 _DISP_CURRENT_LEVEL = 1
 _DISP_MAX_LEVEL: int | None = None  # Disabled = None, Enabled = 1, 2, ...
@@ -210,40 +221,3 @@ def temp_filename(prefix: str = '', suffix: str = '',
     which may have specific rules about filename length.
     """
     return prefix + uuid.uuid4().hex[:rand_length] + suffix
-
-
-# == Profiling Functions ====================================================
-
-
-# noinspection PyPackageRequirements
-def profile_snake(profile_func: Callable):
-    """
-    This function will profile the function passed as an argument, writing
-    the profiling data to a file with the name of the current module
-    ``__file__`` and extension changed to ``.prof``.  It then calls
-    `snakeviz` to visualise the result which opens a browser view.
-
-    .. note:: The `snakeviz` package is not installed by default as part of
-       *PyAvia* and package must be explicitly installed, e.g. ``pip install
-       snakeviz``.
-
-    Parameters
-    ----------
-    profile_func : Callable
-        Function to be profiled.
-    """
-    import cProfile
-    import pstats
-    # noinspection PyUnresolvedReferences
-    import snakeviz.cli as cli
-    import os
-
-    with cProfile.Profile() as pr:
-        profile_func()
-    stats = pstats.Stats(pr)
-    stats.sort_stats(pstats.SortKey.TIME)
-
-    filename = os.path.basename(__file__)
-    filename = os.path.splitext(filename)[0] + '.prof'
-    stats.dump_stats(filename=filename)
-    cli.main([filename])

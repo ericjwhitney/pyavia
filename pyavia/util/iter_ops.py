@@ -1,12 +1,12 @@
 """
-Handy functions for dealing with various iterables.
+Operations for dealing with various iterables / sequences.
 """
 from collections.abc import Callable, Container, Iterable, Sequence
-from typing import TypeVar
+from typing import TypeVar, Any
 
 # Written by Eric J. Whitney, November 2019.
 
-T = TypeVar('T')
+_T = TypeVar('_T')
 
 
 # ======================================================================
@@ -40,15 +40,18 @@ def all_not_none(*args) -> bool:
     return all(x is not None for x in args)
 
 
-
 # ----------------------------------------------------------------------
+
 def any_in(it: Iterable, target) -> bool:
-    """Shorthand function for ``any(x in target for x in it)``.
-    Returns True if found, otherwise False."""
+    """
+    Shorthand function for ``any(x in target for x in it)``. Returns
+    True if found, otherwise False.
+    """
     return any(x in target for x in it)
 
 
 # ----------------------------------------------------------------------
+
 def any_none(*args) -> bool:
     """Returns True if any argument (or element of a single iterable
     argument) are None."""
@@ -92,10 +95,11 @@ def bounded_by(it: Iterable, x, key: Callable = None) -> bool:
 # ----------------------------------------------------------------------
 
 
-def count_op(it: Iterable, oper, value) -> int:
+def count_op(it: Iterable[_T], oper: Callable[[_T, Any], bool],
+             value: Any) -> int:
     """
-    Return a count of the number of items in `it` where
-    ``oper(value) == True``.  This allows user-defined objects to be
+    For each element `x` in `it`, return a count of the number of times
+    ``oper(x, value) == True``.  This allows user-defined objects to be
     included and is subtly different to ``[...].count(...)`` which uses
     the ``__eq__`` operator.
     """
@@ -191,7 +195,7 @@ def first(it: Iterable, condition=lambda x: True):
 
 # ----------------------------------------------------------------------
 
-def flatten(seq):
+def flatten(seq: Sequence[_T]) -> _T:
     """
     Generator returning entries from a flattened representation of any
     sequence container (except strings).  Taken from
