@@ -1,7 +1,7 @@
-from pyavia.motion.landing import landing_energy
-from test.motion.test_landing import typ_tyre_ft_lbf
+from pyavia.dynamics.landing import landing_energy
+from pyavia.dynamics.tests.test_landing import _tyre_ft_lbf
 
-# Written by Eric J. Whale, November 2023.
+# Written by Eric J. Whitney, November 2023.
 
 # Compute landing load factor and deflection using conservation of energy.
 # Note the following in the mass values below:
@@ -9,7 +9,7 @@ from test.motion.test_landing import typ_tyre_ft_lbf
 #   - Aircraft mass is divided by 2 for per-leg analysis.
 
 result = landing_energy(strut=2158.3,  # Strut spring K [lbf/ft]
-                        tyre=typ_tyre_ft_lbf,  # Tabulated (ft, lbf)
+                        tyre=_tyre_ft_lbf,  # Tabulated (ft, lbf)
                         g=32.174,  # [ft/s^2]
                         K=2 / 3,  # L/W for light aircraft
                         m_ac=1200 * 0.031081 / 2,  # lbm -> [slug]
