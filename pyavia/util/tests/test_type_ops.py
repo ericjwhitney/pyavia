@@ -5,7 +5,7 @@ from unittest import TestCase
 
 class TestForceType(TestCase):
     def test_force_type(self):
-        from pyavia.type_ext import force_type
+        from pyavia.util.type_ops import force_type
 
         x = force_type(3.5, int, float)
         self.assertIsInstance(x, int)  # -> 3 (int)
@@ -27,7 +27,7 @@ class TestForceType(TestCase):
 
 class TestCoaxType(TestCase):
     def test_coax_type(self):
-        from pyavia.type_ext import coax_type
+        from pyavia.util.type_ops import coax_type
 
         x = coax_type(3.5, int, float)
         self.assertIsInstance(x, float)  # Because int(3.5) != 3.5

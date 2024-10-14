@@ -7,7 +7,7 @@ from unittest.case import TestCase
 class TestFortranArray(TestCase):
     # noinspection PyTypeChecker,PyUnusedLocal
     def test__init__(self):
-        from pyavia.fortran import FortranArray, fortran_array
+        from pyavia.util import FortranArray, fortran_array
         import numpy as np
 
         # test direct initialisation.
@@ -40,7 +40,7 @@ class TestFortranArray(TestCase):
     # ------------------------------------------------------------------
 
     def test__getitem__(self):
-        from pyavia.fortran import fortran_array
+        from pyavia.util import fortran_array
         import numpy as np
 
         # test Fortran individual indexing.
@@ -90,7 +90,7 @@ class TestFortranArray(TestCase):
     # ------------------------------------------------------------------
 
     def test__setitem__(self):
-        from pyavia.fortran import FortranArray, fortran_array
+        from pyavia.util import FortranArray, fortran_array
         import numpy as np
 
         # test basic indices.
@@ -151,7 +151,7 @@ class TestFortranArray(TestCase):
     # ------------------------------------------------------------------
 
     def test_arithmetic(self):
-        from pyavia.fortran import FortranArray, fortran_array
+        from pyavia.util import FortranArray, fortran_array
         import numpy as np
 
         # test inversion, multiplication.
@@ -185,7 +185,7 @@ class TestFortranArray(TestCase):
     # ------------------------------------------------------------------
 
     def test_arrayops(self):
-        from pyavia.fortran import fortran_array
+        from pyavia.util import fortran_array
         import numpy as np
 
         fib_mat = fortran_array([[1, 1, 2, 3],
@@ -216,7 +216,7 @@ class TestFortranArray(TestCase):
     # ------------------------------------------------------------------
 
     def test_typical_example(self):
-        from pyavia.fortran import FortranArray, fortran_do
+        from pyavia.util import FortranArray, fortran_do
 
         a = FortranArray(4, 4, ftype='real*8')
         b = FortranArray(4, ftype='integer')
