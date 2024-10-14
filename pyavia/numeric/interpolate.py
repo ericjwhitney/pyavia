@@ -1,4 +1,3 @@
-# Last updated: 18 March 2021 by Eric J. Whitney
 
 from __future__ import annotations
 from typing import Sequence, Union
@@ -6,11 +5,13 @@ from typing import Sequence, Union
 import numpy as np
 from scipy.interpolate import interp1d
 
-from pyavia.iter import find_bracket
-from pyavia.geometry import line_pt
+from pyavia.ops import find_bracket
+from pyavia.numeric.lines import line_pt
+
+# Written by Eric J. Whitney, March 2021.
 
 
-# =============================================================================
+# ======================================================================
 
 # TODO This may end up being deleted.
 def linear_int_ext(data_pts, p, scale=None, allow_extrap=False):
@@ -253,6 +254,8 @@ def smooth_multi(x: Sequence, y: [Sequence], x_new: Sequence,
 
 # -----------------------------------------------------------------------------
 
+
+# TODO This may be a duplicate of 'subdivide_series'
 def subd_num_list(li: Sequence, max_size: int) -> list:
     """
     Expands a sorted list of values by repeatedly subdividing the intervals

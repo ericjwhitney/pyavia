@@ -3,7 +3,7 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.optimize import minimize
 
 from .base import Foil2DBasic
-from pyavia.solve.exception import SolverError
+from pyavia.numeric.solve import SolverError
 
 # Written by Eric J. Whitney, January 2023.
 
@@ -232,11 +232,11 @@ def QPROP_from_model(model_foil: Foil2DBasic, test_α: ArrayLike,
     # Run α-sweep of model.
     model_cl, model_cd = [], []
     for i in range(n_pts):
-        model_foil.set_states(α=test_α[i])
+        model_foil.set_state(α=test_α[i])
         model_cl.append(model_foil.cl)
         model_cd.append(model_foil.cd)
 
-    model_foil.set_states(**restore)
+    model_foil.set_state(**restore)
 
     # -- Setup Model Variables ----------------------------------------------
 
@@ -336,7 +336,7 @@ def QPROP_from_model(model_foil: Foil2DBasic, test_α: ArrayLike,
                     α_test_ > (model_α0 + d2r(5.0))):
                 continue
 
-            try_foil_.set_states(α=α_test_, Re=test_Re, M=test_M)
+            try_foil_.set_state(α=α_test_, Re=test_Re, M=test_M)
             cl_err2_.append((try_foil_.cl - model_cl[i_])**2)
 
         if len(cl_err2_) < 5:
@@ -389,7 +389,7 @@ def QPROP_from_model(model_foil: Foil2DBasic, test_α: ArrayLike,
             #         (α_test_ > model_α0 + d2r(7.0))):
             #     continue
 
-            try_foil_.set_states(α=α_test_, Re=test_Re, M=test_M)
+            try_foil_.set_state(α=α_test_, Re=test_Re, M=test_M)
             cd_err2_.append((try_foil_.cd - model_cd[i_]) ** 2)
 
         if len(cd_err2_) < 5:

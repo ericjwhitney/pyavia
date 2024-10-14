@@ -39,9 +39,9 @@ Notes:
 from math import exp, log, isclose
 from typing import List, Optional
 
-from pyavia.iter import find_bracket
-from pyavia.units import dim, Dim, to_absolute_temp
-from pyavia.solve import bisect_root
+from pyavia.units import Dim, dim, to_absolute_temp
+from pyavia.numeric.solve import bisect_root
+from pyavia.util import find_bracket
 
 
 # -----------------------------------------------------------------------------

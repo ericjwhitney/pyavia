@@ -2,7 +2,7 @@ import numpy as np
 from scipy.special import binom
 
 
-# =============================================================================
+# ======================================================================
 
 def bernstein_poly(t: np.ndarray, i: int, n: int):
     """
@@ -11,7 +11,7 @@ def bernstein_poly(t: np.ndarray, i: int, n: int):
     return binom(n, i) * (t ** i) * (1 - t) ** (n - i)
 
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def bezier(t: np.ndarray, ctrl_pts: np.ndarray) -> np.ndarray:
     """

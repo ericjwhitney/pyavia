@@ -9,8 +9,8 @@ from numpy.polynomial import Polynomial
 from numpy.typing import ArrayLike, NDArray
 from scipy.interpolate import PchipInterpolator
 
-from pyavia.math import sclvec_asarray, sclvec_return, within_range
-from pyavia.solve import SolverError
+from pyavia.numeric.math_ext import sclvec_asarray, sclvec_return, within_range
+from pyavia.numeric.solve import SolverError
 
 # Written by Eric J. Whitney, May 2023.
 
@@ -19,6 +19,8 @@ _ExtOpt = Union[None, str, float, 'Function1D']  # Extrapolation options.
 
 # TODO Add roots() as solve(0, ...) for compatibility with SciPy.  Move
 #  differentiation / anti-differentiation to __call__.
+
+# TODO replace sclvec_asarray with check/make_array, return_array, etc.
 
 # ============================================================================
 
@@ -40,16 +42,16 @@ class Function1D(ABC):
         x_domain : tuple[float, float]
 
             Applicable closed interval (range) of the function and its
-            derivatives, i.e. :math:`x \in [x_{ min}, x_{max}].  If an `x`
-            value is supplied outside this range, how it is handled depends
-            on ``ext_lo`` and ``ext_hi`` (see below).
+            derivatives, i.e. :math:`x \in [x_{ min}, x_{max}].  If an
+            `x` value is supplied outside this range, how it is handled
+            depends on ``ext_lo`` and ``ext_hi`` (see below).
 
         ext_lo, ext_hi : various, default = None
 
-            Extend / extrapolate function outside `x_domain` on either the
-            ``lo`` (or left ``x < x_domain[0]``) side or ``hi`` (or right
-            ``x > x_domain[1]``) side.  The type of extension depends on the
-            argument:
+            Extend / extrapolate function outside `x_domain` on either
+            the ``lo`` (or left ``x < x_domain[0]``) side or ``hi`` (or
+            right ``x > x_domain[1]``) side.  The type of extension
+            depends on the argument:
 
             - `None`: Attempting to compute a value outside the range
               raises a `ValueError` exception.
@@ -129,7 +131,7 @@ class Function1D(ABC):
                 raise TypeError(f"Unknown extrapolation argument: "
                                 f"{repr(ext_arg)}")
 
-            # -- Finalise ----------------------------------------------------
+            # -- Finalise ----------------------------------------------
 
             if side == 0:
                 self._ext_lo = ext_func
@@ -418,16 +420,17 @@ class FitXY1D(Function1D, ABC):
         Parameters
         ----------
         x, y : array_like, shape (n,)
-            (`x`, `y`) values of known points where `n` >= 2.  Duplicate `x`
-            values are not permitted.  These values are copied for internal
-            storage.
+            (`x`, `y`) values of known points where `n` >= 2.  Duplicate
+            `x` values are not permitted.  These values are copied for
+            internal storage.
 
-        x_domain : tuple[float | None, float | None], default = (None, None)
+        x_domain : tuple[float | None, float | None], default =
+                   (None, None)
             Applicable closed interval (range) of the function and its
-            derivatives, i.e. :math:`x \in [x_{min}, x_{max}]`.  If either
-            entry is `None`, then the domain limit on that side is taken to
-            encompass just the given `x` values (i.e. either the minimum or
-            maximum).
+            derivatives, i.e. :math:`x \in [x_{min}, x_{max}]`.  If
+            either entry is `None`, then the domain limit on that side
+            is taken to encompass just the given `x` values (i.e. either
+            the minimum or maximum).
 
         kwargs :
             See `Function1D.__init__` for additional arguments (e.g.

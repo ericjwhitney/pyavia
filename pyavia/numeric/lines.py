@@ -1,8 +1,10 @@
-# Last updated: 16 March 2021 by Eric J. Whitney.
 
 from __future__ import annotations
 import numpy as np
 
+# Written by Eric J. Whitney,  March 2021.
+
+# ======================================================================
 
 def line_pt(a, b, p, scale=None):
     """Find the coordinates of a point `p` anywhere along the line `a` → `b`

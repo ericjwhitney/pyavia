@@ -1,15 +1,16 @@
 from __future__ import annotations
 from abc import ABC
+from types import SimpleNamespace
 
 import numpy as np
 from scipy.optimize import root_scalar
 
 from .base import Foil2DAero
 from .flat import Flat2DAero
-from pyavia.solve import SolverError, step_bracket_root
+from pyavia.numeric.solve import step_bracket_root, SolverError
 
 
-# Written by Eric J. Whitney.
+# Written by Eric J. Whitney, January 2023.
 
 # ===========================================================================
 
@@ -34,17 +35,17 @@ class PostStall2DMixin(Foil2DAero, ABC):
     """
     warn_α_range = False  # Override default aerofoil behaviour.
 
-    def __init__(self, *, post_nan: bool = True,
-                 # TODO Consider better names for these.
-                 post_crossover: bool = False, **kwargs):
+    def __init__(self, *, replace_nan: bool = True, high_α: bool = False,
+                 **kwargs):
         """
         Parameters
         ----------
-        post_nan : bool, default = True
-            If `True` and the 'base' (underlying) foil is stalled, any
-            `NaN` value returned by the base model will be replaced by
-            the corresponding post-stall model value.
-        post_crossover : bool, default = False
+        replace_nan : bool, default = True
+            If `True` and the base foil is stalled, any `NaN` value
+            returned by the base model will be replaced by the
+            corresponding post-stall model value.
+
+        high_α : bool, default = False
             If `True` and the base foil is stalled, a check is made to
             determine if `α` is beyond the point where the base model
             :math:`c_l` crosses over (falls below) the post-stall model.
@@ -56,40 +57,45 @@ class PostStall2DMixin(Foil2DAero, ABC):
         """
         super().__init__(**kwargs)
 
-        # Setup post-stall parameters.  Note that _post_active is not an
-        # external state; the model is not designed to be switched on and
-        # off.  This is only used for temporarily disabling model when
-        # deriving certain parameters.
-        self._post_model = Flat2DAero(Re=self.Re, M=self.M, α=self.α)
-        self._post_active = True
-        self._post_nan, self._post_crossover = post_nan, post_crossover
-
-        # Setup stalling and crossover 'α' of base model.
-        self._base_α_stall_neg, self._base_α_stall_pos = None, None
-        self._post_α_cross_neg, self._post_α_cross_pos = None, None
+        # Setup post-stall parameters in separate namespace.  Note that
+        # 'active' is not an external attribute; the model is not
+        # designed to be switched on and off.  This is only used for
+        # temporarily disabling model when deriving certain parameters.
+        self._post_stall = SimpleNamespace(
+            model=Flat2DAero(Re=self.Re, M=self.M, α=self.α),
+            active=True,
+            replace_nan=replace_nan,
+            high_α=high_α,
+            base_α_stall=[None, None],  # -ve, +ve.
+            post_α_cross=[None, None]  # -ve, +ve.
+        )
 
     # -- Public Methods ------------------------------------------------
 
     @property
     def α_stall_neg(self) -> float:
         # Similar to α_stall_pos.
-        if self._base_α_stall_neg is None:
-            restore, self._post_active = self._post_active, False
-            self._base_α_stall_neg = super().α_stall_neg
-            self._post_active = restore
+        ps = self._post_stall  # For compactness.
+        if ps.base_α_stall[0] is None:
+            restore = ps.active
+            ps.active = False
+            ps.base_α_stall[0] = super().α_stall_neg
+            ps.active = restore
 
-        return self._base_α_stall_neg
+        return ps.base_α_stall[0]
 
     @property
     def α_stall_pos(self) -> float:
         # The stall angle is determined by the superclass method, after
         # the post-stall model has been temporarily disabled.
-        if self._base_α_stall_pos is None:
-            restore, self._post_active = self._post_active, False
-            self._base_α_stall_pos = super().α_stall_pos
-            self._post_active = restore
+        ps = self._post_stall  # For compactness.
+        if ps.base_α_stall[1] is None:
+            restore = ps.active
+            ps.active = False
+            ps.base_α_stall[1] = super().α_stall_pos
+            ps.active = restore
 
-        return self._base_α_stall_pos
+        return ps.base_α_stall[1]
 
     @property
     def cd(self) -> float:
@@ -107,22 +113,22 @@ class PostStall2DMixin(Foil2DAero, ABC):
     def cm_qc(self) -> float:
         return self._stalled_prop('cm_qc')
 
-    def set_states(self, **kwargs) -> frozenset[str]:
+    def set_state(self, **kwargs) -> frozenset[str]:
         # Update base model.
-        changed = super().set_states(**kwargs)
+        changed = super().set_state(**kwargs)
 
         # Always update post-stall model even when inactive, to prevent
         # missing state changes, and always uses base model output
         # values.  The angle of attack is adjusted for the post-stall
         # model.
-        self._post_model.set_states(Re=self.Re, M=self.M,
-                                    α=self.α - self.α0)
+        ps = self._post_stall  # For compactness.
+        ps.model.set_state(Re=self.Re, M=self.M, α=self.α - self.α0)
 
         if changed - {'α'}:
             # If anything other than 'α' changed, stall / crossover
             # points may need to be recomputed.
-            self._base_α_stall_neg, self._base_α_stall_pos = None, None
-            self._post_α_cross_neg, self._post_α_cross_pos = None, None
+            ps.base_α_stall = [None, None]
+            ps.post_α_cross = [None, None]
 
         return changed
 
@@ -136,56 +142,57 @@ class PostStall2DMixin(Foil2DAero, ABC):
 
         The crossover point is limited to +/-60° + ZLA.
         """
-        restore = self.get_states()
+        # Find root of Δcl = cl_base - cl_post = f(α) -> 0.
+        def Δcl_gap(α: float) -> float:
+            self.set_state(α=α)
+            cl_base = super(PostStall2DMixin, self).cl
+            cl_post = self._post_stall.model.cl
+            return cl_base - cl_post
 
-        # Find root of Δcl = cl_foil - cl_stall = f(α) -> 0.
-        def Δcl_models(α_: float) -> float:
-            self.set_states(α=α_)
-            return super(PostStall2DMixin, self).cl - self._post_model.cl
-
-        # First approximately bracket the crossover cl. Setup starting
-        # bracket (α_stall,  α_stall +/- 2°).
-        if side >= 0:
-            α1 = self.α_stall_pos
-            α_limit = 1.0471976 + self.α0  # 60° + ZLA.
-        else:
-            α1 = self.α_stall_neg
-            α_limit = -1.0471976 + self.α0  # -60° + ZLA.
-
-        α2 = α1 + side * 0.0349
-        max_steps = 50
-        try:
-            x1, x2 = step_bracket_root(Δcl_models, x1=α1, x2=α2,
-                                       x_limit=α_limit,
-                                       max_steps=max_steps)
-        except SolverError as e:
-            if e.flag == 2:
-                # 'α' limit reached; just return the limit.
-                self.set_states(**restore)
-                return α_limit
-
+        with self.restore_state():
+            # First approximately bracket the crossover cl. Setup starting
+            # bracket (α_stall,  α_stall +/- 2°).
+            if side >= 0:
+                α1 = self.α_stall_pos
+                α_limit = 1.0471976 + self.α0  # 60° + ZLA.
             else:
-                raise SolverError(f"Failed to bracket the crossover cl - "
-                                  f"{e.details}") from e
+                α1 = self.α_stall_neg
+                α_limit = -1.0471976 + self.α0  # -60° + ZLA.
 
-        # Converge the final crossover value.
-        sol = root_scalar(Δcl_models, bracket=(x1, x2), xtol=1e-3, maxiter=20)
-        if not sol.converged:
-            raise SolverError(f"Failed to converge the crossover cl: "
-                              f"{sol.flag}")
+            α2 = α1 + side * 0.0349
+            max_steps = 50
+            try:
+                x1, x2 = step_bracket_root(Δcl_gap, x1=α1, x2=α2,
+                                           x_limit=α_limit,
+                                           max_steps=max_steps)
+            except SolverError as e:
+                if e.flag == 2:
+                    # 'α' limit reached; just return the limit.
+                    return α_limit
 
-        self.set_states(**restore)
+                else:
+                    raise SolverError(f"Failed to bracket the crossover cl - "
+                                      f"{e.details}") from e
+
+            # Converge the final crossover value.
+            sol = root_scalar(Δcl_gap, bracket=(x1, x2), xtol=1e-3,
+                              maxiter=20)
+            if not sol.converged:
+                raise SolverError(f"Failed to converge the crossover "
+                                  f"cl: {sol.flag}")
+
         return sol.root
 
-    def _stalled_prop(self, prop: str) -> float:
+    def _stalled_prop(self, name: str) -> float:
         """
         Checks if the stall model is active and returns whichever
         property attribute is correct.
         """
-        base_val = getattr(super(), prop)
+        base_val = getattr(super(), name)
 
         # If inactive, return immediately.
-        if not self._post_active:
+        ps = self._post_stall  # For compactness.
+        if not ps.active:
             return base_val
 
         # If α is post-stall and specified conditions are met,
@@ -198,28 +205,28 @@ class PostStall2DMixin(Foil2DAero, ABC):
             return base_val  # Not stalled, return base value.
 
         # Find post-stall model value.
-        post_val = getattr(self._post_model, prop)
+        post_val = getattr(ps.model, name)
 
         # Replace NaN values.
-        if self._post_nan and np.isnan(base_val):
+        if ps.replace_nan and np.isnan(base_val):
             return post_val
 
         # Replace if beyond cl crossover point.
-        if self._post_crossover:
+        if ps.high_α:
             if stall < 0:
                 # Negative side.
-                if self._post_α_cross_neg is None:
-                    self._post_α_cross_neg = self._find_α_cross(-1)
+                if ps.post_α_cross[0] is None:
+                    ps.post_α_cross[0] = self._find_α_cross(-1)
 
-                if self.α < self._post_α_cross_neg:
+                if self.α < ps.post_α_cross[0]:
                     return post_val
 
             elif stall > 0:
                 # Positive side.
-                if self._post_α_cross_pos is None:
-                    self._post_α_cross_pos = self._find_α_cross(+1)
+                if ps.post_α_cross[1] is None:
+                    ps.post_α_cross[1] = self._find_α_cross(+1)
 
-                if self.α > self._post_α_cross_pos:
+                if self.α > ps.post_α_cross[1]:
                     return post_val
 
         # All other cases, return base (unstalled) value.

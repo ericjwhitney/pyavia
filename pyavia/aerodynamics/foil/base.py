@@ -3,23 +3,25 @@ Top-level definition for foil performance models and general functions.
 """
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 from typing import Any
 
 import numpy as np
 from scipy.optimize import minimize_scalar
 
-from pyavia.states import States, InvalidStateError
-from pyavia.solve import step_bracket_min
-from pyavia.solve.exception import SolverError
+from pyavia.numeric.solve import SolverError
+from pyavia.numeric.solve.bracket import step_bracket_min
+from pyavia.state import State, InvalidStateError
 
 
 # Written by Eric J. Whitney, January 2023.
 
-# ============================================================================
+# ======================================================================
 
-# TODO likely unnecessary, combine with Basic below.
-class Foil2DAero(States, ABC):
+# TODO introduce an allowable tolerance on alpha, Re, M before changing
+#  state.
+
+class Foil2DAero(State, ABC):
     """
     Class defining the basic 2D aerodynamic interface common to all
     foils.
@@ -36,44 +38,7 @@ class Foil2DAero(States, ABC):
     True``.  TODO Review
     """
 
-    # -- Public Methods ------------------------------------------------------
-
-    @property
-    @abstractmethod
-    def α(self) -> float:
-        """Angle of attack (`α`) in range `[-π, +π]`."""
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def α0(self) -> float:
-        """Angle of attack for zero lift (:math:`α_0` or `ZLA`)."""
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def α_stall_neg(self) -> float:
-        """
-        Returns the negative stalling angle of attack
-        (below :math:`α_0`) under the *current* flow conditions.
-        """
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def α_stall_pos(self) -> float:
-        """
-        Returns the positive stalling angle of attack (below :math:`α_0`)
-        under the *current* flow conditions.
-        """
-        raise NotImplementedError
-
-    @property
-    def β(self) -> float:
-        r"""
-        Prantdl-Meyer compressibility factor :math:`β=\sqrt{1 - M^2}`.
-        """
-        return np.sqrt(1.0 - self.M ** 2)
+    # -- Public Methods ------------------------------------------------
 
     @property
     @abstractmethod
@@ -156,9 +121,47 @@ class Foil2DAero(States, ABC):
         """Reynolds Number (`Re`)."""
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def α(self) -> float:
+        """Angle of attack (`α`) in range `[-π, +π]`."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def α0(self) -> float:
+        """Angle of attack for zero lift (:math:`α_0` or `ZLA`)."""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def α_stall_neg(self) -> float:
+        """
+        Returns the negative stalling angle of attack
+        (below :math:`α_0`) under the *current* flow conditions.
+        """
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def α_stall_pos(self) -> float:
+        """
+        Returns the positive stalling angle of attack (below :math:`α_0`)
+        under the *current* flow conditions.
+        """
+        raise NotImplementedError
+
+    @property
+    def β(self) -> float:
+        r"""
+        Prantdl-Meyer compressibility factor :math:`β=\sqrt{1 - M^2}`.
+        """
+        return np.sqrt(1.0 - self.M ** 2)
+
+
 # ======================================================================
 
-
+# TODO Merge with above.  <<< HERE >>>
 class Foil2DBasic(Foil2DAero, ABC):
     r"""
     Class defining the basic 2D aerodynamic properties typical for most
@@ -181,10 +184,27 @@ class Foil2DBasic(Foil2DAero, ABC):
     """
 
     def __init__(self, *, Re: float = np.inf, M: float = 0.0,
-                 α: float = 0.0):
+                 α: float = 0.0, Re_log_tol: float = -np.inf,
+                 M_tol: float = 0.0, α_tol: float = 0.0):
         super().__init__()
-        self._Re, self._M, self._α = np.nan, np.nan, np.nan  # init only
-        self._set_ReMα(Re, M, α)
+        self._α, self._M, self._Re = np.nan, np.nan, np.nan  # init only
+
+        # TODO
+        # # Convert log10(ΔRe/Re) to upper / lower factors.
+        # if Re_log_tol > -np.inf:
+        #     self._Re_ftol = np.power(10.0, Re_log_tol)
+        # else:
+        #     self._Re_ftol = 0.0
+        #
+        # self._M_tol = M_tol
+        # if self._M_tol < 0:
+        #     raise ValueError("'M_tol' must be >= 0.")
+        #
+        # self._α_tol = α_tol
+        # if self._α_tol < 0:
+        #     raise ValueError("'α_tol' must be >= 0.")
+
+        self._set_αMRe(α, M, Re)
 
     # -- Public Methods ------------------------------------------------
 
@@ -236,10 +256,10 @@ class Foil2DBasic(Foil2DAero, ABC):
         :math:`α_0`) under the *current* flow conditions. See
         `cl_stall_pos` for more detail.
         """
-        restore = self.get_states()
-        self.set_states(α=self.α_stall_neg)
+        restore = self.get_state()
+        self.set_state(α=self.α_stall_neg)
         val = self.cl
-        self.set_states(**restore)
+        self.set_state(**restore)
         return val
 
     @property
@@ -253,17 +273,17 @@ class Foil2DBasic(Foil2DAero, ABC):
         For `Foil2dBasic` this simply returns the `cl` property after
         setting `α` = `α_stall_pos`.
         """
-        restore = self.get_states()
-        self.set_states(α=self.α_stall_pos)
+        restore = self.get_state()
+        self.set_state(α=self.α_stall_pos)
         val = self.cl
-        self.set_states(**restore)
+        self.set_state(**restore)
         return val
 
     # @classmethod
     # def input_states(cls) -> frozenset[str]:
     #     return frozenset(['Re', 'M', 'α'])
 
-    def get_states(self) -> dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         return {'Re': self._Re, 'M': self._M, 'α': self._α}
 
     @property
@@ -278,10 +298,10 @@ class Foil2DBasic(Foil2DAero, ABC):
     def Re(self) -> float:
         return self._Re
 
-    def set_states(self, *, Re: float = None, M: float = None,
-                   α: float = None) -> frozenset[str]:
+    def set_state(self, *, α: float = None, M: float = None,
+                  Re: float = None) -> frozenset[str]:
         r"""
-        Sets the operating state via `Re`, `M` and `α` optional
+        Sets the operating state via  `α`, `M` and `Re` optional
         arguments. This method is intended to be overridden by specific
         implementations, which should chain-up with this method. This
         (superclass) method checks should be called *prior* to any
@@ -290,13 +310,15 @@ class Foil2DBasic(Foil2DAero, ABC):
 
         Parameters
         ----------
-        Re : float, optional
-            Reynold's number in range `(0, ∞]`.
-        M : float, optional
-            Mach number in range `[0, ∞]`.
         α : float, optional
             Angle of attack.  This is normalised to the range of
             :math:`α \in [-π, +π]`
+
+        M : float, optional
+            Mach number in range `[0, ∞]`.
+
+        Re : float, optional
+            Reynold's number in range `(0, ∞]`.
 
         Returns
         -------
@@ -308,7 +330,7 @@ class Foil2DBasic(Foil2DAero, ABC):
         InvalidStateError
             Illegal Reynolds or Mach Numbers.
         """
-        return self._set_ReMα(Re, M, α)
+        return self._set_αMRe(α, M, Re)
 
     # -- Private Methods -----------------------------------------------------
 
@@ -322,10 +344,10 @@ class Foil2DBasic(Foil2DAero, ABC):
         # Define function to minimise as min(-cl(α)) for α > 0 or
         # min(cl(α)) for α < 0.
         def cl_fn(α: float) -> float:
-            self.set_states(α=α)
+            self.set_state(α=α)
             return -side * self.cl
 
-        with self.restore_states():
+        with self.restore_state():
             # First approximately bracket the peak cl. Setup starting
             # bracket of (α0,  α0 +/- 5°).
             try:
@@ -353,47 +375,85 @@ class Foil2DBasic(Foil2DAero, ABC):
 
         return α_stall
 
-    def _set_ReMα(self, Re: float | None, M: float | None,
-                  α: float | None) -> frozenset[str]:
+    def _set_αMRe(self, α: float | None, M: float | None,
+                  Re: float | None) -> frozenset[str]:
         """Common code for __init__ and set_states."""
         changed = frozenset()
 
-        # Update Reynolds Number.
-        if Re is not None and self._Re != Re:
-            if Re <= 0.0:
-                raise InvalidStateError(f"Invalid Re = {Re} (require > 0.")
-            self._Re = Re
-            changed |= {'Re'}
-
-        # Update Mach Number.
-        if M is not None and self._M != M:
-            if M < 0.0:
-                raise InvalidStateError(f"Invalid M = {M} (require >= 0).")
-            self._M = M
-            changed |= {'M'}
-
         # Update AoA.
         if α is not None:
-            α = std_α(α)
-            if self._α != α:
+
+            # # TODO CHANGE THIS TO NP.ISFINITE TO HANDLE +INF, -INF and
+            # #  NAN cases
+            # α = std_α(α)  # Note: Could be NaN.
+            # if ((abs(α - self._α) > self._α_tol) or
+            #         (np.isnan(α) != np.isnan(self._α))):
+            #     # The abs(...) > tol condition will always be false if
+            #     # either 'α' or 'self._α' is NaN.  So we also flag a
+            #     # change if its NaN status is changing.
+            #     self._α = α
+            #     changed |= {'α'}
+
+            α = std_α(α)  # Note: Could be NaN.
+            if α != self._α:
                 self._α = α
                 changed |= {'α'}
+
+        # Update Mach Number.
+        if M is not None:
+
+            # TODO
+            # if ((abs(M - self._M) > self._M_tol) or
+            #         (np.isnan(M) != np.isnan(self._M))):  # See above.
+            #     if M < 0.0:
+            #         raise InvalidStateError(f"Require 'M' >= 0, got "
+            #                                 f"'M' = {M}.")
+            #     self._M = M
+            #     changed |= {'M'}
+
+            if M != self._M:
+                if M < 0.0:
+                    raise InvalidStateError(f"Require 'M' >= 0, got "
+                                            f"'M' = {M}.")
+                self._M = M
+                changed |= {'M'}
+
+        # Update Reynolds Number.
+        # if Re is not None and self._Re != Re:  WAS
+        if Re is not None:
+
+            # TODO
+            # # Note: Re can be NaN or +Inf.
+            # if ((abs(Re - self._Re) > self._Re_ftol * self._Re) or
+            #         (np.isnan(Re) != np.isnan(self._Re))):  # See above.
+            #     if Re <= 0.0:
+            #         raise InvalidStateError(f"Invalid 'Re' > 0, got "
+            #                                 f"Re = {Re}.")
+            #     self._Re = Re
+            #     changed |= {'Re'}
+
+            if Re != self._Re:
+                if Re <= 0.0:
+                    raise InvalidStateError(f"Invalid 'Re' > 0, got "
+                                            f"Re = {Re}.")
+                self._Re = Re
+                changed |= {'Re'}
 
         return changed
 
 
-# ===========================================================================
+# ======================================================================
 
 # Future Improvement: α arguments can also be arrays and we can add Re,
 # M trends aligned to these as well.
 
-def plot_foil_aero(foils: list[Foil2DAero] | Foil2DAero,
+def plot_foil_aero(foils: Iterable[Foil2DAero] | Foil2DAero,
                    α_start: float, α_end: float, num: int = 50, *,
-                   figs: [[str, ...], ...] = (('α', 'cl', 'cm_qc'),
-                                              ('cl', 'cd')),
+                   figs: Sequence[Sequence[str]] = (('α', 'cl', 'cm_qc'),
+                                                    ('cl', 'cd')),
                    title: str = "", block: bool = True,
-                   colours: [str] = ('b', 'r', 'g', 'k'),
-                   labels: [str] = ('1', '2', '3', '4'),
+                   colours: Sequence[str] = ('b', 'r', 'g', 'k'),
+                   labels: Sequence[str] = ('1', '2', '3', '4'),
                    **state_kwargs):
     """
     Plot foil performance.  This function requires ``matplotlib.pyplot``.
@@ -451,12 +511,12 @@ def plot_foil_aero(foils: list[Foil2DAero] | Foil2DAero,
         foils = [foils]
 
     for foil, colour, label in zip(foils, colours, labels):
-        restore = foil.get_states()
+        restore = foil.get_state()
         data = defaultdict(list)
 
         # Sweep over α and get required properties.
         for α_i in np.linspace(α_start, α_end, num=num):
-            foil.set_states(α=α_i, **state_kwargs)
+            foil.set_state(α=α_i, **state_kwargs)
             for prop in all_props:
                 val = getattr(foil, prop)
                 data[prop].append(val)
@@ -498,7 +558,7 @@ def plot_foil_aero(foils: list[Foil2DAero] | Foil2DAero,
             plt.grid()
 
         # Reset original state.
-        foil.set_states(**restore)
+        foil.set_state(**restore)
 
     plt.show(block=block)
 

@@ -5,7 +5,8 @@ from unittest import TestCase
 
 class TestImperfectGas(TestCase):
     def test_all(self):
-        from pyavia.aerodynamics import ImperfectGas
+
+        from pyavia.fluids import ImperfectGas
         from pyavia.units import dim
 
         def stp_checks(test_gas):
@@ -118,7 +119,7 @@ class TestImperfectGas(TestCase):
 # noinspection PyPep8Naming
 class TestPerfectGas(TestCase):
     def test_all(self):
-        from pyavia.aerodynamics import PerfectGas
+        from pyavia.fluids import PerfectGas
         from pyavia.units import dim
 
         def stp_checks(test_gas):

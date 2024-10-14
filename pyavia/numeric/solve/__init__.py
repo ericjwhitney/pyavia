@@ -9,7 +9,4 @@ from .dqnm import solve_dqnm
 from .exception import SolverError
 from .fixed_point import fixed_point
 from .newton_bounded import newton_bounded
-from .stepping import step_bracket_root, step_bracket_min
-
-
-
+from .bracket import step_bracket_min, step_bracket_root

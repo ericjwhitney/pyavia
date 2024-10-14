@@ -132,8 +132,9 @@ def newton_bounded(func: Callable, x0: ArrayLike, *,
 
             # If fval is 0, a root has been found; terminate.
             if fval == 0:
-                return _results_select(
-                    full_output, (p0, funcalls, itr, _ECONVERGED))
+                return _results_select(full_output,
+                                       (p0, funcalls, itr, _ECONVERGED),
+                                       method='newton_bounded')
 
             fder = fprime(p0, *args)
             funcalls += 1
@@ -146,8 +147,9 @@ def newton_bounded(func: Callable, x0: ArrayLike, *,
                             "value is %s." % (itr + 1, p0))
                     raise RuntimeError(msg)
                 warnings.warn(msg, RuntimeWarning)
-                return _results_select(
-                    full_output, (p0, funcalls, itr + 1, _ECONVERR))
+                return _results_select(full_output,
+                                       (p0, funcalls, itr + 1, _ECONVERR),
+                                       method='newton_bounded')
 
             # Compute step using derivative.
             newton_step = fval / fder
@@ -179,8 +181,9 @@ def newton_bounded(func: Callable, x0: ArrayLike, *,
             # ** Only check for convergence if the last step was not
             # clipped to a boundary.
             if np.isclose(p, p0, rtol=rtol, atol=tol) and not hit_bounds:
-                return _results_select(
-                    full_output, (p, funcalls, itr + 1, _ECONVERGED))
+                return _results_select(full_output,
+                                       (p, funcalls, itr + 1, _ECONVERGED),
+                                       method='newton_bounded')
             p0 = p
 
     else:
@@ -257,8 +260,9 @@ def newton_bounded(func: Callable, x0: ArrayLike, *,
 
                 # Return the midpoint.
                 p = (p1 + p0) / 2.0
-                return _results_select(
-                    full_output, (p, funcalls, itr + 1, _ECONVERGED))
+                return _results_select(full_output,
+                                       (p, funcalls, itr + 1, _ECONVERGED),
+                                       method='newton_bounded')
 
             else:
                 # Compute new point position using secant.
@@ -275,8 +279,9 @@ def newton_bounded(func: Callable, x0: ArrayLike, *,
             # ** Only check for convergence if the last step was not
             # clipped to a boundary.
             if np.isclose(p, p1, rtol=rtol, atol=tol) and not hit_bounds:
-                return _results_select(
-                    full_output, (p, funcalls, itr + 1, _ECONVERGED))
+                return _results_select(full_output,
+                                       (p, funcalls, itr + 1, _ECONVERGED),
+                                       method='newton_bounded')
 
             # ** Update working points and continue.  For secant method,
             # do not replace the old point if the current step took us to a
@@ -295,7 +300,9 @@ def newton_bounded(func: Callable, x0: ArrayLike, *,
         raise RuntimeError(msg)
 
     # noinspection PyUnboundLocalVariable
-    return _results_select(full_output, (p, funcalls, itr + 1, _ECONVERR))
+    return _results_select(full_output,
+                           (p, funcalls, itr + 1, _ECONVERR),
+                           method='newton_bounded')
 
 
 # ---------------------------------------------------------------------------

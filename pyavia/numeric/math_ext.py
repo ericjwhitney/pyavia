@@ -3,28 +3,30 @@ Useful mathematical functions, particularly if these are not available in
 NumPy.
 """
 from __future__ import annotations
+
 import operator as op
 from collections.abc import Sequence, Iterable, Callable
-from typing import Union, Any, TypeVar
+from typing import Union, Any, TypeVar, Type
 
 import numpy as np
-from numpy.typing import ArrayLike
+import numpy.typing as npt
 
-from pyavia.iter import _ignore_key
+from pyavia.util.iter_ops import _ignore_key
 
 # Written by Eric J. Whitney, 2020.
 
 _T = TypeVar('_T')
 
 
-# =============================================================================
+# ======================================================================
+
 
 # TODO This is a bit abstract.
-def chain_mult(start_val: _T, seq: Sequence[_T]) -> [_T]:
+def chain_mult(start_val: _T, it: Iterable[_T]) -> list[_T]:
     """
-    Multiply ``start_val`` by each element in ``li`` in turn, producing a
-    List of values the same length of ``li``.  The starting value is not
-    included.
+    Multiply ``start_val`` by each element in ``it`` in turn, producing
+    a list of values the same length of ``it``.  The starting value is
+    not included.
 
     Examples
     --------
@@ -32,13 +34,13 @@ def chain_mult(start_val: _T, seq: Sequence[_T]) -> [_T]:
     [10.0, 30.0, 15.0]
     """
     res, val = [], start_val
-    for mult in seq:
+    for mult in it:
         val *= mult
         res.append(val)
     return res
 
 
-def equal_nan(a, b):
+def equal_nan(a, b):  # TODO type hint.
     """
     Extended elementwise == comparison, which also returns true for
     `NaN` elements.
@@ -46,7 +48,8 @@ def equal_nan(a, b):
     return (a == b) | (np.isnan(a) & np.isnan(b))
 
 
-def is_number_seq(obj) -> bool:  # TODO mostly replace with np.ndim(...) > 0
+# TODO Delete ... mostly replace with np.ndim(...) > 0
+def is_number_seq(obj) -> bool:
     """
     Returns ``True`` if ``obj`` is of ``Sequence`` type and is not a string /
     bytes / bytearray.
@@ -57,7 +60,7 @@ def is_number_seq(obj) -> bool:  # TODO mostly replace with np.ndim(...) > 0
     return False
 
 
-# TODO I am removing usage to this, so if it is still required, dim checks
+# TODO I am removing usages of this, so if it is still required, dim checks
 #  will have to be done *inside here*.
 def kind_arctan2(y, x) -> float:
     """
@@ -99,7 +102,7 @@ def kind_div(x, y) -> int | float:
         return x / y
 
 
-def min_max(it: Iterable, key=None):
+def min_max(it: Iterable[_T], key=None) -> tuple[_T, _T]:
     """
     Returns (min, max) of elements in `iterable`.  Comparison provided
     using `key` if supplied.
@@ -109,7 +112,8 @@ def min_max(it: Iterable, key=None):
     return min(it, key=key), max(it, key=key)
 
 
-def monotonic(it: Iterable, dirn, strict=True, key=None):
+def monotonic(it: Iterable, dirn: int, strict: bool = True,
+              key=None) -> bool:
     """
     Returns True if elements of `iterable` are monotonic otherwise false.
     For `dirn` >= 0 the sequence is strictly increasing i.e. :math:`x_{i+1}
@@ -127,7 +131,7 @@ def monotonic(it: Iterable, dirn, strict=True, key=None):
 
 
 # TODO may be redundant if numpy use widespread; e.g. np.all(np.diff(a) > 0)
-def strict_decrease(it: Iterable, key=None):
+def strict_decrease(it: Iterable, key=None) -> bool:
     """
     Shorthand for ``monotonic(iterable, -1, strict=True, key=key)``.
     Returns True *i.f.f.* all :math:`x_{i+1} < x_i`.  Comparison provided
@@ -136,7 +140,7 @@ def strict_decrease(it: Iterable, key=None):
     return monotonic(it, -1, strict=True, key=key)
 
 
-def strict_increase(it: Iterable, key=None):
+def strict_increase(it: Iterable, key=None) -> bool:
     """
     Shorthand for ``monotonic(iterable, +1, strict=True, key=key)``.
     Returns True *i.f.f.* all :math:`x_{i+1} > x_i`.  Comparison provided
@@ -162,8 +166,11 @@ def vectorise(func: Callable, *values) -> Union[list, Any]:
     return func(*values)
 
 
-# ============================================================================
-def sclvec_asarray(x: ArrayLike, *args, **kwargs) -> tuple[np.ndarray, bool]:
+# ======================================================================
+# TODO Replace these older versions.
+
+def sclvec_asarray(x: npt.ArrayLike[_T], *args, **kwargs
+                   ) -> tuple[npt.NDArray[_T], bool]:
     """
     Convenience function to prepare a numpy array from a scalar or vector
     argument, as well as `True` if it is a scalar (or `False` otherwise).
@@ -176,18 +183,112 @@ def sclvec_asarray(x: ArrayLike, *args, **kwargs) -> tuple[np.ndarray, bool]:
     return res, res.ndim == 0
 
 
-def sclvec_return(x: np.ndarray, scalar: bool) -> ArrayLike:
+def sclvec_return(x: npt.NDArray[_T], scalar: bool
+                  ) -> npt.NDArray[_T] | _T:
     """If ``scalar == True``, applies returns ``x.squeeze()[()]``, otherwise
     returns `x` unchanged.
     """
     return x.squeeze()[()] if scalar else x
 
 
-# ============================================================================
+# ----------------------------------------------------------------------
 
-def within_range(seq: [_T], x_range: (_T, _T)) -> [_T]:
+# TODO These are the newer versions.
+
+# TODO
+# ScalarLike = int | float | complex | str | bytes | np.generic
+# ScalarArrayLike = ScalarLike | npt.ArrayLike
+
+
+def check_sclarray(x: npt.ArrayLike, ndim: int = 1,
+                   dtype: Type[_T] = None,
+                   copy: bool = False) -> tuple[npt.NDArray[_T], bool]:
     """
-    Returns a list consisting only the `seq` elements that are within the
-    given closed interval `x_range` [`x_min`, `x_max`].
+    Check parameter `x` and reformat as an `ndarray` of specified layout
+    and type as required.  Whether `x` was a scalar or array is also
+    returned for later use.
+
+    Parameters
+    ----------
+    x : array_like or scalar
+        Input argument as either a scalar or array-like sequence.
+    ndim : int, default = 1
+        Exact required number of dimensions in the output array.
+    dtype : dtype, optional
+        Type of the output array.
+    copy : bool, default = False
+        If `False` then a copy is only made if required for type
+        conversion or reshaping.
+
+    Returns
+    -------
+    result, single : tuple[ndarray, bool]
+        `result` is an array of given `dtype` with `ndim` dimensions.
+        `single` is:
+            - `True` if `x` was a single value supplied as a scalar,
+            - `False` in all other cases, even if `x` contained a single
+              value contained in an n-D sequence / array.
+
+    Raises
+    ------
+    ValueError
+        If `x` cannot be converted to an array of `ndim` dimensions.
     """
-    return [x for x in seq if x_range[0] <= x <= x_range[1]]
+    single = True if np.ndim(x) == 0 else False
+    result = np.array(x, dtype=dtype, copy=copy, ndmin=ndim)
+    if result.ndim != ndim:
+        raise ValueError(f"Result array dimensions ndim = "
+                         f"{result.ndim} incorrect, expected ndim = "
+                         f"{ndim}.")
+    return result, single
+
+
+# ----------------------------------------------------------------------
+
+def return_sclarray(x: npt.NDArray[_T], single: bool
+                    ) -> npt.NDArray[_T] | _T:
+    """
+    Reformat the parameter `x` as a scalar or array, generally to
+    match the form of a previously supplied input parameter (see
+    `check_sclarray`).
+
+    Parameters
+    ----------
+    x : NDArray
+        Input array.
+    single : bool
+        Return `x` as-is if `False`, otherwise convert to a scalar
+        value.
+
+    Returns
+    -------
+    NDArray or scalar
+        - If ``single=False``: Return `x` as-is.
+        - If ``single=True``: Convert `x` to a scalar value before
+          returning.
+
+    Raises
+    ------
+    ValueError
+        If `single=True`` but ``x.size != 1``.
+   """
+    if single:
+        if x.size != 1:
+            raise ValueError(f"Single value expected, got {x.size}.")
+        return x.item(0)
+
+    else:
+        return x
+
+
+# ----------------------------------------------------------------------
+
+def within_range(it: Iterable[_T], x_range: tuple[_T, _T]
+                 ) -> list[_T]:
+    """
+    Returns a list consisting of only the elements in `it` that are
+    within the given closed interval `x_range` [`x_min`, `x_max`].
+    """
+    return [x for x in it if x_range[0] <= x <= x_range[1]]
+
+# ======================================================================

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from numpy.typing import ArrayLike
 
-from pyavia.type_ext import make_sentinel
+from pyavia.util.type_ops import make_sentinel
 
 _MISSING = make_sentinel()
 

@@ -9,7 +9,7 @@ from numpy.typing import ArrayLike, NDArray
 _T = TypeVar('_T')
 
 
-# =============================================================================
+# ======================================================================
 
 def sine_spacing(x1: float, x2: float, n: int,
                  spacing: float) -> NDArray[float]:
@@ -84,7 +84,7 @@ def sine_spacing(x1: float, x2: float, n: int,
     return (x2 - x1) * u_spc + x1
 
 
-# ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 def subdivide_series(x: ArrayLike[_T], ndiv: int,
                      keep_original: str = 'all') -> NDArray[_T]:
     """

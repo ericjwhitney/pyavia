@@ -49,6 +49,7 @@ class TestWeightedDirGraph(TestCase):
 
     def test_trace(self):
         from pyavia.containers import WtDirGraph
+
         wdg = WtDirGraph()
         wdg[1:2] = 0.5
         wdg[1:3] = 0.2

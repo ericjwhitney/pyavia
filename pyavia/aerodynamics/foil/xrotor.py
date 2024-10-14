@@ -5,8 +5,7 @@ from scipy.optimize import root_scalar
 
 from .base import Foil2DBasic
 from .stall import PostStall2DMixin
-from pyavia.solve import step_bracket_root
-from pyavia.solve.exception import SolverError
+from pyavia.numeric.solve import step_bracket_root, SolverError
 
 
 # Written by Eric J. Whitney, January 2023.
@@ -172,9 +171,9 @@ class XROTOR2DAero(Foil2DBasic):
     def cm_qc(self) -> float:
         return self._cm_qc
 
-    def set_states(self, *, Re: float = None, M: float = None,
-                   α: float = None) -> frozenset[str]:
-        changed = super().set_states(α=α, Re=Re, M=M)
+    def set_state(self, *, Re: float = None, M: float = None,
+                  α: float = None) -> frozenset[str]:
+        changed = super().set_state(α=α, Re=Re, M=M)
 
         # If anything changed, recompute the coefficients.
         if changed:
@@ -332,10 +331,10 @@ class XROTOR2DAero(Foil2DBasic):
         """
         # Define error function as f(clα) = clα - clα* = 0.
         def clα_err(α_: float) -> float:
-            self.set_states(α=α_)
+            self.set_state(α=α_)
             return self.clα - clα
 
-        with self.restore_states():
+        with self.restore_state():
             # First find an initial bracket by stepping along the curve.
             try:
                 x1, x2 = step_bracket_root(
@@ -372,5 +371,4 @@ class XROTOR2DAeroPostStall(PostStall2DMixin, XROTOR2DAero):
     overridden).
     """
     def __init__(self, **kwargs):
-        super().__init__(**(
-                {'post_nan': True, 'post_crossover': True} | kwargs))
+        super().__init__(**({'replace_nan': True, 'high_α': True} | kwargs))

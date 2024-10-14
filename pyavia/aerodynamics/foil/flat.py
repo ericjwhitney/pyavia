@@ -97,7 +97,7 @@ class Flat2DAero(Foil2DBasic):  # TODO Consider 'FlatPlateFoil'
     # def output_states(cls) -> frozenset[str]:
     #     return super().output_states() | {'cn', 'cnα'}
 
-    def set_states(self, **kwargs) -> frozenset[str]:
+    def set_state(self, **kwargs) -> frozenset[str]:
         """
         See `Foil2DBasic.set_states` for available parameters.
 
@@ -109,7 +109,7 @@ class Flat2DAero(Foil2DBasic):  # TODO Consider 'FlatPlateFoil'
         extensions to this class.
         """
         # Chain up to revise operating state.
-        changed = super().set_states(**kwargs)
+        changed = super().set_state(**kwargs)
 
         # Only need to compute plate forces if 'α' changed.
         if 'α' in changed:

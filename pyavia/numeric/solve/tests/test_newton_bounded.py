@@ -2,41 +2,14 @@ from unittest import TestCase
 
 import numpy as np
 
-
-# Define test function, first and second derivative.  Used for scalars or
-# element-wise on arrays.
-def f(x):
-    return x ** 2 - x - 1
+from .scalar_tst_functions_early import f, f_exact
 
 
-def df_dx(x):
-    return 2 * x - 1
-
-
-def df2_dx2(x):
-    return 2 * np.ones_like(x)
-
-
-def f_exact(x):
-    return 1.618033988749895 * np.ones_like(x)
-
-
-class TestBisectRoot(TestCase):
-    def test_bisect_root(self):
-        from pyavia.solve.bisect_root import bisect_root
-
-        # Check normal operation.
-        x = bisect_root(f, 1.0, 2.0, ftol=1e-15)
-        self.assertAlmostEqual(x, f_exact(x), places=15)
-
-        # Check failure to converge is flagged.
-        with self.assertRaises(RuntimeError):
-            bisect_root(f, 1.0, 2.0, maxits=10, ftol=1e-15)
-
+# ======================================================================
 
 class TestNewtonBounded(TestCase):
     def test_newton_bounded_scalar(self):
-        from pyavia.solve.newton_bounded import newton_bounded
+        from pyavia.numeric.solve.newton_bounded import newton_bounded
 
         # Check normal operation.
         x = newton_bounded(f, 1.0, bounds=(-1, 10))
@@ -65,7 +38,7 @@ class TestNewtonBounded(TestCase):
     # TODO add versions that check with derivatives.
 
     def test_newton_bounded_vector(self):
-        from pyavia.solve.newton_bounded import newton_bounded
+        from pyavia.numeric.solve.newton_bounded import newton_bounded
         from numpy.testing import assert_allclose
 
         # Check normal operation.
@@ -88,3 +61,5 @@ class TestNewtonBounded(TestCase):
             newton_bounded(f, x0, bounds=bounds)
 
     # TODO add versions that check with derivatives.
+
+# ----------------------------------------------------------------------

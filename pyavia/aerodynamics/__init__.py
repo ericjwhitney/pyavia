@@ -1,7 +1,35 @@
 """
-Functions relating to 1D aerodynamics,  and fluid dynamics:
-    - 1D: Gases, properties of the atmosphere, airspeeds.
-    - 2D: Aerofoil performance.
+=============================================
+Aerodynamics (:mod:`pyavia.aerodynamics`)
+=============================================
+
+.. currentmodule:: pyavia.aerodynamics
+
+Airspeed Functions
+------------------
+
+.. autosummary::
+    :toctree: generated/
+
+    Veas2Vtas          -- Convert equivalent airspeed to true airspeed
+    Vtas2Veas          -- Convert true airspeed to equivalent airspeed
+
+
+
+
+Atmosphere
+----------
+
+.. autosummary::
+    :toctree: generated/
+
+    Atmosphere          -- Properties of Earth's standard atmosphere
+    geo_alt_to_pot      -- Geometric altitude to potential altitude
+    pot_alt_to_geo      -- Potential altitude to geometric altitude
+
+
+XXXX MORE
+
 
 Notes
 -----
@@ -17,9 +45,6 @@ Notes
 # 1-D Components.
 from .airspeed import Veas2Vtas, Vtas2Veas
 from .atmosphere import (Atmosphere, geo_alt_to_pot, pot_alt_to_geo)
-from .gas import Gas
-from .perfect_gas import PerfectGas
-from .imperfect_gas import ImperfectGas
 
 # 2-D Components.
 from .foil.base import Foil2DAero, Foil2DBasic, plot_foil_aero, std_α
