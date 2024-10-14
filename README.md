@@ -3,7 +3,7 @@
 **PyAvia** is a collection of modules useful for common tasks in aerospace
 engineering or engineering in general.  
 
-The current version is **0.0.4** (development).
+The current version is **0.0.5** (development).
 
 *Important points*:
 - Development is intended to be organic.
