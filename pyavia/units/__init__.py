@@ -134,9 +134,7 @@ Slug value = 1716.56 ft.lbf/slug/°R
 
 """
 
-from pyavia.units._base import (
-    add_base_unit, add_unit, block_conversion, convert, set_conversion,
-    to_absolute_temp, to_zero, CACHE_COMPUTED_CONVS, CACHE_MADE_UNITS,
-    CONV_PATH_LENGTH_WARNING, OUTPUT_UCODE_PWR)
-from pyavia.units._dim import (Dim, dim, str2dim)
-from pyavia.units import _defs
+from ._base import (block_conversion, convert, set_conversion,
+                    to_absolute_temp)
+from ._dim import dim, Dim
+from . import _defs  # Sets up standard units.

@@ -8,40 +8,41 @@ from ._base import (to_absolute_temp,
                     _basis_factor, _KNOWN_UNITS, _check_units,
                     _MADE_UNITS)
 
-from pyavia.type_ext import coax_type
+from pyavia.util.type_ops import coax_type
 
-T = TypeVar('T')
+# Written by Eric J. Whitney, January 2020.
+
+_T = TypeVar('_T')
 
 
-# ===========================================================================
+# ======================================================================
 
-# TODO change to hasable dataclass
-class Dim(NamedTuple, Generic[T]):
+# TODO make hashable (or change to hashable dataclass) for use as dict
+#  keys. In this case we will need Dim() to hold a Units object not a
+#  string.
+class Dim(NamedTuple, Generic[_T]):
     """
-    ``Dim`` represents a dimensioned quantity, consisting of a value and a
-    string giving the associated units.  A ``Dim`` object can be used in
-    mathematical expressions and the units conversions are automatically
-    done to make the result 'units aware'.
+    ``Dim`` represents a dimensioned quantity, consisting of a value and
+    a string giving the associated units.  A ``Dim`` object can be used
+    in mathematical expressions and the units conversions are
+    automatically handled to make the result 'units aware'.
 
-    ``Dim`` objects are implemented as a namedtuple and are thus nominally
-    immutable.  This means that they can be treated like scalars,
-    and their `value` and `units` fields cannot simply be changed or
-    overwritten by other functions once they are created.
+    ``Dim`` objects are implemented as a namedtuple and are thus
+    nominally immutable.  This means that they can be treated like
+    scalars, and their `value` and `units` fields cannot simply be
+    changed or overwritten by other functions once they are created.
 
     .. note:: ``Dim`` objects are not normally created by the user.
-       Refer to factory function ``dim()`` for normal construction methods.
+       Refer to factory function ``dim()`` for normal construction
+       methods.
     """
 
-    # value: DimValueType TODO DELETE
-    value: T
+    value: _T
     units: str
 
-    # TODO needs constructor to check unit string if directly constructed,
-    #  and convert to standard unit string.
+    # -- Unary Operators -----------------------------------------------
 
-    # -- Unary Operators ----------------------------------------------------
-
-    def __abs__(self) -> Dim[T]:
+    def __abs__(self) -> Dim[_T]:
         return Dim(abs(self.value), self.units)
 
     def __complex__(self) -> complex:
@@ -68,24 +69,25 @@ class Dim(NamedTuple, Generic[T]):
         """
         return int(self.value)
 
-    def __neg__(self) -> Dim[T]:
+    def __neg__(self) -> Dim[_T]:
         return Dim(-self.value, self.units)
 
-    def __round__(self, n: int = None) -> Dim[T]:
+    def __round__(self, n: int = None) -> Dim[_T]:
         return Dim(round(self.value, n), self.units)
 
-    # -- Binary Operators ---------------------------------------------------
+    # -- Binary Operators ----------------------------------------------
 
-    def __add__(self, rhs: Dim[T]) -> Dim[T]:
+    def __add__(self, rhs: Dim[_T]) -> Dim[_T]:
         r"""
         Add two dimensioned values.  If `rhs` is an ordinary value,
         it is promoted to ``Dim`` before addition.  This allows for the
         case of a dimensionless intermediate product in expressions.
 
-        Addition of isolated temperatures is only permitted in some cases
-        and the result depends on the combination of units involved.  Total
-        temperatures (e.g. K, °C) and temperature changes (e.g. ΔK, Δ°C) are
-        handled differently the result will be as follows:
+        Addition of isolated temperatures is only permitted in some
+        cases and the result depends on the combination of units
+        involved.  Total temperatures (e.g. K, °C) and temperature
+        changes (e.g. ΔK, Δ°C) are handled differently the result will
+        be as follows:
 
             +-----------------+---------------+-----------------+
             |                 |             (+) RHS             |
@@ -98,14 +100,14 @@ class Dim(NamedTuple, Generic[T]):
             +-----------------+---------------+-----------------+
         """
         # TODO rethink promotion rules, eliminate this?
-        #  NOTE - No dims i.e. '' is allowed for Dim objects so might need
-        #  to keep?
+        #  NOTE - No dims i.e. '' is allowed for Dim objects so might
+        #  need to keep?
         if not isinstance(rhs, Dim):
             # Promote to Dim. Addition to a dimless value would only be
             # valid if we were dimless ourselves anyway.
             rhs = Dim(rhs, '')
 
-        err_str = f"Addition '{self.units}' + '{rhs.units}' is not allowed."
+        err_str = f"Can't add units '{self.units}' + '{rhs.units}'."
 
         # Handle special cases of temperature addition.
         if self.is_total_temp():
@@ -124,10 +126,10 @@ class Dim(NamedTuple, Generic[T]):
 
         if self.is_temp_change():
             if rhs.is_total_temp():
-                # Case: Δ + Total -> Total
-                # Units are adopted from the total version of the LHS, which
-                # is what the RHS is converted into prior to addition.
-                rhs = rhs.convert(self.units[1:])  # By dropping Δ from LHS.
+                # Case: Δ + Total -> Total.   Units are adopted from the
+                # total version of the LHS, which is what the RHS is
+                # converted into prior to addition.
+                rhs = rhs.convert(self.units[1:])  # Dropping Δ from LHS
                 return Dim(self.value + rhs.value, rhs.units)
 
             elif rhs.is_temp_change():
@@ -144,16 +146,9 @@ class Dim(NamedTuple, Generic[T]):
         res_value = coax_type(res_value, type(self.value + rhs.value),
                               default=res_value)
 
-        # TODO Removed - Addition / subtraction should not cancel units.
-        # res = Dim(res_value, self.units)
-        # if not res.is_dimless():
-        #     return res
-        # else:
-        #     return res.value  # Units fell off.
-
         return Dim(res_value, self.units)
 
-    def __sub__(self, rhs: Dim[T]) -> Dim[T]:
+    def __sub__(self, rhs: Dim[_T]) -> Dim[_T]:
         r"""
         Subtract two dimensioned values.  Follows the same rules as
         __add__, with differences noted below.
@@ -168,16 +163,18 @@ class Dim(NamedTuple, Generic[T]):
             |  Change (K/Δ°C) | Not Permitted |     Change      |
             +-----------------+---------------+-----------------+
 
-            (*) For this case both temperatures are required to already be on
-            the same scale.  Because absolute temperatures can also represent
-            temperature changes, not requiring this results in an ambiguous
-            conversion target.  Offset scale temperatures are converted to an
-            absolute scale prior to subtraction to give correct results.
+            (*) For this case both temperatures are required to already
+            be on the same scale.  Because absolute temperatures can
+            also represent temperature changes, not requiring this
+            results in an ambiguous conversion target.  Offset scale
+            temperatures are converted to an absolute scale prior to
+            subtraction to give correct results.
 
-        Subtraction of isolated temperatures is only permitted in some cases
-        and the result depends on the combination of units involved.  Total
-        temperatures (e.g. K, °C) and temperature changes (e.g. ΔK, Δ°C) are
-        handled differently the result will be as follows:
+        Subtraction of isolated temperatures is only permitted in some
+        cases and the result depends on the combination of units
+        involved.  Total temperatures (e.g. K, °C) and temperature
+        changes ( e.g. ΔK, Δ°C) are handled differently the result will be
+        as follows:  TODO Missing?
 
         Notice that the result of subtracting temperature type units is
         unsymmetric / not commutative.
@@ -191,9 +188,8 @@ class Dim(NamedTuple, Generic[T]):
         # Handle special cases of temperature subtraction.
         if self.is_total_temp():
             if rhs.is_total_temp():
-                # Case: Total - Total -> Δ
-                # This case requires the temperatures to already be on the
-                # same scale.
+                # Case: Total - Total -> Δ.  This case requires the
+                # temperatures to already be on the same scale.
                 if self.units != rhs.units:
                     raise ValueError(
                         f"Total temperatures must be on the same scale for "
@@ -205,7 +201,7 @@ class Dim(NamedTuple, Generic[T]):
 
                 # Offset case requires temperatures to be converted to
                 # absolute scales prior to subtraction.
-                lhs = to_absolute_temp(self)  # Do subtraction in matching ...
+                lhs = to_absolute_temp(self)  # Do (-) in matching ...
                 rhs = rhs.convert(lhs.units)  # ... absolute units.
                 res = Dim(lhs.value - rhs.value, lhs.units)
 
@@ -238,16 +234,9 @@ class Dim(NamedTuple, Generic[T]):
         res_value = coax_type(res_value, type(self.value - rhs.value),
                               default=res_value)
 
-        # TODO Removed - Addition / subtraction should not cancel units.
-        # res = Dim(res_value, self.units)
-        # if not res.is_dimless():
-        #     return res
-        # else:
-        #     return res.value  # Units fell off.
-
         return Dim(res_value, self.units)
 
-    def __mul__(self, rhs: Dim[T] | T) -> Dim[T] | T:
+    def __mul__(self, rhs: Dim[_T] | _T) -> Dim[_T] | _T:
         """
         Multiply two dimensioned values.   Rules are as follows:
 
@@ -280,7 +269,7 @@ class Dim(NamedTuple, Generic[T]):
         """
         return _dim_mul_generic(self, rhs, operator.mul)
 
-    def __truediv__(self, rhs: Dim[T] | T) -> Dim[T] | T:
+    def __truediv__(self, rhs: Dim[_T] | _T) -> Dim[_T] | _T:
         """
         Divide a dimensioned value.  The same rules as __mul__ apply.
         """
@@ -289,7 +278,7 @@ class Dim(NamedTuple, Generic[T]):
 
         return self * (rhs ** -1)
 
-    def __matmul__(self, rhs: Dim[T] | T) -> Dim[T] | T:
+    def __matmul__(self, rhs: Dim[_T] | _T) -> Dim[_T] | _T:
         """
         Matrix multiply operator, handled in the same fashion as __mul__.
         Note that this applies to any array wrapped in a `Dim` object,
@@ -297,7 +286,7 @@ class Dim(NamedTuple, Generic[T]):
         """
         return _dim_mul_generic(self, rhs, operator.matmul)
 
-    def __pow__(self, pwr: int | float) -> Dim[T] | T:
+    def __pow__(self, pwr: int | float) -> Dim[_T] | _T:
         """
         Raise dimensioned value to a power. Any `k` multiplier value in
         `self.units` is multiplied out and becomes part of `result.value`,
@@ -319,21 +308,21 @@ class Dim(NamedTuple, Generic[T]):
     # TODO reconsider if required?  Can also raise NotImplemented if we
     #  expressly don't allow something.
     # TODO should only work if dimless?
-    def __radd__(self, lhs: Dim[T]) -> Dim[T]:
+    def __radd__(self, lhs: Dim[_T]) -> Dim[_T]:
         """See ``__add__`` for addition rules."""
         return Dim(lhs, '') + self
 
     # TODO Reconsider if required?
     # TODO should only work if dimless?
-    def __rsub__(self, lhs: Dim[T]) -> Dim[T]:
+    def __rsub__(self, lhs: Dim[_T]) -> Dim[_T]:
         """See ``__sub__`` for subtraction rules."""
         return Dim(lhs, '') - self
 
-    def __rmul__(self, lhs: T) -> Dim[T] | T:
+    def __rmul__(self, lhs: _T) -> Dim[_T] | _T:
         """See ``__mul__`` for multiplication rules."""
         return Dim(lhs, '') * self
 
-    def __rtruediv__(self, lhs: T) -> Dim[T] | T:
+    def __rtruediv__(self, lhs: _T) -> Dim[_T] | _T:
         """See ``__truediv__`` for division rules."""
         return Dim(lhs, '') / self
 
@@ -404,7 +393,7 @@ class Dim(NamedTuple, Generic[T]):
         """
         return _Units(self.units).is_dimless()
 
-    def is_similar(self, rhs: Dim[T] | T) -> bool:
+    def is_similar(self, rhs: Dim[_T] | _T) -> bool:
         """
         Returns ``True`` if ``self`` and ``rhs`` have equivalent unit bases
         (e.g. both are pressures, currents, speeds, etc), otherwise
@@ -449,7 +438,7 @@ class Dim(NamedTuple, Generic[T]):
         """
         return _Units(self.units).is_total_temp()
 
-    def to_value(self, to_units: str = None) -> T:
+    def to_value(self, to_units: str = None) -> _T:
         """
         Remove dimensions and return a plain value type.  The target units
         can be optionally specified.  This is a convenience method equivalent
@@ -475,7 +464,7 @@ class Dim(NamedTuple, Generic[T]):
             return self.value
 
     # TODO consider to_system instead.
-    def to_value_sys(self, unit_system: str = None) -> T:
+    def to_value_sys(self, unit_system: str = None) -> _T:
         """
         Similar to ``to_value()`` except that instead of giving target units
         for conversion, a complete target system of units is given instead.
@@ -514,7 +503,7 @@ class Dim(NamedTuple, Generic[T]):
 
 # ----------------------------------------------------------------------------
 
-def dim(value: Dim[T] | T | str = 1, units: str = None) -> Dim[T] | T:
+def dim(value: Dim[_T] | _T | str = 1, units: str = None) -> Dim[_T] | _T:
     # TODO add copy option for dim(Dim(...))
 
     """
@@ -581,7 +570,9 @@ def dim(value: Dim[T] | T | str = 1, units: str = None) -> Dim[T] | T:
 
         else:
             # Case dim() or dim(value): No units.
-            return Dim(value, '')  # Convert None to empty string.
+            # TODO WAS
+            # return Dim(value, '')  # Convert None to empty string.
+            return value
 
     else:
         # Called with two arguments.
@@ -674,7 +665,7 @@ def str2dim(s: str) -> Dim:
 # ===========================================================================
 
 
-def _common_cmp(lhs: Dim[T], rhs, op: Callable[[T, T], bool]) -> bool:
+def _common_cmp(lhs: Dim[_T], rhs, op: Callable[[_T, _T], bool]) -> bool:
     # TODO add rhs type hint ^^^
     """
     Common method used for comparison of a Dim object and another object
@@ -695,8 +686,8 @@ def _common_cmp(lhs: Dim[T], rhs, op: Callable[[T, T], bool]) -> bool:
 
 # ---------------------------------------------------------------------------
 
-def _dim_mul_generic(lhs: Dim[T], rhs: Dim[T] | T,
-                     mult_op: Callable[[T, T], T]) -> Dim[T] | T:
+def _dim_mul_generic(lhs: Dim[_T], rhs: Dim[_T] | _T,
+                     mult_op: Callable[[_T, _T], _T]) -> Dim[_T] | _T:
     """
     Multiply two dimensioned values using multuiplication operator ``op``.
     This is the generic version used by Dim.__mul__, Dim.__matmul__,

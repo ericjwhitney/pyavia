@@ -1,39 +1,46 @@
+import importlib
 from unittest import TestCase
 
+# Define optional module path for development work.
+units_name = 'pyavia.units._dev'  # TODO Development
+units_module = importlib.import_module(units_name)
 
-# ----------------------------------------------------------------------------
+
+# ======================================================================
 
 # noinspection PyUnusedLocal
 class TestDim(TestCase):
     # Test for the `dim()` factory function.
 
     def test___init__(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
-        # No arguments:  Value = 1, no units.
+        # dim() -> 1
         x = dim()
-        self.assertEqual(x.value, 1)
-        self.assertIsInstance(x.value, int)
+        self.assertIsInstance(x, int)
+        self.assertEqual(x, 1)
 
-        # One positional argument: Dimensionless.
-        x = dim(3)
-        self.assertEqual(x.value, 3)
-        self.assertIsInstance(x.value, int)
-        self.assertEqual(x.units, '')
+        # dim(x) -> x
+        x = dim(3.2)
+        self.assertIsInstance(x, float)
+        self.assertEqual(x, 3.2)
 
-        # One positional argument: Units only.
+        # dim(str) -> Dim(1, str)
         x = dim('ft')
         self.assertEqual(x.value, 1)
         self.assertIsInstance(x.value, int)
         self.assertEqual(x.units, 'ft')
 
-        # Two positional arguments: Value and units given.
-        x, y = dim(3, 'ft'), dim(5 + 6j, 's')
-        self.assertEqual(x.value, 3)
+        # dim(int, str) -> Dim(int, str)
+        x = dim(3, 'ft')
         self.assertIsInstance(x.value, int)
+        self.assertEqual(x.value, 3)
         self.assertEqual(x.units, 'ft')
-        self.assertEqual(y.value, 5 + 6j)
-        self.assertIsInstance(y.value, complex)
+
+        # dim(complex, str) -> Dim(complex, str)
+        x = dim(5 + 6j, 's')
+        self.assertIsInstance(x.value, complex)
+        self.assertEqual(x.value, 5 + 6j)
 
         # Cannot use derived units including an offset temperature.
         with self.assertRaises(ValueError):
@@ -41,8 +48,10 @@ class TestDim(TestCase):
 
     def test___add__(self):
         # Also checks __radd__.
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
+        # TODO THIS SHOULD CANCEL DIMS UNLESS OPTION 'KEEP_RADIANS' AND
+        #  'KEEP_STERADIANS'.
         # __radd__ and unit cancellation check.
         x = 5 + dim(1, '')
         self.assertIsInstance(x, int)
@@ -66,7 +75,7 @@ class TestDim(TestCase):
 
     def test___sub__(self):
         # Also includes __rsub__ checks.
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # Subtraction of imcompatible units is not allowed.
         with self.assertRaises(ValueError):
@@ -101,7 +110,7 @@ class TestDim(TestCase):
         self.assertEqual(x.units, 'Δ°F')  # Δ result.
 
     def test___mul__(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # Check multiply by plain units gives Dim result.
         x = 7.5 * dim('km')
@@ -164,7 +173,7 @@ class TestDim(TestCase):
         self.assertEqual(x, 12)
 
     def test___truediv__(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # Check value type follows division rules.
         x = dim(4, 'm') / 2
@@ -178,7 +187,7 @@ class TestDim(TestCase):
         self.assertEqual(x.units, 'kg')
 
     def test___matmul__(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
         import numpy as np
 
         # test multiplication of Dim objects holding arrays.
@@ -189,17 +198,18 @@ class TestDim(TestCase):
         self.assertTrue((x.value == np.array([1, -3])).all())
         self.assertEqual(x.units, 'J')
 
-    def test_change_basis(self):
-        from pyavia.units import dim
-        import pyavia.units as pa_units
-
-        pa_units.STD_UNIT_SYSTEM = 'kg.m.s.K'  # Abbrev. to check defaults.
-        x = dim(1000, 'psi')
-        y = x.to_value_sys()  # Result should be in Pa.
-        self.assertAlmostEqual(y, 6894757.2932, places=3)
+    # TODO For review / still required?
+    # def test_change_basis(self):
+    #     dim = getattr(units_module, "dim")
+    #     import pyavia.core.units as pa_units
+    #
+    #     pa_units.STD_UNIT_SYSTEM = 'kg.m.s.K'  # Abbrev. to check defaults.
+    #     x = dim(1000, 'psi')
+    #     y = x.to_value_sys()  # Result should be in Pa.
+    #     self.assertAlmostEqual(y, 6894757.2932, places=3)
 
     def test_convert_operations(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # test conversion to lhs does nothing.
         x = dim(3, 'kg').convert('kg')
@@ -229,7 +239,7 @@ class TestDim(TestCase):
         self.assertEqual(x.value, 231)
 
     def test_convert_fundamental(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # test current.
         x = dim(1, 'A').convert('mA')
@@ -241,7 +251,7 @@ class TestDim(TestCase):
         self.assertAlmostEqual(x.value, 286.47889, places=4)
 
     def test_convert_derived(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # test acceleration.
         x = (9.80665 * dim('m.s⁻²')).convert('ft/s/s')
@@ -287,7 +297,7 @@ class TestDim(TestCase):
                                places=6)
 
     def test_convert_temperature(self):
-        from pyavia.units import dim
+        dim = getattr(units_module, "dim")
 
         # Temperatures °C, °F, require thorough checks.
         x = dim(32, '°F').convert('°C')
@@ -400,16 +410,15 @@ class TestDimClass(TestCase):
     # Tests for the `Dim` class.
 
     def test__init__(self):
-        from pyavia.units import Dim
         pass
 
     def test__add__(self):
         # Includes __radd__ checks.
 
-        from pyavia.units import Dim
+        dim = getattr(units_module, "dim")
 
         # Addition of like units, preserves quantity type.
-        x_p_y = Dim(1, 'ft') + Dim(12, 'in')
+        x_p_y = dim(1, 'ft') + dim(12, 'in')
         self.assertEqual(x_p_y.value, 2)
         self.assertIsInstance(x_p_y.value, int)
         self.assertEqual(x_p_y.units, 'ft')
