@@ -10,8 +10,8 @@ from typing import Any, TypeVar
 import numpy as np
 import numpy.typing as npt
 
+from pyavia.util import count_op
 from pyavia.util.print_styles import rad2str
-from pyavia.ops import count_op
 from pyavia.state import State, InvalidStateError
 
 # Written by Eric J. Whitney, January 2023.

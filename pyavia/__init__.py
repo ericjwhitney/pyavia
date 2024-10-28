@@ -1,43 +1,22 @@
 """
-**PyAvia** is a collection of modules useful for common tasks in
-aerospace engineering or engineering in general.  Some things to note:
+.. This module acts as the top-level API documentation.
 
-- In code snippets, it may be assumed that PyAvia has been imported as
-  follows:
+.. module: pyavia
 
-    >>> import pyavia as pa
 
-- Code examples are shown in the repository under ``examples/``.
+ERIC - REMOVE THE AUTOSUMMARY HERE AND JUST MAKE A LIST, THE SUBPACKAGES DO
+THE AUTOSUMMARY WORK.
+.. autosummary::
+    :toctree: generated/
 
-.. warning::
-    *CAVEAT COMPUTOR* - These modules are provided "as is", without
-    warranty of any kind.  They are intended to be read and/or used by
-    people trained in engineering and scientific methods who know how to
-    verify results and who can recognise incorrect values when they see
-    them... `which will happen frequently.`
+    aerodynamics
+    propulsion
 
-Version
--------
-The current version is **0.0.5**.  **PyAvia** is designed for Python >=
-3.10 and is platform agnostic.
 
-.. note:: At this stage PyAvia is extremely preliminary, alpha,
-   pre-release, etc.  Structural changes may be made to the code at any
-   time that will almost definitely break third party code.  Please
-   don't get cross.
-
-Subpackages
------------
-Using any of these subpackages requires an explicit import. For example,
-``import pyavias.aerodynamics``.
-
-::
-
- aerodynamics       --- Xxxxxxx
- dynamics           --- Xxxxxxx
 
 """
-from __future__ import annotations
+
+__version__ = "0.0.5"
 
 import sys
 
@@ -45,4 +24,4 @@ import sys
 
 # ======================================================================
 
-assert sys.version_info >= (3, 10)
+assert sys.version_info >= (3, 12)

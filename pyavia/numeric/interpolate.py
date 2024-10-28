@@ -5,7 +5,7 @@ from typing import Sequence, Union
 import numpy as np
 from scipy.interpolate import interp1d
 
-from pyavia.ops import find_bracket
+from pyavia.util import find_bracket
 from pyavia.numeric.lines import line_pt
 
 # Written by Eric J. Whitney, March 2021.

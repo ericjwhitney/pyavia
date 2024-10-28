@@ -1,7 +1,7 @@
 """
-=============================================
+=========================================
 Aerodynamics (:mod:`pyavia.aerodynamics`)
-=============================================
+=========================================
 
 .. currentmodule:: pyavia.aerodynamics
 
@@ -11,10 +11,8 @@ Airspeed Functions
 .. autosummary::
     :toctree: generated/
 
-    Veas2Vtas          -- Convert equivalent airspeed to true airspeed
-    Vtas2Veas          -- Convert true airspeed to equivalent airspeed
-
-
+    EAS2TAS
+    TAS2EAS
 
 
 Atmosphere
@@ -23,9 +21,9 @@ Atmosphere
 .. autosummary::
     :toctree: generated/
 
-    Atmosphere          -- Properties of Earth's standard atmosphere
-    geo_alt_to_pot      -- Geometric altitude to potential altitude
-    pot_alt_to_geo      -- Potential altitude to geometric altitude
+    Atmosphere
+    geo_alt_to_pot
+    pot_alt_to_geo
 
 
 XXXX MORE
@@ -43,7 +41,7 @@ Notes
 """
 
 # 1-D Components.
-from .airspeed import Veas2Vtas, Vtas2Veas
+from .airspeed import EAS2TAS, TAS2EAS
 from .atmosphere import (Atmosphere, geo_alt_to_pot, pot_alt_to_geo)
 
 # 2-D Components.

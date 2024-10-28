@@ -1,6 +1,8 @@
 """
 Adds useful, less common containers not available in the standard
 library.
+
+.. currentmodule:: pyavia.containers
 """
 
 from collections import deque, OrderedDict

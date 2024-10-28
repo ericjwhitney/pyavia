@@ -12,7 +12,7 @@ from scipy.integrate import simpson
 
 from pyavia.aerodynamics import Foil2DAero, Blend2DAero
 from pyavia.numeric.function_1d import PCHIP1D
-from pyavia.ops import find_bracket
+from pyavia.util import find_bracket
 from pyavia.numeric.math_ext import check_sclarray
 from pyavia.propulsion import Propeller, const_pitch_β
 from ._propeller import _SclArray
