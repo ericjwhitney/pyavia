@@ -1,6 +1,22 @@
 """
+=====================================
+Propulsion  (:mod:`pyavia.populsion`)
+=====================================
+
+.. currentmodule:: pyavia.propulsion
+
 Functions / objects relating to propulsion analysis such as reciprocating
 engines, propellers and gas turbines.
+
+.. autosummary::
+    :toctree: generated/
+
+    Propeller
+    CSPropeller
+    BEPropeller
+    BEMPropeller
+    BEMPropellerCS
+
 """
 
 from ._propeller import Propeller, const_pitch_β
