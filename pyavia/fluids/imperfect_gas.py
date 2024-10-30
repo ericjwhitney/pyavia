@@ -1,4 +1,4 @@
-# Last updated: 15 January 2021 by Eric J. Whitney
+# Written by Eric J. Whitney, December 2020.
 
 from __future__ import annotations
 

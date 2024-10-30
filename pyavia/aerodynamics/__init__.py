@@ -3,31 +3,27 @@
 Aerodynamics (:mod:`pyavia.aerodynamics`)
 =========================================
 
-.. currentmodule:: pyavia.aerodynamics
+.. module:: pyavia.aerodynamics
 
 Airspeed Functions
 ------------------
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: _gen_pyavia_aerodynamics/
 
-    EAS2TAS
-    TAS2EAS
+    EAS2TAS  -- Equivalent airspeed to true airspeed.
+    TAS2EAS  -- True airspeed to equivalent airspeed.
 
 
 Atmosphere
 ----------
 
 .. autosummary::
-    :toctree: generated/
+    :toctree: _gen_pyavia_aerodynamics/
 
-    Atmosphere
-    geo_alt_to_pot
-    pot_alt_to_geo
+    atmosphere      -- Atmosphere module.
 
-
-XXXX MORE
-
+XXX MORE
 
 Notes
 -----

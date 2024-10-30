@@ -172,7 +172,7 @@ def ballistic(V0: float, θ0: float, m: float, g: float, ρ: float = 0.0,
     Notes
     -----
     * To calculate a trajectory where the drag is a variable function in
-      flight, see ``ballistic_variable``.
+      flight, see :func:`ballistic_variable`.
     * Any units may be used provided they are consistent.
     """
 

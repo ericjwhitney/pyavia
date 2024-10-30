@@ -1,10 +1,17 @@
 """
+==================================================
+Atmosphere (:mod:`pyavia.aerodynamics.atmosphere`)
+==================================================
+
 Atmospheric property calculations including the ISA.
 
-Contains:
-    Atmosphere      Class giving fixed atmospheric properties.
-    geo_alt_to_pot  Function converting geometric altitude to geopotential.
-    pot_alt_to_geo  Function converting geopotential altitude to geometric.
+.. autosummary::
+    :toctree: generated/
+
+    Atmosphere      -- Class giving fixed atmospheric properties.
+    geo_alt_to_pot  -- Function converting geometric altitude to geopotential.
+    pot_alt_to_geo  -- Function converting geopotential altitude to geometric.
+
 
 Notes:
 
@@ -12,26 +19,24 @@ Notes:
     from -2 → +80 km
 
 - The ISA is defined in terms of geopotential altitude (H) which is
-    convenient when computing the pressure distribution through the depth of
-    the atmosphere.  This assumes a constant value of gravitational
-    acceleration everywhere.  In reality, gravitational acceleration falls
-    slightly as geometric (actual) altitude (h) increases.  H and h are
-    related by an equation; use geo_alt_to_pot() and pot_alt_to_geo() for
-    conversion.  Unless noted otherwise, all altitudes used in Atmosphere
-    are geopotential (H).
+  convenient when computing the pressure distribution through the
+  depth of the atmosphere.  This assumes a constant value of
+  gravitational acceleration everywhere.  In reality, gravitational
+  acceleration falls slightly as geometric (actual) altitude (h)
+  increases.  H and h are related by an equation; use geo_alt_to_pot()
+  and pot_alt_to_geo() for conversion.  Unless noted otherwise,
+  all altitudes used in Atmosphere are geopotential (H).
 
 - Humidity is not presently included.
 
 - Dynamic viscosity is computed via Sutherland's formula which is reasonably
-    accurate between 180°R - 3400°R (or 100K - 1889K, -173 - 1616°C,
-    ref NACA TN 1135).
+  accurate between 180°R - 3400°R (or 100K - 1889K, -173 - 1616°C,
+  ref NACA TN 1135).
 
 - Uppercase and lowercase are mixed to be consistent with source documents.
-    Uppercase H and associated values refer to geopotential altitudes,
-    lowercase refer to geometric (but these don't appear together anyway so
-    as to prevent errors).
-
-- Some non-ASCII characters are used.
+  Uppercase H and associated values refer to geopotential altitudes,
+  lowercase refer to geometric (but these don't appear together anyway so
+  as to prevent errors).
 """
 
 # Last updated: 8 January 2020 by Eric J. Whitney
@@ -74,9 +79,8 @@ class Atmosphere:
     Show density for an ISA standard altitude (note that these are
     formally geopotential altitudes):
 
-import _development.examples.NACA658_ref_prop    >>> atm = Atmosphere(
-H=dim(10000, 'ft'))
-    >>> print(f"ρ = { _development.examples.NACA658_ref_prop.ρ :.3f}")
+    >>> atm = Atmosphere(H=dim(10000, 'ft'))
+    >>> print(f"ρ = {ρ:.3f}")
     ρ = 0.905 kg/m³
 
     Show the temperature ratio for a pressure altitude with a
