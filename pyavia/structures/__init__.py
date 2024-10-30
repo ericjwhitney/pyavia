@@ -1,6 +1,20 @@
 """
+=====================================
+Structures (:mod:`pyavia.structures`)
+=====================================
+
+.. module:: pyavia.structures
+
 Functions relating to structures, stress analysis, fatigue and damage
 tolerance.
+
+.. autosummary::
+    :toctree: _gen_pyavia_structures/
+
+    kt_hole3d
+    sn_raithby
+    mohr2d
+
 """
 
 

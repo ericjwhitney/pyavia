@@ -1,3 +1,11 @@
+"""
+===========================
+State (:mod:`pyavia.state`)
+===========================
+
+XXXXX TODO
+"""
+
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Protocol

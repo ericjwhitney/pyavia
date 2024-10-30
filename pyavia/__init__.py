@@ -1,18 +1,5 @@
 """
-.. This module acts as the top-level API documentation.
-
-.. module: pyavia
-
-
-ERIC - REMOVE THE AUTOSUMMARY HERE AND JUST MAKE A LIST, THE SUBPACKAGES DO
-THE AUTOSUMMARY WORK.
-.. autosummary::
-    :toctree: generated/
-
-    aerodynamics
-    propulsion
-
-
+xxx GENERAL INTRO, Non-RST for general consumption
 
 """
 
