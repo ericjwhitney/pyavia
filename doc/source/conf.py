@@ -10,8 +10,13 @@ from pyavia import __version__
 
 # -- Path setup --------------------------------------------------------
 
-sys.path.insert(0, os.path.abspath('..'))  # Designed to be run from doc/ (?)
-sys.path.insert(0, os.path.abspath('../../'))  # Still required (?)
+# sys.path.insert(0, os.path.abspath('..'))  # Designed to be run from doc/ (?)
+# sys.path.insert(0, os.path.abspath('../../'))  # Still required (?)
+
+# sys.path.insert(0, os.path.abspath('.'))
+# sys.path.insert(0, os.path.abspath('../..'))  # Source rel. to conf.py.
+# sys.path.insert(0, os.path.abspath('../pyavia'))
+
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -28,7 +33,6 @@ release = version  # Full version, including alpha/beta/rc tags.
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.napoleon']
-
 templates_path = ['_templates']
 exclude_patterns = []
 
@@ -45,3 +49,8 @@ exclude_patterns = []
 # html_theme = 'classic'
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
+
+# -- Options for Python Domain -----------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-python-domain
+
+# add_module_names = False  # Use short names for modules. (???)

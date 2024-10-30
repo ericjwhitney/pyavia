@@ -10,11 +10,13 @@ PyAvia
    time that will almost definitely break third party code.  Please
    don't get cross.
 
+
+
 Overview
 ========
 
-**PyAvia** is a collection of modules useful for common tasks in
-aerospace engineering or engineering in general.
+**PyAvia** is a collection of modules useful for common tasks in aerospace
+engineering.
 
 .. warning::
     *CAVEAT COMPUTOR* - These modules are provided "as is", without
@@ -27,17 +29,11 @@ Installation
 ============
 
 **PyAvia** |version| is designed for Python >=3.12 and is platform agnostic.
-TODO xxx
 
 
-API Documentation
-=================
 
-..
-    Using any of these subpackages / submodules requires an explicit
-    import. For example, ``import pyavia.aerodynamics``
-
-.. automodule:: pyavia
+API / Reference Documentation
+=============================
 
 
 Examples
@@ -50,9 +46,24 @@ Examples
 
 - Code examples are shown in the repository under ``examples/``.
 
+
 Copyright
 =========
 
 Copyright (c) 2019-2024 Eric J. Whitney.  **PyAvia** is provided free
 of charge for use under the conditions of the MIT License (see
 ``LICENSE`` file).
+
+
+.. toctree::
+    :maxdepth: 1
+    :hidden:
+
+    API Reference <api_ref/index>
+
+..
+    Original index.rst included these:
+
+    * :ref:`genindex`
+    * :ref:`modindex`
+    * :ref:`search`
