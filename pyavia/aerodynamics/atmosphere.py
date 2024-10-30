@@ -16,7 +16,7 @@ Atmospheric property calculations including the ISA.
 Notes:
 
 - Uses ISO 2533-1975 International Standard Atmsosphere (ISA).  Altitude
-    from -2 → +80 km
+  from -2 → +80 km.
 
 - The ISA is defined in terms of geopotential altitude (H) which is
   convenient when computing the pressure distribution through the

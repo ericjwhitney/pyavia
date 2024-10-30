@@ -2,15 +2,7 @@
 PyAvia
 ######
 
-:Release: |version|
-:Date: |today|
-
-.. note:: At this stage PyAvia is extremely preliminary, alpha,
-   pre-release, etc.  Structural changes may be made to the code at any
-   time that will almost definitely break third party code.  Please
-   don't get cross.
-
-
+:Release: |version|  :Date: |today|
 
 Overview
 ========
@@ -25,16 +17,20 @@ engineering.
     verify results and who can recognise incorrect values when they see
     them... `which will happen frequently.`
 
+.. note:: At this stage PyAvia is extremely preliminary, alpha,
+   pre-release, etc.  Structural changes may be made to the code at any
+   time that will almost definitely break third party code.  Please
+   don't get cross.
+
 Installation
 ============
 
 **PyAvia** |version| is designed for Python >=3.12 and is platform agnostic.
 
-
-
 API / Reference Documentation
 =============================
 
+xxx TODO
 
 Examples
 ========
@@ -45,7 +41,6 @@ Examples
     >>> import pyavia as pa
 
 - Code examples are shown in the repository under ``examples/``.
-
 
 Copyright
 =========
