@@ -3,7 +3,7 @@
 Dynamics (:mod:`pyavia.dynamics`)
 =============================================
 
-.. module:: pyavia.dynamics
+.. currentmodule:: pyavia.dynamics
 
 Classes and functions relating to dynamics and motion in flight,
 control, landing and related topics.
@@ -12,7 +12,7 @@ Ballistics
 ----------
 
 .. autosummary::
-    :toctree: _gen_pyavia_dynamics/
+    :toctree:
 
     ballistic           -- Compute ballistic trajectory, fixed drag area
     ballistic_variable  -- Compute trajectory, variable drag
@@ -22,7 +22,7 @@ Landing
 -------
 
 .. autosummary::
-    :toctree: _gen_pyavia_dynamics/
+    :toctree:
 
     landing_energy      -- Compute aircraft landing dynamics and energy
     LandingImpact       -- Landing impact results object

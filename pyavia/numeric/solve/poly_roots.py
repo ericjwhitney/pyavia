@@ -29,23 +29,23 @@ def quadratic_roots(a: float, b: float, c: float, *,
     Returns
     -------
     roots : tuple[float | complex, ...]
-      A tuple containing the roots of the quadratic equation, with
-      length depending on the result:
+        A tuple containing the roots of the quadratic equation, with
+        length depending on the result:
 
-      - `len(roots) == 0`: No real roots if ``allow_complex=False``,
-        or no root for a line parallel to the x-axis (i.e. ``a=0``
-        and ``b=0``).
-      - `len(roots) == 1`: One real root.
-      - `len(roots) == 2`: Two real roots, or two complex roots with
+        - `len(roots) == 0`: No real roots if ``allow_complex=False``,
+          or no root for a line parallel to the x-axis (i.e. ``a=0``
+          and ``b=0``).
+        - `len(roots) == 1`: One real root.
+        - `len(roots) == 2`: Two real roots, or two complex roots with
         ``allow_complex=True``.
 
     References
     ----------
     .. [1] Press, W. H.; Flannery, B. P.; Teukolsky, S. A.; and
-       Vetterling, W. T. *Numerical Recipes: The Art of Scientific
-       Computing*, 3rd ed. Cambridge, England: Cambridge University
-       Press, pp. 227, 2007. Section 5.6: "Quadratic and Cubic
-       Equations".
+           Vetterling, W. T. *Numerical Recipes: The Art of Scientific
+           Computing*, 3rd ed. Cambridge, England: Cambridge University
+           Press, pp. 227, 2007. Section 5.6: "Quadratic and Cubic
+           Equations".
 
     Examples
     --------
@@ -108,6 +108,3 @@ def quadratic_roots(a: float, b: float, c: float, *,
 
         else:
             return ()  # Omit complex roots.
-
-# ----------------------------------------------------------------------
-

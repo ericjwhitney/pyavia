@@ -16,10 +16,13 @@ def mohr2d(σ_xx: float, σ_yy: float, τ_xy: float,
     ----------
     σ_xx : float
         Normal stress parallel to local x-x axis.
+
     σ_yy : float
         Normal stress parallel to local y-y axis.
+
     τ_xy : float
         Shear stress in local x-y direction.
+
     θ : float, default = None
         Rotation angle, if provided.  If `None`, returns stresses
         transformed to principal axes (see `Returns`).  **Note:** Radians
@@ -29,25 +32,28 @@ def mohr2d(σ_xx: float, σ_yy: float, τ_xy: float,
     -------
     σ_xx', σ_yy', σ_xy', θ : float
 
-        - If `θ` was provided: Stresses transformed by the clockwise rotation
-         `θ` (which is repeated in the output).
+        - If `θ` was provided: Stresses transformed by the clockwise
+          rotation `θ` (which is repeated in the output).
 
-        - If `θ` was `None`: First (larger) and second (smaller) principal
-          stresses, an (approximately) zero shear stress and the first
-          principal stress angle (:math:`\sigma_{11}`, :math:`\sigma_{22}`,
-          :math:`\gamma_{12} \approx 0`, :math:`\theta`).  The angle `θ`
-          is defined as the angle required to rotate `σ_xx` local `x-x` axis
-          to the axis of the first principal stress `1-1`.
+        - If `θ` was `None`: First (larger) and second (smaller)
+          principal stresses, an (approximately) zero shear stress and
+          the  first principal stress angle (:math:`\sigma_{11}`,
+          :math:`\sigma_{22}`, :math:`\gamma_{12} \approx 0`,
+          :math:`\theta`).  The angle `θ` is defined as the angle
+          required to rotate `σ_xx` local `x-x` axis to the axis of the
+          first principal stress `1-1`.
 
     Notes
     -----
+
     - Returned value of `θ` is in the range +/- π.
-    - This function can be also used to transform strains (:math:`ε_{xx}`,
-      :math:`ε_{yy}`, :math:`γ_{xy}`), however in this case the shear
-      strain must be halved before transformation.  The actual shear
-      strain can then be recovered by multiplying the result
-      by two afterwards.  This is due to the classical definition of
-      shear strain as twice the tensor shear strain.
+    - This function can be also used to transform strains
+      (:math:`ε_{xx}`, :math:`ε_{yy}`, :math:`γ_{xy}`), however in this
+      case the shear strain must be halved before transformation.  The
+      actual shear strain can then be recovered by multiplying the
+      result by two afterwards.  This is due to the classical definition
+      of shear strain as twice the tensor shear strain.
+
     """
     if θ is None:
         # Transform stresses to principle axes.
@@ -65,5 +71,3 @@ def mohr2d(σ_xx: float, σ_yy: float, τ_xy: float,
     σ_rot = T @ np.array([σ_xx, σ_yy, τ_xy])
 
     return σ_rot[0], σ_rot[1], σ_rot[2], θ
-
-# -----------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 Solvers (:mod:`pyavia.numeric.solve`)
 =====================================
 
-.. module:: pyavia.numeric.solve
+.. currentmodule:: pyavia.numeric.solve
 
 Functions for finding solutions to various types of equations. These are
 included when not already covered by NumPy / SciPy or when a different
@@ -13,7 +13,7 @@ Functions
 ---------
 
 .. autosummary::
-    :toctree: _gen_pyavia_numeric_solve/
+    :toctree:
 
     bisect_root
     solve_dqnm
@@ -26,7 +26,7 @@ Exceptions
 ----------
 
 .. autosummary::
-    :toctree: _gen_pyavia_numeric_solve/
+    :toctree:
 
     SolverError
 

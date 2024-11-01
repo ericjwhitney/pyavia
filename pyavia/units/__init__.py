@@ -1,4 +1,9 @@
 """
+Units (:mod:`pyavia.units`)
+===========================
+
+.. currentmodule:: pyavia.units
+
 Units-aware calculations, objects and associated functions.
 
 Examples

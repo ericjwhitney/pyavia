@@ -1,8 +1,9 @@
-######
+======
 PyAvia
-######
+======
 
-:Release: |version|  :Date: |today|
+:Version:   |version|
+:Date:      |today|
 
 Overview
 ========
@@ -30,7 +31,7 @@ Installation
 API / Reference Documentation
 =============================
 
-xxx TODO
+:ref:`API Reference <api_ref>`
 
 Examples
 ========
@@ -49,16 +50,15 @@ Copyright (c) 2019-2024 Eric J. Whitney.  **PyAvia** is provided free
 of charge for use under the conditions of the MIT License (see
 ``LICENSE`` file).
 
+Indices
+=======
+
+- :ref:`General Index <genindex>`
+- :ref:`Module Index <modindex>`
+
 
 .. toctree::
     :maxdepth: 1
     :hidden:
 
     API Reference <api_ref/index>
-
-..
-    Original index.rst included these:
-
-    * :ref:`genindex`
-    * :ref:`modindex`
-    * :ref:`search`

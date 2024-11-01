@@ -1,3 +1,10 @@
+"""
+1-D Operations (:mod:`pyavia.numeric.operations_1d`)
+====================================================
+
+.. currentmodule:: pyavia.numeric.operations_1d
+"""
+
 from __future__ import annotations
 from typing import TypeVar
 

@@ -1,3 +1,12 @@
+"""
+Polynomials (:mod:`pyavia.numeric.polynomial`)
+==============================================
+
+.. currentmodule:: pyavia.numeric.polynomial
+
+Useful polynomial operations not otherwise covered by `NumPy` / `SciPy`.
+"""
+
 import numpy as np
 import numpy.typing as npt
 
@@ -50,7 +59,7 @@ def divided_difference(x: npt.ArrayLike, y: npt.ArrayLike) -> float:
 
     References
     ----------
-    .. [1] https://en.wikipedia.org/wiki/Divided_differences
+    .. [1] Divided Differences: https://en.wikipedia.org/wiki/Divided_differences
 
     Examples
     --------
@@ -89,9 +98,8 @@ def newton_poly_coeff(x: npt.ArrayLike,
                       y: npt.ArrayLike) -> np.ndarray[float]:
     """
     Generate an array of increasing divided differences for multiple
-    points `(x, y)` given by arrays `[x0, x1, ..., xn]` and `[y0, y1,
-    ... yn].` These are the coefficients of interpolating polynomial in
-    Newton form.
+    points `(x, y)`. These are the coefficients of the interpolating
+    polynomial in Newton form.
 
     The array contains the divided differences arranged as follows::
 
@@ -126,7 +134,8 @@ def newton_poly_coeff(x: npt.ArrayLike,
 
     References
     ----------
-    .. [1] https://en.wikipedia.org/wiki/Divided_differences#Matrix_form
+    .. [1] Divided differences (matrix form):
+           https://en.wikipedia.org/wiki/Divided_differences#Matrix_form
     """
     x = np.asarray(x, dtype=float)
     a = np.array(y, dtype=float, copy=True)
@@ -152,7 +161,7 @@ def newton_poly(x_pts: npt.ArrayLike, y_pts: npt.ArrayLike,
     The Newton polynomial of degree `n` is given by::
 
         :math:`P_{n-1}(x) = [y_0] + [y_0, y_1](x - x_0) + ... +
-        [y_0, ..., y_n](x - x_0)(x - x_1)...(x - x_{n-1}).
+        [y_0, ..., y_n](x - x_0)(x - x_1)...(x - x_{n-1})`
 
     Parameters
     ----------

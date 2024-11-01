@@ -4,16 +4,19 @@
 API / Reference Documentation
 =============================
 
-Using any of these subpackages / submodules requires an explicit import.
-For example, ``import pyavia.aerodynamics``
-
 .. module:: pyavia
 
-Subpackages
-===========
+Throughout this documentation, the term `modules` is used to refer to both
+subpackages and submodules for the purposes of simplicity.  Use of any module
+requires and explicit import, e.g. ``import pyavia.aerodynamics``
+
+.. note:: There are presently no objects in the base `pyavia` namespace.
+
+Modules
+-------
 
 .. autosummary::
-    :toctree: _gen_pyavia/
+    :toctree: _generated/
 
     aerodynamics
     dynamics
@@ -21,15 +24,8 @@ Subpackages
     numeric
     propulsion
     structures
-
-
-Submodules
-==========
-
-xxx simplifying text about main pyavia namespace
-
-.. autosummary::
-    :toctree:  _gen_pyavia/
+    units
+    util
 
     containers
     fortran

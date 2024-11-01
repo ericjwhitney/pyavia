@@ -3,8 +3,20 @@
 Containers (:mod:`pyavia.containers`)
 ==================================================
 
+.. currentmodule:: pyavia.containers
+
 Adds useful, less common containers not available in the standard
 library.
+
+
+.. autosummary::
+    :toctree:
+
+    AttrDict
+    MultiBiDict
+    ValueRange
+    WtDirGraph
+    WriteOnceDict
 """
 
 from collections import deque, OrderedDict

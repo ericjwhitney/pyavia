@@ -1,38 +1,51 @@
+"""
+Lines (:mod:`pyavia.numeric.lines`)
+===================================
+
+.. currentmodule:: pyavia.numeric.lines
+
+"""
 
 from __future__ import annotations
 import numpy as np
 
-# Written by Eric J. Whitney,  March 2021.
+
+# Written by Eric J. Whitney, March 2021.
 
 # ======================================================================
 
 def line_pt(a, b, p, scale=None):
-    """Find the coordinates of a point `p` anywhere along the line `a` → `b`
-    where at least one component of `p` is supplied (remaining can be None).
-    Each axis may be optionally scaled.  There is no limitation that `p` is
-    in the interval [`a`, `b`], so this function can also be used for
-    extrapolation as required.
+    """
+    Find the coordinates of a point `p` anywhere along the line `a` →
+    `b` where at least one component of `p` is supplied (remaining can
+    be None). Each axis may be optionally scaled.  There is no
+    limitation that `p` is in the interval [`a`, `b`], so this function
+    can also be used for extrapolation as required.
 
     Parameters
     ----------
     a, b : list_like
         Two distinct points on a line i.e. :math:`[x_1, ..., x_n]`
-    p : list_like
-        Required point on the line with at least a single known component,
-        i.e. :math:`(..., None, p_i, None, ...)`.  If more than one value is
-        supplied, the first is used.
-    scale : list
-        If supplied, a list corresponding to each axis [opt_1, ..., opt_n],
-        where each axis can use the following options:
 
-            - None: No scaling performed.
-            - 'log': This axis is linear on a log scale.  In practice
-                log(x) is performed on this axis prior to doing the
-                interpolation / extrapolation, then exp(x) is done prior
-                to returning.
+    p : list_like
+        Required point on the line with at least a single known
+        component, i.e. :math:`(..., None, p_i, None, ...)`.  If more
+        than one value is supplied, the first is used.
+
+    scale : list
+
+        If supplied, a list corresponding to each axis [opt_1, ...,
+        opt_n], where each axis can use the following options:
+
+        - None: No scaling performed.
+        - 'log': This axis is linear on a log scale.  In practice
+          log(x) is performed on this axis prior to doing the
+          interpolation / extrapolation, then exp(x) is done prior
+          to returning.
+
     Returns
     -------
-    list :
+    list
         Required point on line :math:`[q_1, ..., q_n]` where :math:`q_i = p_i`
         from above.
     """

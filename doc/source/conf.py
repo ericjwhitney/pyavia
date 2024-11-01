@@ -32,16 +32,22 @@ release = version  # Full version, including alpha/beta/rc tags.
 
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
-              'sphinx.ext.napoleon']
+              'sphinx.ext.napoleon',
+              'sphinx.ext.todo',]
 templates_path = ['_templates']
 exclude_patterns = []
 
-# TODO temp disable
-# autodoc_default_options = {
-#     'members': True,  # No more Sphinx Bug?
-#     'special-members': True,  # "" "" Ditto?
-#     'exclude-members': '__abstractmethods__, __dict__, __hash__, '
-#                        '__module__, __slots__, __weakref__'}
+
+# TODO update this - remove inherited members from classes
+autodoc_default_options = {
+    'members': True,  # No more Sphinx Bug?
+    'special-members': True,  # "" "" Ditto?
+    'exclude-members': '__abstractmethods__, __dict__, __hash__, '
+                       '__module__, __slots__, __weakref__'}
+
+
+
+todo_include_todos = True
 
 # -- Options for HTML output -------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -49,8 +55,13 @@ exclude_patterns = []
 # html_theme = 'classic'
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
+html_theme_options = {
+    # [...]
+    "primary_sidebar_end": ["indices.html", "sidebar-ethical-ads.html"]
+    # [...]
+}
 
 # -- Options for Python Domain -----------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-python-domain
 
-# add_module_names = False  # Use short names for modules. (???)
+

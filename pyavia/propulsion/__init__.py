@@ -3,13 +3,13 @@
 Propulsion  (:mod:`pyavia.populsion`)
 =====================================
 
-.. module:: pyavia.propulsion
+.. currentmodule:: pyavia.propulsion
 
 Functions / objects relating to propulsion analysis such as reciprocating
 engines, propellers and gas turbines.
 
 .. autosummary::
-    :toctree: _gen_pyavia_propulsion/
+    :toctree:
 
     Propeller
     CSPropeller

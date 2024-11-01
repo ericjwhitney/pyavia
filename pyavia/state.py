@@ -3,6 +3,8 @@
 State (:mod:`pyavia.state`)
 ===========================
 
+.. currentmodule:: pyavia.state
+
 XXXXX TODO
 """
 

@@ -1,6 +1,3 @@
-"""
-This module contains functions relating to propellers.
-"""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -25,22 +22,22 @@ r2d = np.rad2deg
 
 class Propeller(State, ABC):
     """
-    Abstract type defining the characteristics shared by all basic types
-    of propeller.  `Propeller` objects are *stateful*, meaning that
-    the value of any performance properties is dependent on the current
-    object state.  See `pyavia.states` for more information.
+    Abstract type defining the characteristics shared by all basic
+    types of propeller.  `Propeller` objects are *stateful*, meaning
+    that the value of any performance properties is dependent on the
+    current object state.  See `pyavia.states` for more information.
 
     Parameters
     ----------
     B : int, ∞ or None
         Number of blades:
 
-            - If the model *includes* discrete blade effects use integer
-              `B` >= 1.
-            - If the model assumes an infinite number of blades use
-              ``B=np.inf``.
-            - If the model *ignores* blade effects use ``B=None`` (the
-              default).
+        - If the model *includes* discrete blade effects use integer
+          `B` >= 1.
+        - If the model assumes an infinite number of blades use
+          ``B=np.inf``.
+        - If the model *ignores* blade effects use ``B=None`` (the
+          default).
 
     β0_range : (float, float), optional
         Range of `β0` values `(min, max)` (in *radians*) for a variable
@@ -69,9 +66,10 @@ class Propeller(State, ABC):
         is added to this along the blade to give total incidence angle
         :math:`β(r) = β_0(r) + β_r(r)`.  If `β0` is not provided then it
         is set to the following values:
-            - If `β0_range` was not provided, `β0` = 0.0.
-            - If `β0_range` was provided, `β0` is set to the middle of
-              the range i.e. ``β0 = 0.5*(β0_range[0] + β0_range[1])``.
+
+        - If `β0_range` was not provided, `β0` = 0.0.
+        - If `β0_range` was provided, `β0` is set to the middle of
+          the range i.e. ``β0 = 0.5*(β0_range[0] + β0_range[1])``.
 
     ρ0 : float
         Freestream air density (:math:`ρ_0 > 0`) (see `Notes`).
@@ -94,18 +92,18 @@ class Propeller(State, ABC):
     - The following subscripts are used to help standardise variable
       names that represent stages of flow through a propeller:
 
-        - 0 - Freestream (or far upstream) properties.
-        - 2 - Immediately ahead of the disc.
-        - p - At the disc, relative to propeller (moving frame).
-        - 3 - Immediately behind the disc.
-        - ∞ - Distant wake (or far downstream) of the propeller.
+      * 0 - Freestream (or far upstream) properties.
+      * 2 - Immediately ahead of the disc.
+      * p - At the disc, relative to propeller (moving frame).
+      * 3 - Immediately behind the disc.
+      * ∞ - Distant wake (or far downstream) of the propeller.
 
     - If velocities / forces / etc are broken into components, the
       following suffixes are generally used:
 
-        - `a` - Axial.
-        - `t` - Tangential (`θ` direction).
-        - `r` - Radial.
+      * `a` - Axial.
+      * `t` - Tangential (`θ` direction).
+      * `r` - Radial.
 
     - Any units can be used provided they are consistent.  In
       particular this normally means that angles are taken to be
@@ -196,6 +194,7 @@ class Propeller(State, ABC):
         - See the Total Activity Factor property `TAF` for the activity
           factor of the entire propeller.
         - Returned value depends on `B`:
+
             * For `B` = 0, this returns 0.
             * For non-finite number of blades i.e. `B` = `NaN` or
               `B` = ∞, this returns `NaN`.
@@ -411,8 +410,9 @@ class Propeller(State, ABC):
     def T(self) -> float:
         """
         Thrust:
-            - Positive (+) when the propeller is producing thrust.
-            - Negative (-) during propeller braking / windmill.
+
+        - Positive (+) when the propeller is producing thrust.
+        - Negative (-) during propeller braking / windmill.
         """
         raise NotImplementedError
 
@@ -501,13 +501,14 @@ class Propeller(State, ABC):
         Notes
         -----
         - Returned value depends on `B`:
-            * For `B` = 0, this returns 0.
-            * For non-finite number of blades i.e. `B` = `NaN` or
-              `B` = ∞, this returns `NaN`.
-            * For a finite number of blades `B` > 0, the base method
-              does not provide an integration method and raises
-              `NotImplementedError`. Derived classes should supply the
-              return value for this case.
+
+          * For `B` = 0, this returns 0.
+          * For non-finite number of blades i.e. `B` = `NaN` or
+            `B` = ∞, this returns `NaN`.
+          * For a finite number of blades `B` > 0, the base method
+            does not provide an integration method and raises
+            `NotImplementedError`. Derived classes should supply the
+            return value for this case.
         """
         if not np.isfinite(self._B):
             return np.nan
@@ -640,7 +641,7 @@ def const_pitch_β(β_x75: float, x: npt.ArrayLike) -> npt.NDArray[float]:
 
     Returns
     -------
-    ndarray, shape (n,)
+    numpy.ndarray, shape (n,)
         Total pitch angle along the blade corresponding to `x`.
     """
     return np.arctan(np.tan(β_x75) * 0.75 / x)

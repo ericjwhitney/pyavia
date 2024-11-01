@@ -9,7 +9,7 @@ from typing import Any
 # ======================================================================
 
 
-def compare_functions(
+def compare_funcs(
         funcs: Iterable[Callable],
         args: tuple | Callable[[], tuple] = None,
         kwargs: dict[str, Any] | Callable[[], dict[str, Any]] = None,
@@ -41,7 +41,7 @@ def compare_functions(
         of the function.
 
     times : list[float]
-        The total execution times of `each function..
+        The total execution times of each function.
 
     Notes
     -----

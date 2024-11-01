@@ -1,5 +1,19 @@
 """
+Filters (:mod:`pyavia.numeric.filter`)
+======================================
+
+.. currentmodule:: pyavia.numeric.filter
+
 Data filtering algorithms.
+
+.. autosummary::
+    :toctree:
+
+    J211_2pole
+    J211_4pole
+    MovingAverage
+    pinv_simple
+    savgol_variable
 """
 
 # Last updated: 17 March 2023 by Eric J. Whitney.
@@ -252,12 +266,13 @@ def pinv_simple(A: ArrayLike, side: str = 'left') -> np.ndarray:
 def savgol_variable(x: ArrayLike, y: ArrayLike, window: int,
                     order: int, passes: int = 1) -> np.ndarray:
     """
-    Applies a Savitzky–Golay digital filter to the given datapoints
-    (`x`, `y`). This type of filter is typically used to smooth
-    general datapoints without distorting the signal phase / behaviour [1]_.
+    A Savitzky–Golay digital filter for *unequally spaced* datapoints.
+    This type of filter is typically used to smooth general datapoints
+    without distorting the signal phase / behaviour [1]_.
 
-    This implementation is more general than `scipy.signal.savgol_filter`
-    as it allows variable step sizes in `x` [2]_ [3]_.
+    This implementation is more general than
+    `scipy.signal.savgol_filter` as it allows variable step sizes in
+    `x` [2]_ [3]_.
 
     Parameters
     ----------
@@ -266,29 +281,31 @@ def savgol_variable(x: ArrayLike, y: ArrayLike, window: int,
     y : shape(n), array_like
         Sequence of floats giving `y` values.
     window : int
-        Window / filter length as number of datapoints. Requires an odd
-        number with ``window < len(x)``.
+        Odd number to use as window / filter length, with ``window <
+        len(x)``.
     order : int
-        Order of local interpolating polynomial used, with ``order < window``.
+        Order of local interpolating polynomial, with ``order <
+        window``.
     passes : int, default = 1
-        Number of times to pass the filter over the data.  If passes < 1
-        the input `y` values are returned unchanged.
+        Number of times to pass the filter over the data.  If
+        ``passes < 1`` the input `y` values are returned unchanged.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         Smoothed `y`-values.
 
     Notes
     -----
-    .. [1] For more detail see:
-       https://en.wikipedia.org/wiki/Savitzky-Golay_filter
+    .. [1] Savitzky-Golay filter:
+           https://en.wikipedia.org/wiki/Savitzky-Golay_filter
     .. [2] Endpoints of data set are interpolated in the same manner as
-       `scipy.signal.savgol_filter`.
+           `scipy.signal.savgol_filter`.
     .. [3] Adapted from code shown here: https://dsp.stackexchange.com/a/64313
     """
     x, y = np.atleast_1d(x), np.atleast_1d(y)
 
+    # Multiple passes - apply recursively.
     if passes > 1:
         y_filt = np.array(y, copy=True)
         for _ in range(passes):

@@ -1,4 +1,9 @@
 """
+Math Extensions (:mod:`pyavia.numeric.math_ext`)
+================================================
+
+.. currentmodule:: pyavia.numeric.math_ext
+
 Useful mathematical functions, particularly if these are not available in
 NumPy.
 """

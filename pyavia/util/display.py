@@ -11,7 +11,7 @@ import uuid
 # ======================================================================
 
 
-# TODO TO bE DELETED
+# TODO TO BE DELETED ???
 class Indenter:
     """
     Indenter is used to print information from multi-level nested
@@ -22,6 +22,7 @@ class Indenter:
     Examples
     --------
     First define an 'inner' working function:
+
     >>> def inner_func(display: int = 0):
     ...     indent = Indenter(display)  # Output for this level.
     ...     # ... does some other things ...
@@ -29,6 +30,7 @@ class Indenter:
 
     Finally define a top-level function definition that calls the
     'inner' function:
+
     >>> def top_level(display: int | bool = False):
     ...     indent = Indenter(display)  # Output for this level.
     ...     # Does some things.
@@ -37,14 +39,17 @@ class Indenter:
 
     Running `top_level` with default arguments (equivalent to
     ``display=False`` or ``display=0``) produces no output:
+
     >>> top_level()
 
     Running `top_level` with ``display=True`` (equivalent to
     ``display=1``):
+
     >>> top_level(display=True)
     In top_level()...
 
     Running `top_level` with ``display=2`` produces indented output:
+
     >>> top_level(display=2) # doctest: +NORMALIZE_WHITESPACE
     In top_level()...
         In inner_func()...
@@ -99,7 +104,6 @@ class Indenter:
         return self._level - 1
 
 
-
 # ======================================================================
 # Alternative approach to Indenter.
 # TODO Deprecated
@@ -116,12 +120,13 @@ def disp_enter(disp: int | bool = None):
     Parameters
     ----------
     disp : int or bool, optional
+
         - `None` (default): The current nested function level is
           automatically updated.
-        - `int`: Sets the maximum function depth to print.  Values >= 1 mean
-          information will be printed.  For example, if ``disp=3`` then
-          ``disp_print(...)`` will be active for this function and the next
-          two nested levels (where applicable).
+        - `int`: Sets the maximum function depth to print.  Values >= 1
+          mean information will be printed.  For example, if ``disp=3``
+          then ``disp_print(...)`` will be active for this function and
+          the next two nested levels (where applicable).
         - `bool`: Converted to `int`, `True` = 1 and `False` = 0.
     """
     global _DISP_CURRENT_LEVEL, _DISP_MAX_LEVEL
@@ -161,10 +166,10 @@ def disp_exit():
 def disp_print(s: str, *args, **kwargs):
     """
     ``disp_print(...)`` is used to print information from multi-level
-    nested functions and works in conjunction with ``disp_enter(...)`` and
-    ``disp_exit()``. Depending on the current level / function depth the
-    output message is either indented or supressed.  `*args` and `**kwargs`
-    are identical to the ``print(...)`` statement.
+    nested functions and works in conjunction with ``disp_enter(...)``
+    and ``disp_exit()``. Depending on the current level / function depth
+    the output message is either indented or supressed.  `*args` and
+    `**kwargs` are identical to the ``print(...)`` statement.
 
     Examples
     --------
@@ -176,9 +181,9 @@ def disp_print(s: str, *args, **kwargs):
     ...     disp_print("In inner_func()...")
     ...     disp_exit()  # Upon leaving this scope.
 
-    Finally define a top-level function definition that calls the 'inner'
-    function.  The default of `None` is used to enable automatic nesting,
-    otherwise a display level can be assigned:
+    Finally define a top-level function definition that calls the
+    'inner' function.  The default of `None` is used to enable automatic
+    nesting, otherwise a display level can be assigned:
 
     >>> def top_level(disp: int | bool = None):
     ...     disp_enter(disp)  # Setup output at this level.
@@ -197,7 +202,8 @@ def disp_print(s: str, *args, **kwargs):
     >>> top_level(disp=True)
     In top_level()...
 
-    Running the top level function with ``disp=2`` produces indented output:
+    Running the top level function with ``disp=2`` produces indented
+    output:
 
     >>> top_level(disp=2) # doctest: +NORMALIZE_WHITESPACE
     In top_level()...
@@ -213,11 +219,11 @@ def disp_print(s: str, *args, **kwargs):
 def temp_filename(prefix: str = '', suffix: str = '',
                   rand_length: int = None):
     """
-    Generates a (nearly unique) temporary file name with given `prefix` and
-    `suffix` surrounding a random hex UUID (using library function
-    ``uuid.uuid4()``.  The UUID is nominally 32 hex values as chars (i.e.
-    128 bit), and this is truncated to `rand_length` if this specified.
-    This is useful for interfacing with older DOS and FORTRAN style codes
-    which may have specific rules about filename length.
+    Generates a (nearly unique) temporary file name with given `prefix`
+    and `suffix` surrounding a random hex UUID (using library function
+    ``uuid.uuid4()``.  The UUID is nominally 32 hex values as chars
+    (i.e. 128 bit), and this is truncated to `rand_length` if this
+    specified. This is useful for interfacing with older DOS and FORTRAN
+    style codes which may have specific rules about filename length.
     """
     return prefix + uuid.uuid4().hex[:rand_length] + suffix

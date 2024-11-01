@@ -51,15 +51,16 @@ def step_bracket_min(func: Callable[..., float], x1: float,
     SolverError
         Failure to converge raises a `SolverError` exception including
         the following attributes:
-            - `x1`, `x2`: Most recent bracket values used.
-            - `y1`, `y2`: Function values corresponding to `x1`, `x2`.
-            - `flag` and `detail`:
-                - 1: Reached max_steps.
-                - 2: Reached x_limit.
-            - 'xm': Midpoint between `x1` and `x2`.
-            - 'ym': Function value corresponding to `xm`.
-            - 'steps': Number of steps taken.
-            - 'fevals': Number of function evaluations.
+
+        - `x1`, `x2`: Most recent bracket values used.
+        - `y1`, `y2`: Function values corresponding to `x1`, `x2`.
+        - `flag` and `detail`:
+            - 1: Reached max_steps.
+            - 2: Reached x_limit.
+        - 'xm': Midpoint between `x1` and `x2`.
+        - 'ym': Function value corresponding to `xm`.
+        - 'steps': Number of steps taken.
+        - 'fevals': Number of function evaluations.
     """
     if x1 == x2:
         raise ValueError("x1, x2 must have different values.")
@@ -157,13 +158,14 @@ def step_bracket_root(func: Callable[..., float], x1: float,
     SolverError
         Failure to converge raises a `SolverError` exception including
         the following attributes:
-            - `x1`, `x2`: Most recent bracket values used.
-            - `y1`, `y2`: Function values corresponding to `x1`, `x2`.
-            - `flag` and `detail`:
-                - 1: Reached max_steps.
-                - 2: Reached x_limit.
-            - 'steps': Number of steps taken.
-            - 'fevals': Number of function evaluations.
+
+        - `x1`, `x2`: Most recent bracket values used.
+        - `y1`, `y2`: Function values corresponding to `x1`, `x2`.
+        - `flag` and `detail`:
+            - 1: Reached max_steps.
+            - 2: Reached x_limit.
+        - 'steps': Number of steps taken.
+        - 'fevals': Number of function evaluations.
     """
     if x1 == x2:
         raise ValueError("x1, x2 must have different values.")
@@ -232,7 +234,7 @@ def bracket_root(f: Callable[..., float], x1: float, x2: float, *,
     x1, x2 : float
         Starting points for bracket, with `x1` < `x2`.
     f_args : optional
-        Extra arguments passed to be passed to `f(`.
+        Extra arguments passed to be passed to `f()`.
     x_limits : tuple[float, float], default = (-∞, +∞)
         Stops if the next step will exceed this value.
     grow_factor : float, default = 0.5
@@ -259,13 +261,13 @@ def bracket_root(f: Callable[..., float], x1: float, x2: float, *,
     SolverError
         Failure to converge raises a `SolverError` exception including
         the following attributes:
-            - `x1`, `x2`: Most recent bracket values used.
-            - `f1`, `f2`: Function values corresponding to `x1`, `x2`.
-            - `flag` and `detail`:
-                - 1: Reached max_steps.
-                - 2: Reached x_limit.
-            - 'steps': Number of steps taken.
-            - 'fevals': Number of function evaluations.
+        - `x1`, `x2`: Most recent bracket values used.
+        - `f1`, `f2`: Function values corresponding to `x1`, `x2`.
+        - `flag` and `detail`:
+            - 1: Reached max_steps.
+            - 2: Reached x_limit.
+        - 'steps': Number of steps taken.
+        - 'fevals': Number of function evaluations.
 
     Notes
     -----

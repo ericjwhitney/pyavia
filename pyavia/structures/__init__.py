@@ -3,13 +3,13 @@
 Structures (:mod:`pyavia.structures`)
 =====================================
 
-.. module:: pyavia.structures
+.. currentmodule:: pyavia.structures
 
 Functions relating to structures, stress analysis, fatigue and damage
 tolerance.
 
 .. autosummary::
-    :toctree: _gen_pyavia_structures/
+    :toctree:
 
     kt_hole3d
     sn_raithby

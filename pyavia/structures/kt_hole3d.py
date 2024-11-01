@@ -34,26 +34,35 @@ def kt_hole3d(rt: float, bt: float, zt: float, rw: float,
     ----------
     rt : float
         Hole radius to thickness ratio, :math:`0.25 \leq r/t \leq 2.5`.
+
     bt : float
-        Straight shank length to plate thickness ratio, :math:`0 \leq
-         b/t \leq 1`.  If ``bt == 1`` the hole is straight shank only.
+        Straight shank length to plate thickness ratio,
+        :math:`0 \leq b/t \leq 1`.  If ``bt == 1`` the hole is straight
+        shank only.
+
     zt : float
         Location where stress concentration factor is required as a
         ratio of plate thickness, :math:`-0.5 \leq z/t \leq 0.5`.
+
         .. note: `z` is measured from the mid-plane of the plate.
+
     rw : float
         Hole radius to plate half-width, :math:`r/w < 0.25`.
+
     lcase : str
         Loading case from one of the following options:
 
-            - Straight shank:
-                - 'tension': Remote tension.
-                - 'bending': Remote bending.
-                - 'pin': Pin (or rivet) loading.
-                - 'wedge': Wedge loading.
-            - Countersunk hole:
-                - 'tension': Remote tension.
-                - 'bending': Remote bending.
+        - Straight shank:
+
+          * 'tension': Remote tension.
+          * 'bending': Remote bending.
+          * 'pin': Pin (or rivet) loading.
+          * 'wedge': Wedge loading.
+
+        - Countersunk hole:
+
+          * 'tension': Remote tension.
+          * 'bending': Remote bending.
 
     Returns
     -------
@@ -61,19 +70,19 @@ def kt_hole3d(rt: float, bt: float, zt: float, rw: float,
         Three-dimensional stress concentration factor (or :math:`K_t`).
         Depending on load case:
 
-            - Remote tension: :math:`K_t=\sigma_{max}/\sigma_t` where
-              :math:`\sigma_t` is the remote applied stress.
-            - Remote bending: :math:`K_b=\sigma_{max}/[6M/(t^2)]` where
-              `M` = remote applied moment per unit width.
-            - Pin (or rivet) load: :math:`K_p=\sigma_{max}/[P/(2rt)]`
-              where `P` = pin load.
-            - Wedge load: :math:`K_w=\sigma_{max}/[P/(2rt)]` where `P`
-              = wedge load
+        - Remote tension: :math:`K_t=\sigma_{max} / \sigma_t` where
+          :math:`\sigma_t` is the remote applied stress.
+        - Remote bending: :math:`K_b=\sigma_{max} / [6M/(t^2)]` where
+          `M` = remote applied moment per unit width.
+        - Pin (or rivet) load: :math:`K_p=\sigma_{max} / [P / (2rt)]`
+          where `P` = pin load.
+        - Wedge load: :math:`K_w=\sigma_{max} / [P / (2rt)]` where `P`
+          = wedge load
 
-            .. note:: `K` / SCF for simulated rivet loading is obtained
-               by adding one-half of the SCF for remote tension S =
-               p/(2wt) and one-half of the SCF for wedge loading (`2w`
-               is total width of plate).
+        .. note:: `K` / SCF for simulated rivet loading is obtained
+           by adding one-half of the SCF for remote tension S =
+           p/(2wt) and one-half of the SCF for wedge loading (`2w`
+           is total width of plate).
     """
     if not (0.0 <= bt <= 1.0):
         raise ValueError(f"b/t = {bt:.3f} out of range (0..1).")
@@ -132,14 +141,16 @@ def _kt_hole_straight(rt, zt, lcase):
     """
     Three-dimensional stress concentration equation for straight shank
     rivet hole subjected to:
-        - Remote tension.
-        - Remote bending.
-        - Pin loading in hole (r/w < 0.25).
-        - Wedge loading in hole.
+
+    - Remote tension.
+    - Remote bending.
+    - Pin loading in hole (r/w < 0.25).
+    - Wedge loading in hole.
 
     Range of parameters:
-        - -0.5 < z/t < 0.5
-        - 0.25 < r/t < 2.5
+
+    - -0.5 < z/t < 0.5
+    - 0.25 < r/t < 2.5
     """
     idxs = {'tension': 0, 'wedge': 1, 'bending': 2}
     l_idx = idxs[lcase]
@@ -210,8 +221,9 @@ def _kt_hole_csunk(rt, k, zt, lcase):
     """
     Three-dimensional stress concentration factor for countersunk rivet
     hole subjected to:
-        - Remote tension.
-        - Remote bending.
+
+    - Remote tension.
+    - Remote bending.
 
     Solution is for the countersink angle of 100 degrees and a selected
     value of k = 0, 1, 2 or 3 corresponding to b/t = 0, 0.25, 0.50 or

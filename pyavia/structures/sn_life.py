@@ -4,16 +4,18 @@ from pyavia.units import Dim
 from pyavia.containers import ValueRange
 
 
-# =============================================================================
+# ======================================================================
 
 def sn_raithby(s_range: ValueRange):
     r"""
-    S-N data for complete wings and tailplanes by Raithby (RAeS), using the
-    best fit equations of Sewell and Douglas as given in Appendix I of
-    [1]_; these are straight lines on a log-log plot.
+    S-N data for complete wings and tailplanes by Raithby (RAeS).
 
-    .. note:: The equation in Hangartner Appendix I has a typo, the **B**
-              term should be subtracted.
+    This function uses the best fit equations of Sewell and Douglas as
+    given in Appendix I of [1]_; these are straight lines on a log-log
+    plot.
+
+    .. note:: The equation in [1]_ Appendix I has a typo, the `B` term
+       should be subtracted.
 
     Parameters
     ----------
@@ -38,8 +40,8 @@ def sn_raithby(s_range: ValueRange):
     Notes
     -----
     .. [1] R. Hangartner, 'Correlation of Fatigue Data for Aluminium
-              Aircraft Wing and Tail Structures', National Research Council
-              Canada, Ottawa, Aeronautical Report LR-582, Dec. 1974.
+           Aircraft Wing and Tail Structures', National Research Council
+           Canada, Ottawa, Aeronautical Report LR-582, Dec. 1974.
     """
     s_m = max(Dim(s_range.mean, 'ksi').value, 0)
     s_a = Dim(s_range.ampl, 'ksi').value

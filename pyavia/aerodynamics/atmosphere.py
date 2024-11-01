@@ -6,7 +6,7 @@ Atmosphere (:mod:`pyavia.aerodynamics.atmosphere`)
 Atmospheric property calculations including the ISA.
 
 .. autosummary::
-    :toctree: generated/
+    :toctree:
 
     Atmosphere      -- Class giving fixed atmospheric properties.
     geo_alt_to_pot  -- Function converting geometric altitude to geopotential.

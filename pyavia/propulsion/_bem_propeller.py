@@ -20,14 +20,18 @@ from pyavia.propulsion import BEPropeller, CSPropeller
 class BEMPropeller(BEPropeller):
     """
     Blade Element Momentum (BEM) propeller model that converges induced
-    inflow and swirl factors separately under force and momentum
-    equilibrium conditions to give local velocities and angles of
-    attack along the blade [1]_.
+    inflow and swirl factors separately.
+
+    Force and momentum equilibrium conditions are used to give local
+    velocities and angles of attack along the blade (method similar to
+    [1]_).  See :ref:`Notes <BEM_J_limitation>` for advance ratio
+    limitations of this method.
 
     Parameters
     ----------
     blade_stall : 'du-selig' or None
         Make corrections to the model in cases of blade stall:
+
         - `None`: No correction applied.
         - 'du-selig' (Default): Correction of Du and Selig is applied
           [3]_.  At this stage the internal constants are fixed as
@@ -35,6 +39,7 @@ class BEMPropeller(BEPropeller):
 
     high_inflow : 'buhl', 'wilson' or None
         Make corrections to the model in cases of high induced inflow:
+
         - `None`: No correction applied.
         - 'buhl': Correction of Buhl is applied ([2]_ Table 1).
         - 'wilson': Correction of Wilson et al is applied ([2]_
@@ -43,6 +48,7 @@ class BEMPropeller(BEPropeller):
     tip_losses : 'glauert' or None
             Include Prandtl's tip loss factor `F` when computing the
             momentum balance:
+
             - 'None': No tip loss correction is applied.
             - 'glauert':  Typical correction of Glauert [4]_ Chapter VII
               Equation 5.6 is used.  At each blade element `i`:
@@ -55,25 +61,25 @@ class BEMPropeller(BEPropeller):
 
     Notes
     -----
+    .. _BEM_J_limitation:
+
     - This is a simple technique that gives reasonably accurate
       performance predictions in forward flight.  The static thrust /
-      low  velocity case is not handled well however, and advance ratio
-      is restricted to `J > 0.0025'.
+      low velocity case is not handled well however, and advance ratio
+      is restricted to `J > 0.0025`.
 
-    - This class requires specification of `β0` directly.  See mixin
-      TODO for a version with constant speed operation.
+    - This class requires specification of `β0` directly.
+
+    .. todo:: Version with constant speed operation.
 
     - See parent class `BEPropeller` for more general workings and
-    limitations of
-      Blade Element Methods.
+      limitations of Blade Element Methods.
 
     References
     ----------
-    .. [1] This method was originally based on a MATLAB code by D.
-       Auld, although it is now significantly modified.   For the
-       original see:
-       http://www.aerodynamics4students.com/propulsion/blade-element
-       -propeller-theory.php
+    .. [1] This method was originally based on a MATLAB code by D. Auld,
+           although it is now significantly modified.  For the original
+           see: http://www.aerodynamics4students.com/propulsion/blade-element-propeller-theory.php
     .. [2] J.Ledoux, S. Riffo and J. Salomon, "Analysis of the Blade
        Element Momentum Theory", SIAM Journal on Applied Mathematics,
        2021, 81 (6), pp.2596-2621.
@@ -82,7 +88,7 @@ class BEMPropeller(BEPropeller):
        Symposium, Reno, NV, U.S.A.
     .. [4] W. F. Durand (ed.), "Aerodynamic Theory", Julius Springer,
        1935.
-    """
+    """  # noqa
 
     # -- Inner Classes -------------------------------------------------
 

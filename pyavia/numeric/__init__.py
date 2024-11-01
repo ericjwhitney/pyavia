@@ -1,14 +1,13 @@
 """
-===============================
 Numeric (:mod:`pyavia.numeric`)
 ===============================
 
-.. module:: pyavia.numeric
+.. currentmodule:: pyavia.numeric
 
 Core numeric functions used throughout PyAvia.
 
 .. autosummary::
-    :toctree: _gen_pyavia_numeric/
+    :toctree:
 
     solve
     bezier
@@ -19,7 +18,6 @@ Core numeric functions used throughout PyAvia.
     math_ext
     operations_1d
     polynomial
-
 
 """
 from .bezier import bernstein_poly, bezier, bezier_deriv

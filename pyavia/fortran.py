@@ -3,6 +3,8 @@
 Fortran (:mod:`pyavia.fortran`)
 ===============================
 
+.. currentmodule:: pyavia.fortran
+
 Algorithms and containers mimicking Fortran-style behaviour.  This allows
 interoperability with - or straightforward implementation of - algorithms
 originally written using Fortran or MATLAB.

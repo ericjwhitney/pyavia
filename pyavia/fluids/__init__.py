@@ -1,15 +1,14 @@
 """
-=============================
 Fluids (:mod:`pyavia.fluids`)
 =============================
 
-.. module:: pyavia.fluids
+.. currentmodule:: pyavia.fluids
 
 Classes
 -------
 
 .. autosummary::
-    :toctree: _gen_pyavia_fluids/
+    :toctree:
 
     Gas
     PerfectGas
@@ -19,7 +18,7 @@ Functions
 ---------
 
 .. autosummary::
-    :toctree: _gen_pyavia_fluids/
+    :toctree:
 
     enthalpy
     stag_press_ratio

@@ -6,53 +6,67 @@ import numpy as np
 def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
                order=2, jacob_diag=None, verbose=False) -> [float]:
     r"""
-    Solve nonlinear system of equations using the diagonal quasi-Newton
-    method of [1]_.
+    Solve nonlinear system of equations using the Diagonal Quasi-Newton
+    Method of Waziri and Aisha.  For complete details of the method see
+    [1]_.
 
     Notes
     -----
-    - This method only estimates the diagonal elements of the Jacobian. As
-      such it only needs O(N) storage and does not require any matrix
+    - This method only estimates the diagonal elements of the Jacobian.
+      As such it only needs O(N) storage and does not require any matrix
       solution steps.
-    - Additional to [1]_: Optional bounds check and adaptive scaling of move
-      :math:`s`.  If bounds are exceeded the move is scaled back to a factor
-      of 0.75 of the distance remaining to the boundary. In this way a
-      solution on the boundary can stil be approached via a number of steps
-      without the solver getting immediately stuck on the edge.  Iteration
-      stops if the multiplier becomes smaller than :math:`\epsilon = 1
-      \times 10^{-30}`.
-    - Additional to [1]_: There is a check for extremely small moves where
-      :math:`\nu_0 \approx \nu_1`, evaluating :math:`|\nu_1 - \nu_0| <
-      \epsilon`.  We drop back to first order for this step if this is the
-      case.
-    - Additional to [1]_: Drops back to first order if :math:`\|F(x)\|` is
-      escaping upwards at this step with :math:`\|F(x')\| > 2\|F(x)\|`.
+
+    - Additional to [1]_: Optional bounds check and adaptive scaling of
+      move :math:`s`.  If bounds are exceeded the move is scaled back to
+      a factor of 0.75 of the distance remaining to the boundary. In
+      this way a solution on the boundary can stil be approached via a
+      number of steps without the solver getting immediately stuck on
+      the edge.  Iteration stops if the multiplier becomes smaller than
+      :math:`\epsilon = 1 \times 10^{-30}`.
+
+    - Additional to [1]_: There is a check for extremely small moves
+      where :math:`\nu_0 \approx \nu_1`, evaluating :math:`|\nu_1 -
+      \nu_0| < \epsilon`.  We drop back to first order for this step if
+      this is the case.
+
+    - Additional to [1]_: Drops back to first order if :math:`\|F(x)\|`
+      is escaping upwards at this step with :math:`\|F(x')\| >
+      2\|F(x)\|`.
 
     Parameters
     ----------
     func : Callable[list_like]
         Vector valued function taking `x` and returning `F(x)`.
+
     x0 : list_like
-        Vector of numeric types as starting `x` value.  Not suitable for use
-        with user types due to matricies and norms, etc.
+        Vector of numeric types as starting `x` value.  Not suitable for
+        use with user types due to matricies and norms, etc.
+
     xtol : float
         Stop when :math:`\|x' - x\| < x_{tol}`.
+
     ftol : float
         When present we also require :math:`\|F(x)\| <= f_{tol}` before
         stopping.
+
     bounds : tuple(list_like, list_like)
-        A tuple of low and high bounds respectively i.e. :math:`([x_{low},
-        ...], [x_{high}, ...])` that activates bounds checking.  If specific
-        bounds are not required these can be individually set to +/-inf.
+        A tuple of low and high bounds respectively i.e.
+        :math:`([x_{low}, ...], [x_{high}, ...])` that activates bounds
+        checking.  If specific bounds are not required these can be
+        individually set to +/-inf.
+
     maxits : int
         Maximum number of iterations allowed.
+
     order : {2, 1}
         Next `x` position determined via a linear (``order = 1``) or
         quadratic (``order = 2``) estimate.
-    jacob_diag : list_like
-        Initial estimate of diagonal elements of Jacobian.  If None, assumes
-        :math:`D = I`.
-    verbose : bool
+
+    jacob_diag : list_like, optional
+        Initial estimate of diagonal elements of Jacobian.  If `None`,
+        assumes :math:`D = I`.
+
+    verbose : bool, default = False
         If True, print status updates during run.
 
     Returns
@@ -69,9 +83,10 @@ def solve_dqnm(func, x0, xtol=1e-6, ftol=None, bounds=None, maxits=25,
 
     References
     ----------
-    .. [1] Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton Method
-       For Systems Of Nonlinear Equations", Applied Mathematical and
-       Computational Sciences Volume 6, Issue 1, August 2014, pp 21-30.
+    .. [1] Waziri, M. Y. and Aisha, H. A., "A Diagonal Quasi-Newton
+           Method for Systems of Nonlinear Equations", Applied
+           Mathematical and Computational Sciences Volume 6, Issue 1,
+           August 2014, pp 21-30.
     """
     def verbose_print(info):
         if verbose:
