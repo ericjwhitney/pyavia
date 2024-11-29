@@ -145,7 +145,7 @@ def dataclass_names(dc) -> List[str]:
 def make_sentinel(name='_MISSING', var_name=None):
     """
     **This factory function is taken directly from ``boltons.typeutils``
-    *and has only cosmetic changes.**
+    and has only cosmetic changes.**
 
     Creates and returns a new **instance** of a new class, suitable for
     usage as a "sentinel", a kind of singleton often used to indicate
@@ -205,4 +205,79 @@ def make_sentinel(name='_MISSING', var_name=None):
     return Sentinel()
 
 
-# ===========================================================================
+# ======================================================================
+
+
+
+def frozen(cls: type) -> type:
+    # noinspection PyUnresolvedReferences
+    """
+    A decorator to freeze a class, i.e. make it effectively immutable.
+
+
+    Examples
+    --------
+    First, let's define a simple class that will be frozen after
+    initialisation:
+    >>> @frozen
+    ... class MyClass:
+    ...     \"""MyClass docstring.\"""
+    ...     def __init__(self, x):
+    ...         \"""MyClass.__init__ docstring.\"""
+    ...         self.x = x
+
+    Attributes can be set during initialisation:
+    >>> obj = MyClass(42)
+    >>> obj.x
+    42
+
+    Once initialised, attributes can't be reassigned:
+    >>> obj.x = 24
+    Traceback (most recent call last):
+    ...
+    AttributeError: Can't set attribute 'x' on frozen object.
+
+    Docstrings are preserved:
+    >>> obj.__doc__
+    'MyClass docstring.'
+    >>> obj.__init__.__doc__
+    'MyClass.__init__ docstring.'
+
+    Derived classes can be added, but attributes must be set using
+    ``object.__setattr__(...)`` (or the parent's superclass
+    ``__setattr__``) method as all atributes are frozen:
+    >>> class DerivedClass(MyClass):
+    ...     def __init__(self, x, y):
+    ...         super().__init__(x)
+    ...         object.__setattr__(self, 'y', y)  # Note!
+
+    >>> child_obj = DerivedClass(42, 84)
+    >>> child_obj.x, child_obj.y
+    (42, 84)
+
+    >>> child_obj.y = 314
+    Traceback (most recent call last):
+    ...
+    AttributeError: Can't set attribute 'y' on frozen object.
+    """
+    # Move and replace original __init__.
+    cls.__frozen_init__ = cls.__init__
+
+    def init_wrapper(self, *args, **kwargs):
+        self.__frozen_init__(*args, **kwargs)
+        self.__frozen = True
+
+    init_wrapper.__doc__ = cls.__frozen_init__.__doc__
+    cls.__init__ = init_wrapper
+
+    # Add new __setattr__ method.
+    def setattr_wrapper(self, name, value):
+        if getattr(self, '__frozen', False):
+            raise AttributeError(f"Can't set attribute '{name}' on "
+                                 f"frozen object.")
+        else:
+            super(cls, self).__setattr__(name, value)
+
+    cls.__setattr__ = setattr_wrapper
+
+    return cls
