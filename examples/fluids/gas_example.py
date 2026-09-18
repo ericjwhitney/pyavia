@@ -1,33 +1,35 @@
 #!/usr/bin/env python3
 
-# Comparison of gas models.
-# Written by: Eric J. Whitney  Last updated: 15 January 2022.
+# Comparison of gas models.  SI Units.
+# Written by: Eric J. Whitney  Last updated: September 2026.
 
-from pyavia.aerodynamics import PerfectGas, ImperfectGas
-from pyavia.units import Dim
+from pyavia.fluids import PerfectAir, PolyAir
 
-T, T_step = Dim(200, 'K'), Dim(100, 'K')
-P = Dim(1.0, 'atm')
-M = 0.5
+T      = 200      # [K]
+p      = 101_325  # [Pa]
+M      = 0.5
+T_step = 50       # [K]
 
-prop_list = ['T0', 'P0', 'h', 's']
-units = ['K', 'kPa', 'kJ/kg', 'kJ/kg/K']
+# PerfectAir default γ = 1.4.
 
-print(f"\nComparison vs. T for Gas Models with  P = {P:.5G}, M = {M:.5G}\n")
+prop_list = ['T0', 'p0', 'h', 's']
+units = ['K', 'Pa', 'J/kg', 'J/kg/K']
+
+print(f"\nComparison vs. T for gas models with  P = {p:.5G}, M = {M:.5G}\n")
 while True:  # Until model fails.
     try:
-        real = ImperfectGas(T=T, P=P, M=M, gas='air')
-        perfect = PerfectGas(T=T, P=P, M=M, gamma=1.4)
-        print(f"T = {T:.5G}", end='')
+        real = PolyAir(T=T, p=p, M=M)
+        perfect = PerfectAir(T=T, p=p, M=M)
+        print(f"T={T:6.5G}", end='')
         for prop, unit in zip(prop_list, units):
-            real_x, perf_x = getattr(real, prop), getattr(perfect, prop)
-            err = (perf_x - real_x) / real_x * 100.0
-            print(f"\t {prop} = Real {real_x.convert(unit):#.5G}"
-                  f", Perfect {perf_x.convert(unit):#.5G}"
-                  f" (Error {err:+.2f} %)", end='')
+            real_x = getattr(real, prop)
+            perf_x =  getattr(perfect, prop)
+            err: float = (perf_x - real_x) / real_x * 100.0
+            print(f" | {prop:s}={real_x:#.5G} (Real) vs. "
+                  f"{perf_x:#.5G} (Perf) Err={err:+.1f}%", end='')
         print()
         T += T_step
 
     except (RuntimeError, ValueError) as ex:
-        print(f"\nStopped -- {ex}")
+        print(f"\nStopped -> {ex}")
         break

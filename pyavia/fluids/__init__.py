@@ -4,15 +4,34 @@ Fluids (:mod:`pyavia.fluids`)
 
 .. currentmodule:: pyavia.fluids
 
-Classes
--------
+Protocols
+---------
 
 .. autosummary::
     :toctree:
 
     Gas
+    GasFlow
     PerfectGas
-    ImperfectGas
+    PolyGas
+
+Perfect Gases
+-------------
+
+.. autosummary::
+    :toctree:
+
+    PerfectGas
+    PerfectAir
+
+Real / Polynomial Gases
+-----------------------
+
+.. autosummary::
+    :toctree:
+
+    PolyGas
+    PolyAir
 
 Functions
 ---------
@@ -20,14 +39,14 @@ Functions
 .. autosummary::
     :toctree:
 
-    enthalpy
-    stag_press_ratio
-    stag_temp_ratio
-    temp_from_enthalpy
-
+    init_gas
 """
 
-from .gas import Gas
-from .perfect_gas import (PerfectGas, enthalpy, stag_press_ratio,
-                          stag_temp_ratio, temp_from_enthalpy)
-from .imperfect_gas import ImperfectGas
+from ._gas import Gas, GasFlow
+from ._make_gas import make_gas
+from ._air import PerfectAir, PerfectAirFlow, PolyAir, PolyAirFlow
+
+
+# FutureWork: Add modules for other specific models.
+
+

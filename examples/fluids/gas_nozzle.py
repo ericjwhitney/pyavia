@@ -9,63 +9,93 @@
 
 import time
 import matplotlib.pyplot as plt
-from pyavia.fluids.imperfect_gas import ImperfectGas
+
+from pyavia.fluids import PolyAirFlow, make_gas
 from pyavia.units import Dim
 
-chamber = ImperfectGas(T=Dim(700, 'K'), P=Dim(25.0, 'atm'), M=0.1,
-                       w=Dim(10, 'kg/s'), gas='air', FAR=0)
-P_exit = Dim(1.0, 'atm')
+# Create flowing version of (imperfect) gas model PolyAir.
 
-M, M_step = chamber.M, 0.01
-Mx, PP0x, TT0x, Ax = [], [], [], []
+
+P_ATM = 101_325  # [Pa]
+
+chamber = PolyAirFlow(
+    T     = 700,        # [K]
+    p     = 25 * P_ATM, # [Pa]
+    M     = 0.1,
+    m_dot = 10,         # [kg/s]
+    # FAR   = 0.01,
+    # fuel  = 'kerosene'  # FutureWork: Passing this argument is a problem.
+)
+p_exit = P_ATM
+
+M, ΔM = chamber.M, 0.01
+M_x, p_p0_x, T_T0_x, A_x = [], [], [], []
 last_gas = None
 
 print(f"Computing Nozzle.\n")
 print(f"{'M':>14s}{'P/P0':>14s}{'T/T0':>14s}{'A':>14s}")
 t_start = time.time()
 while True:
-    local_gas = ImperfectGas(w=chamber.w, gas=chamber.gas, FAR=chamber.FAR,
-                             h0=chamber.h0, s=chamber.s, M=M,
-                             init_gas=last_gas)
-    Mx.append(M)
-    PP0x.append(local_gas.P / chamber.P0)
-    TT0x.append(local_gas.T / chamber.T0)
-    Ax.append(local_gas.w / local_gas.rho / local_gas.u)
-    print(f"{Mx[-1]:14.4f}{PP0x[-1]:14.4f}{TT0x[-1]:14.4f}{Ax[-1]:14.4f}")
-    if local_gas.P < P_exit:
+    # Basic Method: This method may involve some more calculation cost to
+    # converge to the correct properties
+    # local_gas = PolyAirFlow(m_dot=chamber.m_dot, FAR=chamber.FAR,
+    #                         h0=chamber.h0, s=chamber.s, M=M)
+
+    # Advanced Method: Use the gas from the previous iteration to
+    # quickly find the properties here.
+
+    # FutureWork: Probably better to make this a more generic
+    # 'fit_model_lsq' type approach which would better handle
+    # different arguments.
+    local_gas = make_gas(
+        PolyAirFlow,
+        init_props=('p', 'T', 'M', 'm_dot', 'FAR'),
+        ref_gas=last_gas,
+        h0=chamber.h0, s=chamber.s, M=M, m_dot=chamber.m_dot,
+        # fuel=chamber.fuel,  # FutureWork: Problem argument.
+        FAR=chamber.FAR
+    )
+
+    M_x.append(M)
+    p_p0_x.append(local_gas.p / chamber.p0)
+    T_T0_x.append(local_gas.T / chamber.T0)
+    A_x.append(local_gas.m_dot / local_gas.ρ / local_gas.V)
+    print(f"{M_x[-1]:14.4f}{p_p0_x[-1]:14.4f}"
+          f"{T_T0_x[-1]:14.4f}{A_x[-1]:14.4f}")
+    if local_gas.p < p_exit:
         break
-    M += M_step
+    M += ΔM
     last_gas = local_gas
 
-At = min(Ax)
-AAtx = [A / At for A in Ax]
+At = min(A_x)
+A_At_x = [A / At for A in A_x]
 
-Me, AeAt = Mx[-1], AAtx[-1]
-PeP0, TeT0 = PP0x[-1], TT0x[-1]
-gamma = chamber.gamma
-predPeP0 = (1 + 0.5 * (gamma - 1) * Me ** 2) ** (-gamma / (gamma - 1))
-predTeT0 = 1 / (1 + 0.5 * (gamma - 1) * Me ** 2)
+Me, Ae_At = M_x[-1], A_At_x[-1]
+pe_p0, Te_T0 = p_p0_x[-1], T_T0_x[-1]
+γ = chamber.γ
+pred_pe_p0 = (1 + 0.5 * (γ - 1) * Me ** 2) ** (-γ / (γ - 1))
+pred_Te_T0 = 1 / (1 + 0.5 * (γ - 1) * Me ** 2)
 t_end = time.time()
 
-print(f"\nAe/A* = {AAtx[-1]:.4f}.")
-print(f"Using chamber gamma = {gamma:.3f} and exit Mach number Me = "
-      f"{Mx[-1]:.4f}:")
-print(f"\tPredicted Pe/P0 = {predPeP0:.4f} vs. Computed Pe/P0 = {PeP0:.4f}")
-print(f"\tPredicted Te/T0 = {predTeT0:.4f} vs. Computed Te/T0 = {TeT0:.4f}")
+print(f"\nAe/A* = {A_At_x[-1]:.4f}.")
+print(f"Using chamber gamma = {γ:.3f} and exit Mach number Me = "
+      f"{M_x[-1]:.4f}:")
+print(f"\tPredicted Pe/P0 = {pred_pe_p0:.4f} vs. Computed Pe/P0 = {pe_p0:.4f}")
+print(f"\tPredicted Te/T0 = {pred_Te_T0:.4f} vs. Computed Te/T0 = {Te_T0:.4f}")
 print(f"\tSolution took {t_end - t_start:.3f} seconds.")
 
 plt.figure()
 plt.xlabel("$M$")
 plt.ylabel("$P/P_0$, $T/T_0$")
-plt.ylim([0, 1])
+plt.ylim((0, 1))
 plt.grid()
-plt.plot(Mx, PP0x, 'b', label="$P/P_0$")
-plt.plot(Mx, TT0x, 'r', label="$T/T_0$")
+plt.plot(M_x, p_p0_x, 'b', label="$P/P_0$")
+plt.plot(M_x, T_T0_x, 'r', label="$T/T_0$")
 plt.legend(loc='upper right')
 
 plt.figure()
 plt.xlabel("$M$")
 plt.ylabel("$A/A*$")
 plt.grid()
-plt.plot(Mx, AAtx, color='k')
+plt.plot(M_x, A_At_x, color='k')
 plt.show()

@@ -4,33 +4,34 @@
 # Written by: Eric J. Whitney  Last updated: 15 January 2022.
 
 from math import isclose
-from pyavia.aerodynamics import PerfectGas, ImperfectGas
-from pyavia.units import dim
 
-M, M_stop, M_step = 0.00, 2.50, 0.05
+from pyavia.fluids import PerfectAirFlow, PolyAirFlow
+
+M, M_stop, ΔM = 0.00, 2.50, 0.05
 use_gas = 'real_ssl_air'
 
-P_ref = dim(1.0, 'atm')  # SSL reference conditions with unit massflow.
-T_ref = dim(288.15, 'K')
-w_ref = dim(1.0, 'kg/s')
+# SSL reference conditions with unit massflow.
+p_ref = 101_325  # [Pa]
+T_ref = 288.15   # [K]
+m_dot_ref = 1.0      # [kg/s]
 
 gas_models = {
     'perfect_cold_air': {
-        'model': PerfectGas,
-        'kwargs': {'gamma': 1.4, 'gas': 'air'}},
+        'model': PerfectAirFlow,
+        'kwargs': {'γ': 1.4}},
 
     'perfect_hot_air': {
-        'model': PerfectGas,
-        'kwargs': {'gamma': 1.33, 'gas': 'air'}},
+        'model': PerfectAirFlow,
+        'kwargs': {'γ': 1.33}},
 
     'real_ssl_air': {
-        'model': ImperfectGas,
-        'kwargs': {'gas': 'air', 'FAR': 0.0}}
+        'model': PolyAirFlow,
+        'kwargs': {'FAR': 0.0}}
 }
 
-vt_units = '        m.s⁻¹.K⁻⁰ᐧ⁵'
-q_units = '  kg.K⁰ᐧ⁵/m²/kPa/s'
-Q_units = '   kg.K⁰ᐧ⁵/m²/kPa/s'
+vt_units = 'm.s⁻¹/√K'
+q_units = 'kg.√K/m²/Pa/s'
+Q_units = 'kg.√K/m²/Pa/s'
 
 print(f"\nQ-Curve Data - Reference Flow -> {use_gas}")
 
@@ -42,18 +43,23 @@ print(''.join(f'{x:>18s}' for x in col_units))
 while M < M_stop or isclose(M, M_stop):
     gas_model = gas_models[use_gas]['model']
     kwargs = gas_models[use_gas]['kwargs']
-    gas = gas_model(T=T_ref, P=P_ref, M=M, w=w_ref, **kwargs)
+    gas = gas_model(T=T_ref, p=p_ref, M=M, m_dot=m_dot_ref, **kwargs)
 
-    vt = (gas.u / (gas.T0 ** 0.5)).convert(vt_units)
+    vt = gas.V / (gas.T0 ** 0.5)
 
     # Rearrange Q = 1000 * W * (T0 ** 0.5) / (A * P0):
-    #   -> Q = rho * V * (T0 ** 0.5) / P0
-    Q = (gas.rho * gas.u * gas.T0 ** 0.5 / gas.P0).convert(Q_units)
-    q = (Q * (gas.P0 / gas.P)).convert(q_units)
+    #        -> Q = ρ * V * (T0 ** 0.5) / p0
+    Q = gas.ρ * gas.V * gas.T0 ** 0.5 / gas.p0
+    q = Q * (gas.p0 / gas.p)
 
-    print(f"{M:18.2f}{gas.P0 / gas.P:18.4f}"
-          f"{(gas.P0 - gas.P) / gas.P0 * 100.0:18.4f}"
-          f"{gas.T0 / gas.T:18.4f}{float(vt):18.4f}{float(q):18.4f}"
-          f"{float(Q):18.4f}")
+    print(
+        f"{M:18.2f}"
+        f"{gas.p0 / gas.p:18.4f}"
+        f"{float((gas.p0 - gas.p) / gas.p0 * 100.0):18.4f}"
+        f"{gas.T0 / gas.T:18.4f}"
+        f"{float(vt):18.4f}"
+        f"{float(q):18.4f}"
+        f"{float(Q):18.4f}"
+    )
 
-    M += M_step
+    M += ΔM

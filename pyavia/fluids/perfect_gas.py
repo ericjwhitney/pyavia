@@ -1,253 +1,487 @@
-
-from __future__ import annotations
+from abc import ABC
+from typing import Final
 
 import numpy as np
 
-from .gas import Gas, _solve_TPM
-from pyavia.units import dim, Dim
-from pyavia.util import split_dict
+from ._gas import Gas, _check_init_props
+
+from pyavia.util.function_ops import cached_property_readonly
 
 
-# Written by Eric J. Whitney, January 2021.
+# Original by Eric J. Whitney, December 2020.
 
-# =============================================================================
+# ======================================================================
 
-# noinspection PyPep8Naming
-class PerfectGas(Gas):
+# TODO Unit support - presently SI units.
+
+# - Suppress PyCharm warning about incorrect type for properties using
+#   cached_property_readonly, this is valid.
+# - Suppress PyCharm warning about overriding Final attributes, this is
+#   wil be fixed in 3.15.
+# noinspection protocol,final
+class PerfectGas(Gas, ABC):
     r"""
-    A simplified thermally and calorically perfect gas, i.e. c_p and R are
-    constant.  Once initialised, properties are fixed.
+    A model of a thermally and calorically perfect gas, i.e.
+    :math:`c_p` and `R` are constant.
 
-    .. note::
-        - Internal working parameters are stream pressure, temperature,
-          Mach number and ratio of specific heats  (`P`, `T`, `M`, `γ`).
-        - Sepcific enthalpy computation is :math:`h = h_ref + c_p.(T -
-          T_{ref})`.
-        - Specific entropy computation is :math:`s = s_ref + c_p.ln(T /
-          T_{ref}) - R.ln(P / P_{ref})`.
+    Parameters
+    ----------
+    γ : float
+        Ratio of specific heats :math:`γ = c_p / c_v`.
 
-    Reference values for `air`:
-        - P_ref = 100 kPa.  Note this is 1 bar, not an ISA standard atmosphere.
-        - T_ref = 298.15 K.
-        - h_ref = 720.76 kJ/kg.
-        - s_ref = 5.68226 kJ/kg/K.
+    **props :  dict[str, float]
+        Keyword arguments giving property names and values that
+        properly define the gas state, e.g. ``p=101325, T=288.15``.
+        Available properties are:
+
+        - p: Stream / static pressure.
+        - p0: Total / stagnation pressure.
+        - T: Stream / static temperature.
+        - T0: Total / stagnation temperature.
+        - M: Mach number.
+        - h: Specific enthalpy.
+        - h0: Total / stagnation enthalpy.
+        - s: Specific entropy.
+
+        Either two or three properties must be supplied:
+
+        - *If two parameters are supplied,* this is assumed to be a
+          stationary gas, and only `p`, `T`, `h` or `s` can be used.
+          In this case `M = 0` is assumed.
+
+        - *If three parameters are supplied,* any combination of
+          parameters can be used provided the gas state is fully
+          specified including velocity (in any combination), e.g.
+          :math:'P = 101.325 kPa`, :math:`T = 288.15 K` and :math:`M =
+          0.5`.
+
+    Attributes
+    ----------
+    R : float
+        Gas constant for the specific gas.  This value can be computed
+        from the universal gas constant using :math:`R = R_{univ} / M`
+        where :math:`R_{univ}` = 8.314462618 kg.m².s⁻².K⁻¹.mol⁻¹ and M
+        is molar mass [kg/mol].
+
+    p_ref : float
+        Reference pressure for the gas model in `Pa`.
+
+    T_ref : float
+        Reference temperature for the gas model in `K`.
+
+    h_ref : float
+        Reference enthalpy for the gas at :math:`p_{ref}` and
+        :math:`T_{ref}` in `kJ/kg`.
+
+    s_ref : float
+        Reference entropy for the gas model at :math:`p_{ref}` and
+        :math:`T_{ref}` in `kJ/kg/K`.
+
+    Notes
+    -----
+    - All attributes are considered read-only.
+    - For more information about relationships between different
+      properties in ideal gases and relative accuracy see [1]_.
+    - Internally, a `PerfectGas` is always defined by stream pressure
+      (`p`), temperature (`T`), Mach number (`M`) and ratio of specific
+      heats (`γ`).
+
+    References
+    ----------
+    .. [1] Hilsenrath, J., et al, "Tables of Thermal Properties of
+       Gases", Circular 564, U.S. Department of Commerce, National
+       Bureau of Standards, 1955.
     """
 
-    def __init__(self, *, gas: str = 'air', gamma: float = 1.4, **kwargs):
+    # -- Specific Gas Constants ----------------------------------------
+
+    R    : Final[float]
+    p_ref: Final[float]
+    T_ref: Final[float]
+    h_ref: Final[float]
+    s_ref: Final[float]
+
+    # -- Magic Methods -------------------------------------------------
+
+    # FutureWork: Overzealous PyCharm warning, this is valid.
+    # noinspection missing-constructor
+    def __init__(self, *, γ: float, **props: float):
+        # Internally, all perfect gases are defined using fundamental
+        # properties of 'p', 'T', 'M', 'γ'.  We get property keys in
+        # alphabetical order then find the fundamental properties that
+        # result in 'props'.
+        self.__γ = γ
+        prop_keys = _check_init_props(
+            props, ('h', 'M', 'p', 'p0', 'T', 's')
+        )  # Alphabetical order (case insensitive).
+
+        match prop_keys:  # TODO check for error, allows extra param?
+            # -- Two Parameters: Assume M = 0 --------------------------
+
+            case ('p', 'T'):
+                self.__p = props['p']
+                self.__T = props['T']
+                self.__M = 0.0
+
+            case ('h', 'p'):
+                self.__p = props['p']
+                self.__T = temperature_h(props['h'], h_ref=self.h_ref,
+                                         c_p=self.c_p, T_ref=self.T_ref)
+                self.__M = 0.0
+
+            case ('p', 's'):
+                self.__p = props['p']
+                self.__T = temperature_ps(
+                    props['p'], props['s'], p_ref=self.p_ref,
+                    s_ref=self.s_ref, R=self.R, c_p=self.c_p,
+                    T_ref=self.T_ref
+                )
+                self.__M = 0.0
+
+            # FutureWork: More options.
+
+            # -- Three Parameters: Fully Defined -----------------------
+
+            case ('h', 'p', 'p0'):
+                self.__p = props['p']
+                self.__T = temperature_h(props['h'], h_ref=self.h_ref,
+                                         c_p=self.c_p, T_ref=self.T_ref)
+                self.__M = mach(props['p0'] / props['p'], self.__γ)
+
+            case ('M', 'p', 'T'):
+                self.__p = props['p']
+                self.__T = props['T']
+                self.__M = props['M']
+
+            # FutureWork: More options.
+
+            case _:
+                raise ValueError(f"Unknown property or combination: "
+                                 f"{', '.join(prop_keys)}")
+
+        # Basic check on properties.
+        if np.any(self.__p <= 0):
+            raise ValueError("Requires p > 0.")
+
+        if np.any(self.__T <= 0):
+            raise ValueError("Requires T > 0.")
+
+        if np.any(self.__M < 0):
+            raise ValueError("Requires M >= 0.")
+
+    # -- Properties  ---------------------------------------------------
+
+    @cached_property_readonly
+    def a(self) -> float:
+        r"""
+        Local speed of sound.  Computed using :math:`a = \sqrt{γRT}`.
         """
-        Construct a thermally and calorically perfect gas with 1-D flow
-        properties.
+        return (self.__γ * self.R * self.__T) ** 0.5
 
-        Parameters
-        ----------
-        gas : str
-            Gas idenfitifer, used to set `R` and reference values.  Supported
-            values for this model are:
-
-                - 'air' (default).
-
-        gamma : float
-            Ratio of specific heats.  Commonly used values for air are:
-
-                - γ = 1.4: Atmospheric air, compressors (default).
-                - γ = 1.33: Hot air, burners, turbines.
-
-        kwargs : {str: Dim | float}
-            Remaining arguments must include three state properties that
-            properly define the gas.  These can be supplied in any
-            combination provided they fully define the state, e.g. {'P':
-            dim(101.325, 'kPa'), 'T': dim(288.15, 'K'), 'M': 0.0}.
-
-            Available properties are:
-                - P0: Total / stagnation pressure.
-                - T0: Total / stagnation temperature.
-                - P: Stream / static pressure.
-                - T: Stream / static temperature.
-                - h: Specific enthalpy.
-                - h0: Total / stagnation enthalpy.
-                - s: Specific entropy.
-                - M: Mach number.
-
-            If `P`, `T` and `M` are supplied these are directly set and
-            initialisation is complete.  Other combinations are converted
-            into these values using perfect gas equations or iterative
-            convergence of `T`, `P` and `M`.
+    @property
+    def c_p(self) -> float:
         """
-        # Set basic constants.
-        self._gamma = gamma
-        if gas == 'air':
-            R = dim(287.05287, 'J/kg/K')
-
-            # Fixed reference values below are selected to align with
-            # GasFlowWF model for dry air with γ = 1.4.
-            self._P_ref = dim(100, 'kPa')  # 1 bar, not ISA std atm.
-            self._T_ref = dim(298.15, 'K')
-            self._h_ref = dim(720.76, 'kJ/kg')
-            self._s_ref = dim(5.68226, 'kJ/kg/K')
-        else:
-            raise ValueError(f"Unknown gas: {gas}")
-
-        # Extract state definition from kwargs.
-        state, kwargs = split_dict(kwargs, ('P0', 'T0', 'P', 'T', 'h', 'h0',
-                                            's', 'M'))
-
-        # Now we can initialise the superclass.
-        super().__init__(R=R, **kwargs)
-
-        # ---------------------------------------------------------------------
-
-        # Where possible, try to massage the state provided into T, P, M to
-        # avoid complex calculation.
-
-        com_err = "Invalid combination of states: "
-        com_err += ', '.join([f"'{st}'" for st in state])
-
-        if 'h' in state:
-            # Replace static enthalpy with static temperature.
-            if 'T' in state:  # Can't already have T with h.
-                raise ValueError(com_err)
-            state['T'] = temp_from_enthalpy(state['h'], self.c_p, self._T_ref,
-                                            self._h_ref)
-            del state['h']
-
-        if 'T0' in state and 'M' in state:
-            # Replace stagnation temperature with static temperature.
-            if 'T' in state:  # Can't already have T with T0, M.
-                raise ValueError(com_err)
-
-            state['T'] = state['T0'] / stag_temp_ratio(self._gamma, state['M'])
-            del state['T0']
-
-        if 'P0' in state and 'M' in state:
-            # Replace stagnation pressure with static pressure.
-            if 'P' in state:  # Can't already have P with P0, M.
-                raise ValueError(com_err)
-
-            state['P'] = state['P0'] / stag_press_ratio(self._gamma, state['M'])
-            del state['P0']
-
-        # TODO More opportunities exist: h0, s, s0, etc.
-
-        # ---------------------------------------------------------------------
-
-        # Initialise the gas using our best available starting point.
-        if len(state) != 3:
-            raise ValueError(f"Need three state properties to uniquely "
-                             f"specify flow, got: "
-                             f"{', '.join(list(state.keys()))}")
-
-        if set(state.keys()) != {'T', 'P', 'M'}:
-            # We didn't arrive at T, P, M directly.  Solve for these by
-            # constructing trial flows until the state matches.
-            self._T, self._P, self._M = _solve_TPM(
-                PerfectGas, gas=gas, gamma=self._gamma, **state, **kwargs)
-        else:
-            # T, P, M directly available.
-            self._T = state['T']
-            self._P = state['P']
-            self._M = state['M']
-
-        # Specifically check gas temperatures are total and not delta.
-        if not self._T.is_total_temp():
-            raise ValueError(f"Gas temperatures must be total not Δ, got "
-                             f"{self._T:.5G}")
-
-    # -- Properties ---------------------------------------------------------
+        Specific heat capacity at constant pressure.  Computed using
+        :math:`c_p = R.γ / (γ - 1)`.
+        """
+        return self.R * self.__γ / (self.__γ - 1)
 
     @property
-    def gamma(self) -> float:
-        return self._gamma
+    def c_v(self) -> float:
+        """
+        Specific heat capacity at constant volume.  Computed from
+        :math:`c_v = c_p - R`.
+        """
+        return self.c_p - self.R
+
+    @cached_property_readonly
+    def h(self) -> float:
+        return enthalpy(self.__T, T_ref=self.T_ref, c_p=self.c_p,
+                        h_ref=self.h_ref)
 
     @property
-    def c_p(self) -> Dim:
-        return self.R * self._gamma / (self._gamma - 1)
-
-    @property
-    def h(self) -> Dim:
-        return enthalpy(self._T, self.c_p, self._T_ref, self._h_ref)
+    def h0(self) -> float:
+        r"""
+        Total / stagnation enthalpy of the gas, assuming it is brought
+        to rest without losses or heat transfer.  Defined as
+        :math:`h_0 = h + \frac{1}{2}u^2`, ignoring graviational (height)
+        change effects.
+        """
+        return self.h + 0.5 * self.V ** 2
 
     @property
     def M(self) -> float:
-        return self._M
+        return self.__M
 
     @property
-    def P(self) -> Dim:
-        return self._P
+    def p(self) -> float:
+        return self.__p
 
     @property
-    def P0(self) -> Dim:
-        return self._P * self.P0_P
+    def p0(self) -> float:
+        return self.__p * self.p0_p
 
     @property
-    def P0_P(self) -> float:
+    def p0_p(self) -> float:
         """
         Ratio of total (stagnation) pressure to static pressure.
         """
-        return stag_press_ratio(self._gamma, self._M)
+        return p0_p(self.__M, self.__γ)
+
+    @cached_property_readonly
+    def s(self) -> float:
+        return entropy(
+            self.__p, self.__T, p_ref=self.p_ref, T_ref=self.T_ref,
+            c_p=self.c_p, R=self.R, s_ref=self.s_ref
+        )
 
     @property
-    def s(self) -> Dim:
-        return (self._s_ref + self.c_p * np.log(self._T / self._T_ref) -
-                self.R * np.log(self._P / self._P_ref))
+    def T(self) -> float:
+        return self.__T
 
     @property
-    def T(self) -> Dim:
-        return self._T
-
-    @property
-    def T0(self) -> Dim:
-        return self._T * self.T0_T
+    def T0(self) -> float:
+        return self.__T * self.T0_T
 
     @property
     def T0_T(self) -> float:
-        """
-        Ratio of total (stagnation) pressure to static temperature.
-        """
-        return stag_temp_ratio(self._gamma, self._M)
+        return T0_T(self.__M, self.__γ)
 
     @property
-    def u(self) -> Dim:
-        return self.a * self._M
+    def V(self) -> float:
+        """
+        Flow velocity.  Computed from :math:`V = M.a`.
+        """
+        return self.M * self.a
+
+    @property
+    def γ(self) -> float:
+        return self.__γ
+
+    @property
+    def ρ(self) -> float:
+        """
+        Density :math:`\rho = P/(RT)`.
+        """
+        return self.__p / (self.R * self.__T)
+
+    @property
+    def μ(self):
+        raise NotImplementedError
 
 
-# =============================================================================
+# ======================================================================
 
-# General perfect gas equations.
-
-def enthalpy(T: Dim, c_p: Dim, T_ref: Dim, h_ref: Dim) -> Dim:
+def enthalpy(T: float, *, T_ref: float,
+             c_p: float, h_ref: float) -> float:
     r"""
-    Returns the specific enthalpy of a perfect gas, computed using
-    :math:`{h} = h_{ref} + c_p (T - T_{ref})`
+    Returns the specific enthalpy of a perfect gas given the
+    temperature.  Calculate using:
 
-    .. note:: Enthalpies can only be compared if they have common reference
-              conditions.
+    .. math:: h = h_{ref} + c_p (T - T_{ref})
+
+    .. note:: Enthalpies can only be compared if they have common
+       reference conditions.
+
+    Parameters
+    ----------
+    T : float
+        Temperature.
+
+    T_ref : float
+        Reference temperature.
+
+    c_p : float
+        Specific heat at constant pressure.
+
+    h_ref : float
+        Reference enthalpy.
+
+    Returns
+    -------
+    float
+        Specific enthalpy.
     """
     return h_ref + c_p * (T - T_ref)
 
 
-def stag_press_ratio(gamma: float, M: float) -> float:
+# ----------------------------------------------------------------------
+
+def entropy(p: float, T: float, *, p_ref: float, T_ref: float,
+            c_p: float, R: float, s_ref: float) -> float:
     r"""
-    Returns the ratio of total (stagnation) pressure to static pressure of
-    a perfect gas, computed using
-    :math:`\frac{P_0}{P} = (1 + \frac{1}{2}(γ - 1)M^2)^{\frac{γ}{γ - 1}}`.
+    Computes the specific entropy of a perfect gas given the pressure
+    and temperature, using :math:`s = s_{ref} + c_p \log (T/T_{ref}) -
+    R \log (p/p_{ref})`.
+
+    Parameters
+    ----------
+    p : float
+        Pressure/s (static / stream).
+
+    T : float
+        Temperature/s (static / stream).
+
+    p_ref : float
+        Reference pressure for the gas model in `Pa`.
+
+    T_ref : float
+        Reference temperature for the gas model in `K`.
+
+    c_p : float
+        Specific heat at constant pressure.
+
+    R : float
+        Gas constant for the specific gas.
+
+    s_ref : float
+        Reference specific entropy.
+
+    Returns
+    -------
+    float
     """
-    return (1 + 0.5 * (gamma - 1) * M ** 2) ** (gamma / (gamma - 1))
+    return s_ref + c_p * np.log(T / T_ref) - R * np.log(p / p_ref)
 
+# ----------------------------------------------------------------------
 
-def stag_temp_ratio(gamma: float, M: float) -> float:
+def mach(p0_p_: float, γ: float) -> float:
     r"""
-    Returns the ratio of total (stagnation) pressure to static temperature of
-    a perfect gas, computed using
-    :math:`\frac{T_0}{T} = 1 + \frac{1}{2}(γ - 1)M^2`.
+    Returns the Mach number of a perfect gas given the stagnation
+    pressure ratio.  Calculated using:
+
+    .. math:: M = \sqrt{ \frac{2}{γ-1} (1 - \frac{p_0}{p})^{\frac{γ-1}{γ} } }
+
+    Parameters
+    ----------
+    p0_p_ : float
+        Stagnation to stream pressure ratio.
+
+    γ : float
+        Ratio of specific heats.
+
+    Returns
+    -------
+    float
+        Mach number.
     """
-    return 1 + 0.5 * (gamma - 1) * M ** 2
+    return np.sqrt(2 / (γ - 1) * (1 - p0_p_) ** ((γ - 1) / γ))
 
+# ----------------------------------------------------------------------
 
-def temp_from_enthalpy(h_: Dim, c_p: Dim, T_ref: Dim, h_ref: Dim) -> Dim:
+def p0_p(M: float, γ: float) -> float:
     r"""
-    Returns the static temperature of a perfect gas, based on the specific
-    enthalpy, computed using :math:`{T} = T_{ref} + (h - h_{ref}) / c_p`
-    """
-    return T_ref + (h_ - h_ref) / c_p
+    Computes the ratio of total (stagnation) pressure to static pressure
+    of a perfect gas from the Mach number.  Calculated using:
 
-# -----------------------------------------------------------------------------
+    .. math:: \frac{P_0}{P} = (1 + \frac{1}{2}(γ - 1)M^2)^{
+       \frac{γ}{γ - 1} }
+
+    Parameters
+    ----------
+    M : float
+        Mach number.
+
+    γ : float
+        Ratio of specific heats.
+
+    Returns
+    -------
+    float
+        Ratio of stagnation to stream pressure.
+    """
+    return (1 + 0.5 * (γ - 1) * M ** 2) ** (γ / (γ - 1))
+
+# ----------------------------------------------------------------------
+
+def T0_T(M: float, γ: float) -> float:
+    r"""
+    Computes the ratio of total (stagnation) temperature to static
+    temperature of a perfect gas from the Mach number.  Calculated
+    using:
+
+    .. math:: T_0 / T = 1 + \frac{1}{2} (γ - 1) M^2
+
+    Parameters
+    ----------
+    M : float
+        Mach number/s :math:`M = u/a`.
+
+    γ : float
+        Ratio of specific heats.
+
+    Returns
+    -------
+    float
+        Ratio of stagnation to stream temperature.
+    """
+    return 1 + 0.5 * (γ - 1) * M ** 2
+
+# ----------------------------------------------------------------------
+
+def temperature_h(h: float, *, h_ref: float, c_p: float, T_ref: float) -> float:
+    r"""
+    Returns the static temperature of a perfect gas given the specific
+    enthalpy.  Calculated using:
+
+     .. math:: T = T_{ref} + (h - h_{ref}) / c_p
+
+    Parameters
+    ----------
+    h : float
+        Specific enthalpy.
+
+    h_ref : float
+        Reference enthalpy.
+
+    c_p : float
+        Specific heat at constant pressure.
+
+    T_ref : float
+        Reference temperature.
+
+    Returns
+    -------
+    float
+    """
+    return T_ref + (h - h_ref) / c_p
+
+# ----------------------------------------------------------------------
+
+def temperature_ps(p: float, s: float, *, p_ref: float, s_ref: float,
+                   R: float, c_p: float, T_ref: float) -> float:
+    r"""
+    Computes the temperature of a perfect gas given the pressure
+    and entropy.  Calculated using:
+
+    .. math:: T = T_{ref} \exp [ ((s - s_{ref}) + R \log (p / p_{ref})) / c_p ]
+
+    Parameters
+    ----------
+    p : float
+        Static / stream pressure.
+
+    s : float
+        Specific entropy.
+
+    p_ref : float
+        Reference pressure.
+
+    s_ref : float
+        Reference specific entropy.
+
+    R : float
+        Gas constant for the specific gas.
+
+    c_p : float
+        Specific heat at constant pressure.
+
+    T_ref : float
+        Reference temperature.
+
+    Returns
+    -------
+    float
+        Static / stream temperature.
+    """
+    return T_ref * np.exp(((s - s_ref) + R * np.log(p / p_ref)) / c_p)
