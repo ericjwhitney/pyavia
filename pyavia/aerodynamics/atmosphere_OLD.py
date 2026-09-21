@@ -3,43 +3,37 @@
 Atmosphere (:mod:`pyavia.aerodynamics.atmosphere`)
 ==================================================
 
+.. currentmodule:: pyavia.aerodynamics.atmosphere
+
 Atmospheric property calculations including the ISA.
 
-.. autosummary::
-    :toctree:
-
-    Atmosphere      -- Class giving fixed atmospheric properties.
-    geo_alt_to_pot  -- Function converting geometric altitude to geopotential.
-    pot_alt_to_geo  -- Function converting geopotential altitude to geometric.
-
-
-Notes:
-
-- Uses ISO 2533-1975 International Standard Atmsosphere (ISA).  Altitude
-  from -2 → +80 km.
+Notes
+-----
+- Uses ISO 2533-1975 International Standard Atmsosphere (ISA).
+  Altitude from -2 → +80 km.
 
 - The ISA is defined in terms of geopotential altitude (H) which is
-  convenient when computing the pressure distribution through the
-  depth of the atmosphere.  This assumes a constant value of
-  gravitational acceleration everywhere.  In reality, gravitational
-  acceleration falls slightly as geometric (actual) altitude (h)
-  increases.  H and h are related by an equation; use geo_alt_to_pot()
-  and pot_alt_to_geo() for conversion.  Unless noted otherwise,
-  all altitudes used in Atmosphere are geopotential (H).
+  convenient when computing the pressure distribution through the depth
+  of the atmosphere.  This assumes a constant value of gravitational
+  acceleration everywhere.  In reality, gravitational acceleration falls
+  slightly as geometric (actual) altitude (h) increases.  H and h are
+  related by an equation; use ``geo_alt_to_pot()`` and
+  ``pot_alt_to_geo()`` for conversion. Unless noted otherwise, all
+  altitudes used in Atmosphere are geopotential (H).
 
 - Humidity is not presently included.
 
-- Dynamic viscosity is computed via Sutherland's formula which is reasonably
-  accurate between 180°R - 3400°R (or 100K - 1889K, -173 - 1616°C,
-  ref NACA TN 1135).
+- Dynamic viscosity is computed via Sutherland's formula which is
+  reasonably accurate between 180°R - 3400°R (or 100K - 1889K, -173
+  - 1616°C, ref NACA TN 1135).
 
-- Uppercase and lowercase are mixed to be consistent with source documents.
-  Uppercase H and associated values refer to geopotential altitudes,
-  lowercase refer to geometric (but these don't appear together anyway so
-  as to prevent errors).
+- Uppercase and lowercase are mixed to be consistent with source
+  documents. Uppercase H and associated values refer to geopotential
+  altitudes, lowercase refer to geometric (but these don't appear
+  together anyway so as to prevent errors).
 """
 
-# Last updated: 8 January 2020 by Eric J. Whitney
+# Written by Eric J. Whitney, November 2019.
 
 from math import exp, log, isclose
 from typing import List, Optional
@@ -49,14 +43,16 @@ from pyavia.numeric.solve import bisect_root
 from pyavia.util import find_bracket
 
 
-# -----------------------------------------------------------------------------
+
+# ======================================================================
 
 # noinspection PyPep8Naming,NonAsciiCharacters
-class Atmosphere:
+class Atmosphere_OLD:
     """
     An Atmosphere class giving a fixed representation of atmospheric
-    conditions.  Once constructed, all of the regular assosicated atmospheric
-    properties are then made available through class properties.
+    conditions.  Once constructed, all of the regular assosicated
+    atmospheric properties are then made available through class
+    properties.
 
     ..
         #>>> import pyavia as pa
@@ -67,35 +63,37 @@ class Atmosphere:
     Set default result units as US or SI.  Individual defaults can be
     set for each unit type:
 
-    >>> Atmosphere.set_default_style('SI')
-    >>> Atmosphere.unitdef_press = 'psi'
+    >>> Atmosphere_OLD.set_default_style('SI')
+    >>> Atmosphere_OLD.unitdef_press = 'psi'
 
     Show some ISA SSL values:
 
-    >>> atm = Atmosphere(H='SSL')
-    >>> print(f"P = {atm.pressure:.3f}, T = {atm.temperature:.2f}")
+    >>> atm = Atmosphere_OLD(H='SSL')
+    >>> print(f"P = {atm.pressure:.3f}, T = {atm.temperature_h:.2f}")
     P = 14.696 psi, T = 288.15 K
 
     Show density for an ISA standard altitude (note that these are
     formally geopotential altitudes):
 
-    >>> atm = Atmosphere(H=dim(10000, 'ft'))
+    >>> atm = Atmosphere_OLD(H=dim(10000, 'ft'))
     >>> print(f"ρ = {ρ:.3f}")
     ρ = 0.905 kg/m³
 
     Show the temperature ratio for a pressure altitude with a
     temperature offset:
 
-    >>> atm = Atmosphere(H_press=dim(34000,'ft'), T_offset=dim(+15,'Δ°C'))
+    >>> atm = Atmosphere_OLD(H_press=dim(34000,'ft'), T_offset=dim(+15,'Δ°C'))
     >>> print(f"Theta = {atm.theta:.3f}")
     Theta = 0.818
 
     Show the density ratio for an arbitrary non-standard atmosphere
     based on temperature / pressure:
 
-    >>> atm = Atmosphere(P=dim(90, 'kPa'), T=dim(-15, '°C'))
+    >>> atm = Atmosphere_OLD(P=dim(90, 'kPa'), T=dim(-15, '°C'))
     >>> print(f"σ = {atm.σ:.3f}")
     σ = 0.991
+
+
     """
 
     # noinspection PyProtectedMember
@@ -139,7 +137,7 @@ class Atmosphere:
 
                 # SSL atmosphere.
                 if isinstance(H, str) and H == 'SSL':
-                    tmp = Atmosphere(H=dim(0, 'm'))
+                    tmp = Atmosphere_OLD(H=dim(0, 'm'))
                     # noinspection PyUnresolvedReferences
                     self._T, self._P = tmp._T, tmp._P
                     return
@@ -158,7 +156,7 @@ class Atmosphere:
 
             if 'h_geometric' in kwargs:
                 # Set an ISA atmosphere based on geometric altitude h.
-                tmp = Atmosphere(H=geo_alt_to_pot(kwargs['h_geometric']))
+                tmp = Atmosphere_OLD(H=geo_alt_to_pot(kwargs['h_geometric']))
                 # noinspection PyUnresolvedReferences
                 self._T, self._P = tmp._T, tmp._P
                 return
@@ -249,12 +247,12 @@ class Atmosphere:
     @property
     def delta(self) -> float:
         r""":math:`\delta = P / P_{SSL}`."""
-        return self._P / Atmosphere(H='SSL').pressure
+        return self._P / Atmosphere_OLD(H='SSL').pressure
 
     @property
     def density(self) -> Dim:
-        return (self._P / Atmosphere.R / self._T).convert(
-            Atmosphere.unitdef_dens)
+        return (self._P / Atmosphere_OLD.R / self._T).convert(
+            Atmosphere_OLD.unitdef_dens)
 
     @property
     def density_altitude(self) -> Dim:
@@ -269,12 +267,12 @@ class Atmosphere:
         H_lhs, H_rhs = H_lhs.value, H_rhs.value
 
         def density_err(H_try: float) -> float:
-            return Atmosphere(H=dim(H_try, H_units)).density.convert(
+            return Atmosphere_OLD(H=dim(H_try, H_units)).density.convert(
                 dens_reqd.units).value - dens_reqd.value
 
         H_d = bisect_root(density_err, H_lhs, H_rhs, maxits=50, ftol=1e-6)
 
-        return dim(H_d, H_units).convert(Atmosphere.unitdef_alt)
+        return dim(H_d, H_units).convert(Atmosphere_OLD.unitdef_alt)
 
     @property
     def dynamic_viscosity(self) -> Dim:
@@ -287,7 +285,7 @@ class Atmosphere:
         s = dim(110.4, 'K')
         beta_s = dim(1.458E-06, 'kg/m/s/K^0.5')
         return (beta_s * self._T ** 1.5 / (self._T + s)).convert(
-            Atmosphere.unitdef_visc)
+            Atmosphere_OLD.unitdef_visc)
 
     @property
     def kinematic_viscosity(self) -> Dim:
@@ -295,7 +293,7 @@ class Atmosphere:
 
         """
         return (self.dynamic_viscosity / self.density).convert(
-            Atmosphere.unitdef_kine)
+            Atmosphere_OLD.unitdef_kine)
 
     @property
     def gamma(self) -> float:
@@ -308,7 +306,7 @@ class Atmosphere:
 
     @property
     def pressure(self) -> Dim:
-        return self._P.convert(Atmosphere.unitdef_press)
+        return self._P.convert(Atmosphere_OLD.unitdef_press)
 
     @property
     def pressure_altitude(self) -> Dim:
@@ -322,24 +320,24 @@ class Atmosphere:
         H_b, T_b, P_b, _ = _ISA_HTPrho_b[base_idx]
         beta = _ISA_beta[base_idx]
         H_p = _alt_in_layer(self._P, P_b, H_b, T_b, beta)
-        return H_p.convert(Atmosphere.unitdef_alt)
+        return H_p.convert(Atmosphere_OLD.unitdef_alt)
 
     @property
     def sigma(self) -> float:
         r""":math:`\sigma = \rho/\rho_{SSL}`."""
-        return self.density / Atmosphere(H='SSL').density
+        return self.density / Atmosphere_OLD(H='SSL').density
 
     @property
     def speed_of_sound(self) -> Dim:
         r""":math:`a = \sqrt{\gamma RT}`.
 
         """
-        return ((self.gamma * Atmosphere.R * self._T) ** 0.5).convert(
-            Atmosphere.unitdef_spd)
+        return ((self.gamma * Atmosphere_OLD.R * self._T) ** 0.5).convert(
+            Atmosphere_OLD.unitdef_spd)
 
     @property
     def temperature(self) -> Dim:
-        return self._T.convert(Atmosphere.unitdef_temp)
+        return self._T.convert(Atmosphere_OLD.unitdef_temp)
 
     @property
     def temperature_offset(self) -> Dim:
@@ -352,15 +350,15 @@ class Atmosphere:
         will be the same atmosphere.
         """
         # Units driven by LHS ())i.e. self).
-        return self.T - Atmosphere(H_press=self.H_press,
-                                   T_offset=dim(0.0, 'K')).T
+        return self.T - Atmosphere_OLD(H_press=self.H_press,
+                                       T_offset=dim(0.0, 'K')).T
 
     @property
     def theta(self) -> float:
         r"""
         :math:`\theta = T/T_{SSL}`.
         """
-        return self._T / Atmosphere(H='SSL').T
+        return self._T / Atmosphere_OLD(H='SSL').T
 
     # Method Aliases ---------------------------------------------------------
 
@@ -379,7 +377,7 @@ class Atmosphere:
     σ: float = sigma
 
 
-# ----------------------------------------------------------------------------
+# ======================================================================
 
 # Related constants.
 
@@ -390,9 +388,8 @@ _GAMMA_PERF = 1.4
 # temperatures.
 
 
-# ----------------------------------------------------------------------------
+# ======================================================================
 
-# noinspection PyPep8Naming
 def _press_in_layer(H, P_b, H_b, T_b, beta):
     """Returns the pressure computed within layer of constant lapse rate
     given geopotential altitude and base layer values of (_b) of pressure,
@@ -400,10 +397,10 @@ def _press_in_layer(H, P_b, H_b, T_b, beta):
     if not isclose(beta, 0, abs_tol=1e-6):
         # ISO 2533-1975 Eqn 12.
         return P_b * ((1 + (beta / T_b) * (H - H_b)) ** (
-                -G_N / beta / Atmosphere.R))
+                -G_N / beta / Atmosphere_OLD.R))
     else:
         # ISO 2533-1975 Eqn 13.
-        return P_b * exp((-G_N / Atmosphere.R / T_b) * (H - H_b))
+        return P_b * exp((-G_N / Atmosphere_OLD.R / T_b) * (H - H_b))
 
 
 # noinspection PyPep8Naming
@@ -416,11 +413,11 @@ def _alt_in_layer(P, P_b, H_b, T_b, beta):
         # the (P / Pb) * ... expression can resolve to a NumPy scalar which
         # can be confused by the RHS Dim term.
         return (H_b + (T_b / beta) *
-                ((P / P_b) ** (-beta * Atmosphere.R / G_N) - 1))
+                ((P / P_b) ** (-beta * Atmosphere_OLD.R / G_N) - 1))
     else:
-        # Note: (Atmosphere.R * T_b / G_N) is on the LHS for the same
+        # Note: (Atmosphere.R * T_b / g_n) is on the LHS for the same
         # reasons as above.
-        return H_b - (Atmosphere.R * T_b / G_N) * log(P / P_b)
+        return H_b - (Atmosphere_OLD.R * T_b / G_N) * log(P / P_b)
 
 
 _ISA_HTPrho_b: Optional[List] = None
@@ -476,19 +473,26 @@ def _set_ISA_levels():
     # Append density values.
     for idx in range(len(_ISA_HTPrho_b)):
         P, T = _ISA_HTPrho_b[idx][2], _ISA_HTPrho_b[idx][1]
-        _ISA_HTPrho_b[idx][:] += [P / Atmosphere.R / T]
+        _ISA_HTPrho_b[idx][:] += [P / Atmosphere_OLD.R / T]
 
 
 _set_ISA_levels()
 
+# ======================================================================
 
+# TODO rename geometric_to_potential
 def geo_alt_to_pot(geo_alt: Dim) -> Dim:
-    """Convert geometric altitude to geopotential h → H per ISO 2533-1975 Eqn
-    8."""
+    """
+    Convert geometric altitude (`h`) to geopotential altitude ('H')
+    per ISO 2533-1975 Eqn 8.
+    """
     return R_EARTH * geo_alt / (R_EARTH + geo_alt)
 
 
+# TODO rename potential_to_geometric
 def pot_alt_to_geo(pot_alt: Dim) -> Dim:
-    """Convert geopotential altitude to geometric H → h per ISO 2533-1975 Eqn
-    9."""
+    """
+    Convert geopotential altitude (`H`) to geometric altitude (`h`)
+    per ISO 2533-1975 Eqn 9.
+    """
     return R_EARTH * pot_alt / (R_EARTH - pot_alt)
