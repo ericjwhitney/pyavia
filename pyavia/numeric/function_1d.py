@@ -5,27 +5,25 @@
 .. currentmodule:: pyavia.numeric.function_1d
 
 Classes for working with 1-D / scalar functions.
-
 """
-
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Union, Final
+from typing import Final
 
 import numpy as np
+import numpy.typing as npt
 from numpy.polynomial import Polynomial
-from numpy.typing import ArrayLike, NDArray
 from scipy.interpolate import PchipInterpolator
 
-from pyavia.numeric.math_ext import (sclvec_asarray, sclvec_return,
-                                     within_range)
+from pyavia.numeric._math_ext import (
+    sclvec_asarray, sclvec_return, within_range
+)
 from pyavia.numeric.solve import SolverError
 
 # Written by Eric J. Whitney, May 2023.
 
-_ExtOpt = Union[None, str, float, 'Function1D']  # Extrapolation options.
+# Extrapolation options.
+type _ExtOpt = None | str | float | Function1D
 
 
 # TODO Add roots() as solve(0, ...) for compatibility with SciPy.  Move
@@ -36,9 +34,41 @@ _ExtOpt = Union[None, str, float, 'Function1D']  # Extrapolation options.
 # ======================================================================
 
 class Function1D(ABC):
-    """
-    Abstract definition of a 1-D scalar function
-    :math:`y = f_{model}(x)`.
+    r"""
+    Abstract definition of a 1-D scalar function :math:`y =
+    f_{model}(x)`.
+
+    Parameters
+    ----------
+    x_domain : tuple[float, float]
+        Applicable closed interval (range) of the function and its
+        derivatives, i.e. :math:`x \in [x_{ min}, x_{max}]`.  If an `x`
+        value is supplied outside this range, how it is handled depends
+        on ``ext_lo`` and ``ext_hi`` (see below).
+
+    ext_lo, ext_hi : various, default = None
+        Extend / extrapolate function outside `x_domain` on either the
+        ``lo`` (or left ``x < x_domain[0]``) side or ``hi`` (or right
+        ``x > x_domain[1]``) side.  The type of extension depends on the
+        argument:
+
+        - `None`: Attempting to compute a value outside the range
+          raises a `ValueError` exception.
+
+        - ``'constant'``:  Returns the  `y` value corresponding to the
+          function endpoint, i.e. :math:`f_{model}(x_{min})` or
+          :math:`f_{model}(x_{max})`.
+
+        - ``'linear'``: Extend a straight line from the adjacent range
+          endpoint, using the function value and derivative computed at
+          the adjacent endpoint.
+
+        - `value`: Similar to ``'constant'`` however the value given is
+          used as the constant.  This is akin to a `fill value`.
+
+        - `Function1D`: Use the given `Function1D` object for extension
+          / extrapolation.  In this way, functions can be chained together
+          as desired.
 
     Notes
     -----
@@ -48,42 +78,7 @@ class Function1D(ABC):
 
     def __init__(self, x_domain: tuple[float, float],
                  ext_lo: _ExtOpt = None, ext_hi: _ExtOpt = None):
-        r"""
-        Parameters
-        ----------
-        x_domain : tuple[float, float]
 
-            Applicable closed interval (range) of the function and its
-            derivatives, i.e. :math:`x \in [x_{ min}, x_{max}]`.  If an
-            `x` value is supplied outside this range, how it is handled
-            depends on ``ext_lo`` and ``ext_hi`` (see below).
-
-        ext_lo, ext_hi : various, default = None
-
-            Extend / extrapolate function outside `x_domain` on either
-            the ``lo`` (or left ``x < x_domain[0]``) side or ``hi`` (or
-            right ``x > x_domain[1]``) side.  The type of extension
-            depends on the argument:
-
-            - `None`: Attempting to compute a value outside the range
-              raises a `ValueError` exception.
-
-            - ``'constant'``:  Returns the  `y` value corresponding to
-              the function endpoint, i.e. :math:`f_{model}(x_{min})` or
-              :math:`f_{model}(x_{max})`.
-
-            - ``'linear'``: Extend a straight line from the adjacent
-              range endpoint, using the function value and derivative
-              computed at the adjacent endpoint.
-
-            - `value`: Similar to ``'constant'`` however the value
-              given is used as the constant.  This is akin to a `fill
-              value`.
-
-            - `Function1D`: Use the given `Function1D` object for
-              extension / extrapolation.  In this way, functions can
-              be chained together as desired.
-        """
         # -- Setup Base Functions --------------------------------------
 
         if (not isinstance(x_domain, Sequence) or len(x_domain) != 2 or
@@ -151,7 +146,7 @@ class Function1D(ABC):
             else:
                 self._ext_hi = ext_func
 
-    def __call__(self, x: ArrayLike) -> ArrayLike:
+    def __call__(self, x: npt.ArrayLike) -> npt.ArrayLike:
         r"""
         Return the value of the approximating function
         :math:`y_{approx}` at the given abscissa/s `x`.
@@ -184,9 +179,9 @@ class Function1D(ABC):
         """
         return self._eval(x, n=0)
 
-    # -- Public Methods ------------------------------------------------
+    # -- Public --------------------------------------------------------
 
-    def derivative(self, x: ArrayLike, n: int = 1) -> ArrayLike:
+    def derivative(self, x: npt.ArrayLike, n: int = 1) -> npt.ArrayLike:
         """
         Return the derivative of the model function
         :math:`d^{n}f_{model}/dx^n` at the given abscissa/s `x` where
@@ -196,6 +191,7 @@ class Function1D(ABC):
         ----------
         x : array_like
             `x` value (or sequence of values).
+
         n : int, default = 1
             Order of derivative to evaluate, where `n` >= 1. For
             example, if ``n=1`` the first derivative `dy/dx` is
@@ -220,7 +216,8 @@ class Function1D(ABC):
         if n < 1:
             raise ValueError("Derivative requires n >= 1.")
 
-        # TODO also check n is integer
+        if not n.is_integer():
+            raise TypeError("Derivate requires 'n' to be an integer.")
 
         return self._eval(x, n)
 
@@ -241,8 +238,8 @@ class Function1D(ABC):
         return self._ext_lo
 
     def solve(self, y: float = 0.0,
-              x_range: (float | None, float | None) = (None, None)
-              ) -> [float]:
+              x_range: tuple[float | None, float | None] = (None, None)
+              ) -> list[float]:
         """
         Find one (or more) real `x` values that satisfy the equation
         :math:`y = f_{model}(x)` in the given `x_range = [min, max]`.
@@ -273,7 +270,7 @@ class Function1D(ABC):
 
         Returns
         -------
-        x : [float]
+        x : list[float]
             A sorted list containing one or more unique solutions (real
             roots) to the equation :math:`y = f_{model}(x)`. If no
             solutions are found an empty list is returned.
@@ -290,7 +287,8 @@ class Function1D(ABC):
         x_range = [x_r if x_r is not None else x_d
                    for x_r, x_d in zip(x_range, self.x_extents)]
 
-        # Get unique 'interior' solutions from within the current domain.
+        # Get unique 'interior' solutions from within the current
+        # domain.
         x_range_intl = np.clip(x_range, *self._x_domain)
         x_sols = set(self._solve(y, x_range_intl))
 
@@ -304,7 +302,8 @@ class Function1D(ABC):
                 x_range_lo = (x_range[0], self._x_domain[0])  # Shrunk.
                 x_sols.update(self._ext_lo.solve(y, x_range_lo))
 
-        # Add RH 'exterior' unique solutions from outside the normal domain.
+        # Add RH 'exterior' unique solutions from outside the normal
+        # domain.
         if x_range[1] > self._x_domain[1]:
             if self._ext_hi is None:
                 raise ValueError("x_range extends beyond function "
@@ -317,7 +316,7 @@ class Function1D(ABC):
         return list(sorted(x_sols))
 
     @property
-    def x_domain(self) -> (float, float):
+    def x_domain(self) -> tuple[float, float]:
         """
         Returns the `x` domain of the function as (`min`, `max`).  This
         does not including any left or right extension / extrapolation
@@ -326,7 +325,7 @@ class Function1D(ABC):
         return self._x_domain
 
     @property
-    def x_extents(self) -> (float, float):
+    def x_extents(self) -> tuple[float, float]:
         """
         Return the complete `x` extents where function can be evaluated.
         This may be larger than `x_domain` as it includes the extents of
@@ -344,18 +343,18 @@ class Function1D(ABC):
 
         return extents_min, extents_max
 
-    # -- Private Methods -----------------------------------------------
+    # -- Protected -----------------------------------------------------
 
-    def _eval(self, x: ArrayLike, n: int) -> ArrayLike:
+    def _eval(self, x: npt.ArrayLike, n: int) -> npt.ArrayLike:
         """
-        Evaluates the model function (n == 0) or it's derivative
-        (n > 0) at the given abscissa/s `x`.  This is common code used
-        by `__call__` and `derivative`.  Note:
+        Evaluates the model function (n == 0) or it's derivative (n > 0)
+        at the given abscissa/s `x`.  This is common code used by
+        `__call__` and `derivative`.  Note:
 
         - Any `NaN` `x` values automatically generate a `NaN` result.
         - `x` values are passed to extended / extrapolated regions using
-          `_eval` not `_func`, as these may need to further delegate calls
-          to other extensions in turn.
+          `_eval` not `_func`, as these may need to further delegate
+          calls to other extensions in turn.
         """
         assert n >= 0
         x, scalar = sclvec_asarray(x)
@@ -387,10 +386,10 @@ class Function1D(ABC):
         return sclvec_return(res, scalar)
 
     @abstractmethod
-    def _func(self, x: NDArray, n: int) -> NDArray:
+    def _func(self, x: npt.NDArray, n: int) -> npt.NDArray:
         """
-        The internal implementation of the model function and derivative -
-        derived classes must provided this method.
+        The internal implementation of the model function and derivative
+        - derived classes must provided this method.
 
         Parameters
         ----------
@@ -418,7 +417,8 @@ class Function1D(ABC):
         pass
 
     @abstractmethod
-    def _solve(self, y: float, x_range: (float, float)) -> [float]:
+    def _solve(self, y: float, x_range: tuple[float, float]
+               ) -> list[float]:
         """
         Return one (or more) real `x` values that satisfy the model
         function equation :math:`y = f_{model}(x)`.  These must lie
@@ -432,34 +432,31 @@ class Function1D(ABC):
 
 
 class FitXY1D(Function1D, ABC):
-    """
+    r"""
     Abstract class incorporating standard methods for functions that are
     fit to `x`-`y` data.
+
+    Parameters
+    ----------
+    x, y : array_like, shape (n,)
+        (`x`, `y`) values of known points where `n` >= 2.  Duplicate
+        `x` values are not permitted.  These values are copied for
+        internal storage.
+
+    x_domain : tuple[float | None, float | None], default = (None, None)
+        Applicable closed interval (range) of the function and its
+        derivatives, i.e. :math:`x \in [x_{min}, x_{max}]`.  If
+        either entry is `None`, then the domain limit on that side
+        is taken to encompass just the given `x` values (i.e. either
+        the minimum or maximum).
+
+    **kwargs :
+        See `Function1D` for additional arguments (e.g. extrapolation).
     """
 
-    def __init__(self, x: ArrayLike, y: ArrayLike,
+    def __init__(self, x: npt.ArrayLike, y: npt.ArrayLike,
                  x_domain: tuple[float | None, float | None] = (None, None),
                  **kwargs):
-        r"""
-        Parameters
-        ----------
-        x, y : array_like, shape (n,)
-            (`x`, `y`) values of known points where `n` >= 2.  Duplicate
-            `x` values are not permitted.  These values are copied for
-            internal storage.
-
-        x_domain : tuple[float | None, float | None], default =
-                   (None, None)
-            Applicable closed interval (range) of the function and its
-            derivatives, i.e. :math:`x \in [x_{min}, x_{max}]`.  If
-            either entry is `None`, then the domain limit on that side
-            is taken to encompass just the given `x` values (i.e. either
-            the minimum or maximum).
-
-        kwargs :
-            See `Function1D.__init__` for additional arguments (e.g.
-            extrapolation)
-        """
         # -- Setup and Sort Points -------------------------------------
 
         self._x = np.array(x, copy=True, ndmin=1)
@@ -483,14 +480,14 @@ class FitXY1D(Function1D, ABC):
 
         # Substitute `None` domain values with the points range.
         x_pts = (np.min(self._x), np.max(self._x))
-        x_domain = [x_d if x_d is not None else x_p
-                    for x_d, x_p in zip(x_domain, x_pts)]
+        x_domain = tuple(x_d if x_d is not None else x_p
+                         for x_d, x_p in zip(x_domain, x_pts))
 
-        # -- Init Base -------------------------------------------------
+        # -- Init Base Class -------------------------------------------
 
-        super().__init__(x_domain, **kwargs)
+        super().__init__(x_domain, **kwargs)  # noqa
 
-    # -- Public Methods ------------------------------------------------
+    # -- Public --------------------------------------------------------
 
     @property
     def n_pts(self) -> int:
@@ -511,37 +508,41 @@ class FitXY1D(Function1D, ABC):
     @property
     def sumsq_residual(self) -> float:
         r"""
-        Residual sum of squares :math:`SS_{res} = \sum{(y_i -
-        f_{model}(x_i))^2}`.  This is always re-calculated unless
-        overridden by a derived class.
+        Residual sum of squares:
+
+        .. math:: SS_{res} = \sum{(y_i - f_{model}(x_i))^2}
+
+        This is always re-calculated unless overridden by a derived
+        class.
         """
         return float(np.sum((self._y - self._func(self._x, n=0)) ** 2))
 
     @property
     def sumsq_total(self) -> float:
         r"""
-        Total sum of squares :math:`SS_{tot} = \sum{(y_i - \bar{y})^2}`.
+        Total sum of squares:
+
+        .. math:: SS_{tot} = \sum{(y_i - \bar{y})^2}
+
         This is always calculated unless overridden by a derived class.
         """
         mean = np.sum(self._y) / len(self._y)
         return float(np.sum((self._y - mean) ** 2))
 
     @property
-    def x(self) -> NDArray:
+    def x(self) -> npt.NDArray:
         """
         Absiccas `x` of known function values, in sorted order.
         """
         return self._x
 
     @property
-    def y(self) -> NDArray:
+    def y(self) -> npt.NDArray:
         """
         Ordinates 'y' of known function values, corresponding to
         abscissas returned by property `x`.
         """
         return self._y
-
-    # -- Private Methods -----------------------------------------------
 
 
 # ======================================================================
@@ -549,7 +550,31 @@ class FitXY1D(Function1D, ABC):
 class Line1D(Function1D):
     """
     A 1-D function modelled as a straight line.  The line may be finite
-    or infinite; see `__init__` for more details.
+    or infinite.
+
+    Possible argument combinations are as follows:
+
+    - If two `x` values and two `y` values are given corresponding to
+      two points, this defines the line.
+    - If a single `x` and `y` value are provided, then `slope` or
+      `intercept` must also be provided to define the line.
+    - If no `x` and `y` value is provided, then both `slope` and
+      `intercept` must be provided.
+
+    Parameters
+    ----------
+    x, y : array_like
+        Refer to text for argument combinations.
+
+    x_domain : tuple[float, float] or None, default = (-∞, +∞)
+        Applicable closed interval (domain) for the line.
+
+    slope, intercept : float
+        Refer to text for argument combinations.
+
+    kwargs :
+        See `Function1D.__init__` for additional arguments (e.g.
+        extrapolation)
 
     Notes
     -----
@@ -558,31 +583,10 @@ class Line1D(Function1D):
     would imply all `x` values are solutions).
     """
 
-    def __init__(self, x: ArrayLike = None, y: ArrayLike = None,
-                 x_domain: (float, float) = (-np.inf, +np.inf), *,
-                 slope: float = None, intercept: float = None, **kwargs):
-        """
-        Possible argument combinations are as follows:
-
-        - If two `x` values and two `y` values are given corresponding
-          to two points, this defines the line.
-        - If a single `x` and `y` value are provided, then `slope` or
-          `intercept` must also be provided to define the line.
-        - If no `x` and `y` value is provided, then both `slope` and
-          `intercept` must be provided.
-
-        Parameters
-        ----------
-        x, y : array_like
-            Refer to text for argument combinations.
-        x_domain : tuple[float, float] or None, default = (-∞, +∞)
-            Applicable closed interval (domain) for the line.
-        slope, intercept : float
-            Refer to text for argument combinations.
-        kwargs :
-            See `Function1D.__init__` for additional arguments (e.g.
-            extrapolation)
-        """
+    def __init__(self, x: npt.ArrayLike = None, y: npt.ArrayLike = None,
+                 x_domain: tuple[float, float] = (-np.inf, +np.inf), *,
+                 slope: float | None = None, intercept: float | None = None,
+                 **kwargs):
         super().__init__(x_domain=x_domain, **kwargs)
 
         # Standardise x, y points.
@@ -639,9 +643,9 @@ class Line1D(Function1D):
         if np.isnan(self._line_m) or np.isnan(self._line_c):
             raise ValueError("Resulting line is invalid.")
 
-    # -- Private Methods -----------------------------------------------
+    # -- Protected -----------------------------------------------------
 
-    def _func(self, x: NDArray, n: int) -> NDArray:
+    def _func(self, x: npt.NDArray, n: int) -> npt.NDArray:
         assert n >= 0
         if n == 0:
             # Basic line equation.
@@ -655,7 +659,7 @@ class Line1D(Function1D):
             # Higher derivatives (zero).
             return np.zeros_like(x)
 
-    def _solve(self, y: float, x_range: (float, float)) -> [float]:
+    def _solve(self, y: float, x_range: tuple[float, float]) -> list[float]:
         # Horizontal lines give no solutions.
         if self._line_m == 0.0:
             return []
@@ -675,19 +679,21 @@ class PCHIP1D(FitXY1D):
     A 1D function model using a Piecewise Cubic Hermite Interpolating 
     Polynomial (`PCHIP`).  
     
-    This interpolation passes through all given (`x`, `y`) points exactly, 
-    i.e. ``sumsq_residal == 0`` and `R`² = 1. See [1]_ for more detail.
+    This interpolation passes through all given (`x`, `y`) points 
+    exactly, i.e. :math:`SS_{res} = 0` and :math:`R^2 = 1`. See [1]_ 
+    for more detail.
 
-    .. note:: For ``solve(...)`` `PCHIPApprox1D` does not include
-       discontinuity jumps across `y` as possible solutions.
+    .. note:: For `solve(...)` `PCHIP1D` does not include discontinuity 
+       jumps across `y` as possible solutions.
 
-    Notes
-    -----
-    .. [1] PCHIP Interpolation using SciPy:
-           https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html
-    """  # noqa
+    References
+    ----------
+    .. [1] `PCHIP Interpolation on SciPy
+           <https://docs.scipy.org/doc/scipy/reference/generated/
+           scipy.interpolate.PchipInterpolator.html>`_
+    """
 
-    # -- Public Methods ------------------------------------------------------
+    # -- Public --------------------------------------------------------
 
     @property
     def R2(self) -> float:
@@ -697,9 +703,9 @@ class PCHIP1D(FitXY1D):
     def sumsq_residual(self) -> float:
         return 0.0  # Always passes thru all points.
 
-    # -- Private Methods -----------------------------------------------
+    # -- Protected -----------------------------------------------------
 
-    def _func(self, x: NDArray, n: int) -> NDArray:
+    def _func(self, x: npt.NDArray, n: int) -> npt.NDArray:
         assert n >= 0
         if n <= 3:
             # Up to third derivative.
@@ -719,10 +725,11 @@ class PCHIP1D(FitXY1D):
         for n in (1, 2, 3):
             self._pchip_funcs.append(self._pchip_funcs[0].derivative(n))
 
-    def _solve(self, y: float, x_range: (float, float)) -> [float]:
+    def _solve(self, y: float, x_range: tuple[float, float]) -> list[float]:
         # Use PCHIP 'solve', then trim to given range.
         x_sols = self._pchip_funcs[0].solve(y=y, discontinuity=False)
         return within_range(x_sols, x_range)
+
 
 # ======================================================================
 
@@ -731,45 +738,43 @@ class SmoothPoly1D(FitXY1D):
     """
     A 1-D polynomial of specified degree/s that smoothly fits the data
     points in a least-squares sense.
+
+    Parameters
+    ----------
+    x, y, x_domain : array_like, shape (n,)
+        See `FitXY1D` for details.
+
+    degree : int or Sequence[int]
+        One or more positive integers (>=0) specifying the degree of
+        the smoothed polynomial:
+
+        - If one value is given, this is the (fixed) degree of the
+          fitting polynomial.  Parameter `R2_min` is ignored.
+
+        - If a sequence of values is given, an attempt is made to build
+          the polynomial using each degree in turn, in the order given.
+          A given degree is rejected if it cannot be constructed (i.e.
+          insufficient / invalid points).  In addition, if the parameter
+          `R2_min` is provided, the polynomial is rejected if it is not
+          sufficiently accurate, i.e. :math:`R^2 < R^2_{min}`.
+
+          .. note:: This (re-)building can occur whenever the stored
+             `x` and `y` values change (e.g. after ``add_points(...)``),
+             which means that if a sequence of degrees is provided the
+             order of the polynomial can be dynamic.
+
+    **kwargs :
+        See `Function1D` for additional arguments (e.g. extrapolation).
     """
-    # Set a maximum on how many polys will be precomputed (base + derivatives).
-    # The remainder are computed on demand.
+    # Set a maximum on how many polys will be precomputed (base +
+    # derivatives). The remainder are computed on demand.
     _PRECOMPUTE_N_POLYS: Final = 3
 
-    def __init__(self, x: ArrayLike, y: ArrayLike,
-                 x_domain: (float | None, float | None) = (None, None),
-                 *, degree: int | [int],
-                 R2_min: float = None, **kwargs):
-        """
-        Parameters
-        ----------
-        x, y, x_domain : array_like, shape (n,)
-            See `FitXY1D.__init__` for more details.
-        degree : int or [int]
-            One or more positive integers (>=0) specifying the degree of
-            the smoothed polynomial:
-
-            - If one value is given, this is the (fixed) degree of the
-              fitting polynomial.  Parameter `R2_min` is ignored.
-
-            - If a sequence of values is given, an attempt is made to
-              build the polynomial using each degree in turn, in the
-              order given.  A given degree is rejected if it cannot be
-              constructed (i.e. insufficient / invalid points).  In
-              addition, if the parameter `R2_min` is provided, the
-              polynomial is rejected if it is not sufficiently accurate,
-              i.e. :math:`R^2 < R^2_{min}`.
-
-              .. note:: This (re-)building can occur whenever the stored
-                 `x` and `y` values change (e.g. after
-                 ``add_points(...)``), which means that if a sequence of
-                 degrees is provided the order of the polynomial can be
-                 dynamic.
-
-        kwargs :
-            See `Function1D.__init__` for additional arguments (e.g.
-            extrapolation)
-        """
+    def __init__(self, x: npt.ArrayLike, y: npt.ArrayLike,
+                 x_domain: tuple[float | None, float | None] = (None, None),
+                 *,
+                 degree: int | Sequence[int], R2_min: float | None = None,
+                 **kwargs):
         # Setup polynomial degree/s.
         self._poly_funcs: list[Polynomial] = []
 
@@ -792,7 +797,7 @@ class SmoothPoly1D(FitXY1D):
         # Remainder of base can now be setup.
         super().__init__(x, y, x_domain, **kwargs)
 
-    # -- Public Methods ------------------------------------------------
+    # -- Public --------------------------------------------------------
 
     @property
     def sumsq_residual(self) -> float:
@@ -802,9 +807,9 @@ class SmoothPoly1D(FitXY1D):
     def sumsq_total(self) -> float:
         return self._sumsq_total  # Precomputed value.
 
-    # -- Private Methods -----------------------------------------------
+    # -- Protected -----------------------------------------------------
 
-    def _func(self, x: NDArray, n: int) -> NDArray:
+    def _func(self, x: npt.NDArray, n: int) -> npt.NDArray:
         assert n >= 0
         assert len(self._poly_funcs) > 0
 
@@ -851,10 +856,9 @@ class SmoothPoly1D(FitXY1D):
         for n in range(1, n_pre):
             self._poly_funcs.append(self._poly_funcs[0].deriv(n))
 
-    def _solve(self, y: float, x_range: (float, float)) -> [float]:
+    def _solve(self, y: float, x_range: tuple[float, float]) -> list[float]:
         # Get all polynomial roots using NumPy subtraction and roots().
-        roots = np.array((self._poly_funcs[0] - y).roots(),
-                         dtype=np.complex_)
+        roots = np.array((self._poly_funcs[0] - y).roots(), dtype=complex)
 
         # Extract only real roots.  Tolerance on imaginary part is same
         # as SciPy _zeros_py.py.
@@ -862,6 +866,5 @@ class SmoothPoly1D(FitXY1D):
                                    4 * np.finfo(float).eps])
 
         return within_range(real_roots, x_range)
-
 
 # ======================================================================
