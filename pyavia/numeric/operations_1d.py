@@ -4,29 +4,23 @@
 
 .. currentmodule:: pyavia.numeric.operations_1d
 """
-
-from __future__ import annotations
-from typing import TypeVar
-
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+import numpy.typing as npt
+
 
 # Written by Eric J. Whitney, 2022.
-
-_T = TypeVar('_T')
-
 
 # ======================================================================
 
 def sine_spacing(x1: float, x2: float, n: int,
-                 spacing: float) -> NDArray[float]:
+                 spacing: float) -> npt.NDArray[np.float64]:
     r"""
     Generates a non-linear distribution of values in the interval
     :math:`[x_1, x_2]`.
 
-    .. note:: This procedure is adapted from a Fortran subroutine contained
-       within the `AVL` source code written by M. Drela and H. Youngren
-       (2002).
+    .. note:: This procedure is adapted from a Fortran subroutine
+       contained within the `AVL` source code written by M. Drela and H.
+       Youngren (2002).
 
     Parameters
     ----------
@@ -47,14 +41,16 @@ def sine_spacing(x1: float, x2: float, n: int,
             - *2* = Sine spacing (points concentrated toward `x1`).
             - *3* = Equal spacing.
 
-        A negative value of `dist` produces reversed spacing (only applicable
-        to sine spacing).  Intermediate / fractional values produce a spacing
-        which is a combination of the adjacent integer values.
+        A negative value of `dist` produces reversed spacing (only
+        applicable to sine spacing).  Intermediate / fractional values
+        produce a spacing which is a combination of the adjacent integer
+        values.
 
     Returns
     -------
     x : ndarray[float]
-        Points in the interval [`x1`, `x2`] clustered to the distribution.
+        Points in the interval [`x1`, `x2`] clustered to the
+        distribution.
 
     Examples
     --------
@@ -92,16 +88,17 @@ def sine_spacing(x1: float, x2: float, n: int,
 
 
 # ----------------------------------------------------------------------
-def subdivide_series(x: ArrayLike[_T], ndiv: int,
-                     keep_original: str = 'all') -> NDArray[_T]:
+
+def subdivide_series(x: npt.ArrayLike, ndiv: int,
+                         keep_original: str = 'all') -> npt.NDArray:
     """
-    Subdivide a list / array by inserting `ndiv` intermediate points equally
-    into each interval between consequtive `x` values. See `Notes` section
-    for a detailed explanation.
+    Subdivide a list / array by inserting `ndiv` intermediate points
+    equally into each interval between consequtive `x` values. See
+    `Notes` section for a detailed explanation.
 
     .. note::  This function is commonly used with a series of function
-               coordinates or grid values to produce a finer discretisation
-               / grid.
+       coordinates or grid values to produce a finer discretisation /
+       grid.
 
     Parameters
     ----------
@@ -110,8 +107,8 @@ def subdivide_series(x: ArrayLike[_T], ndiv: int,
         sorted order or unique.
 
         .. note:: If adjacent `x` values are repeated / duplicates,
-                  subdividing points will be inserted which are also equal
-                  to that `x` value.
+           subdividing points will be inserted which are also equal to
+           that `x` value.
 
     ndiv : int
         Number of divisions (>= 1) to perform on the intervals between
@@ -122,8 +119,8 @@ def subdivide_series(x: ArrayLike[_T], ndiv: int,
         the result, in addition to the new subdividing points:
 
         - ``keep_original='all'``: Retain all original grid points.
-        - ``keep_original='ends'``: Retain only the first and last original
-          points.
+        - ``keep_original='ends'``: Retain only the first and last
+          original points.
         - ``keep_original='interior'``: Retain all the original points
           *except* the first and last points.
         - ``keep_original='none'``: Discard all original grid points.
@@ -185,21 +182,21 @@ def subdivide_series(x: ArrayLike[_T], ndiv: int,
     x = x[:, np.newaxis]  # Make column vector [np, 1]
     Δx = np.diff(x, axis=0)  # Δx along axis [np - 1, 1]
 
-    # Compute subdividing fractions as row vector.  The compute Δx and x'
-    # for each subdivision.  Resulting x' values are in columns.
+    # Compute subdividing fractions as row vector, then compute Δx and
+    # x' for each subdivision.  Resulting x' values are in columns.
     frac = ((np.arange(ndiv) + 1) / (ndiv + 1))[np.newaxis, :]  # [1, ndiv]
     offset = Δx @ frac
     x_sub = x[:-1, :] + offset  # [np - 1, ndiv]
 
     if keep_original == 'none':
-        return x_sub.ravel()  # Interleave / return only subdividing points.
+        return x_sub.ravel()  # Interleave / return only subdiv. points.
 
     elif keep_original == 'ends':
         return np.r_[x[0], x_sub.ravel(), x[-1]]  # Tack on ends.
 
-    # Otherwise generate 'all' result by interleaving original 'x' values
-    # with subdivisions [x_0, x_sub, ..., x_1, x_sub, ..., x_np-2, x_sub,
-    # ...] and finally tack on RH end [x_np-1].
+    # Otherwise generate 'all' result by interleaving original 'x'
+    # values with subdivisions [x_0, x_sub, ..., x_1, x_sub, ...,
+    # x_np-2, x_sub, ...] and finally tack on RH end [x_np-1].
     x_all = np.r_[np.c_[x[:-1, :], x_sub].ravel(), x[-1]]
 
     if keep_original == 'all':
@@ -209,4 +206,5 @@ def subdivide_series(x: ArrayLike[_T], ndiv: int,
         return x_all[1:-1]  # Dock ends.
 
     else:
-        raise ValueError(f"Unknown 'keep_original' option: '{keep_original}'.")
+        raise ValueError(f"Unknown 'keep_original' option: "
+                         f"'{keep_original}'.")
