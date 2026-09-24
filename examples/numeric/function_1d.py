@@ -1,19 +1,20 @@
 #!usr/bin/env python3
-
-# Example of a 1-D modelling functions.
-# Written by Eric J. Whitney, May 2023.
-
+"""
+Example of a 1-D modelling functions.
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pyavia.data import PCHIP1D, SmoothPoly1D  # noqa
+from pyavia.numeric import SmoothPoly1D, PCHIP1D
+
+# Written by Eric J. Whitney, May 2023.
+
+# ======================================================================
+
 
 # Example data points.
 x = [-1.2, 0.2, 1.1, 2.0, 3.9, 5.0, 5.5, 7.0]
 y = [1.2, 0.2, 1.4, 4.3, 15.0, 25.0, 31.3, 35.1]
-
-# ----------------------------------------------------------------------
-# Examples of different functions.
 
 # Fit a smooth polynomial up to order 3 through the points applicable
 # to a domain slightly larger than the input points.  No extrapolation
@@ -41,11 +42,13 @@ show_funcs = [f_smpoly1, f_smpoly2, f_pchip1, f_pchip2]
 # ----------------------------------------------------------------------
 
 # Solve / plot each function in turn.
-for f_approx in show_funcs:
-    f_type = str(f_approx)
-    print(f"\nFunction type: {f_type}:")
-    print(f"\tLow side extraplation (< x_min): {str(f_approx.ext_lo)}")
-    print(f"\tHigh side extraplation (> x_max): {str(f_approx.ext_hi)}")
+for i, f_approx in enumerate(show_funcs):
+    f_type = f_approx.__class__.__name__
+    print(f"\nFunction #{i} - Type: {f_type}")
+    print(f"\tLow side extraplation (< x_min): "
+          f"{f_approx.ext_lo.__class__.__name__}")
+    print(f"\tHigh side extraplation (> x_max): "
+          f"{f_approx.ext_hi.__class__.__name__}")
     print(f"\tx_domain: {f_approx.x_domain}")
     print(f"\tx_extents: {f_approx.x_extents}")
 
@@ -55,7 +58,7 @@ for f_approx in show_funcs:
     print(f"\tSolution of f(x) = {y_sol} -> x = {x_sol}")
 
     # Compute the proxy function and derivative at some typical points.
-    print(f"\tPlot of f(x) and df(x)/dx ...")
+    print(f"\tPlotting f(x) and df(x)/dx ...", end='')
     x_plot_min = np.clip(min(x) - 5, *f_approx.x_extents)
     x_plot_max = np.clip(max(x) + 5, *f_approx.x_extents)
     x_plot = np.linspace(x_plot_min, x_plot_max, num=500)
@@ -69,15 +72,16 @@ for f_approx in show_funcs:
     plt.legend()
     plt.xlabel("$x$")
     plt.ylabel("$y$")
-    plt.title(f"FUNCTION - {f_type}")
+    plt.title(f"FUNCTION #{i} - {f_type}")
 
     plt.figure()
     plt.plot(x_plot, dydx_plot, '--b')
     plt.grid(axis='both')
     plt.xlabel("$x$")
     plt.ylabel(r"${dy}/{dx}$")
-    plt.title(f"DERIVATIVE - {f_type}")
+    plt.title(f"DERIVATIVE #{i} - {f_type}")
 
     plt.show(block=False)
+    print("done.")
 
 plt.show(block=True)

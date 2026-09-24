@@ -6,7 +6,7 @@ spaced datapoints.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pyavia.data import savgol_variable
+from pyavia.numeric import savgol_variable
 
 
 # Written by Eric J. Whitney, March 2023
@@ -14,7 +14,8 @@ from pyavia.data import savgol_variable
 # ======================================================================
 
 def func(x):
-    # return x ** 2 - 2 * x - 3  # Different trial functions.
+    # Different options for trial functions.
+    # return x ** 2 - 2 * x - 3
     return np.sin(x) + 0.35
 
 
